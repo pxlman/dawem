@@ -18,8 +18,10 @@ export const loadState = async (): Promise<AppState | null> => {
   try {
     const jsonState = await AsyncStorage.getItem(APP_STATE_KEY);
     if (jsonState !== null) {
-      // console.log('State loaded successfully.'); // Optional logging
-      return JSON.parse(jsonState) as AppState;
+      const state = JSON.parse(jsonState) as AppState;
+      // Ensure default values for new fields
+      state.settings = state.settings || {};
+      return state;
     }
     return null;
   } catch (e) {

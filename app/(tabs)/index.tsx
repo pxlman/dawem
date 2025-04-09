@@ -36,8 +36,10 @@ export default function HabitListScreen() {
     // Grouping Logic
     const groupedHabitsForDisplay: TimeModuleGroupData[] = useMemo(() => {
         const dueHabits = habits.filter(habit => !habit.archived && isHabitDue(habit, currentDate));
-        const groups = timeModules.reduce<GroupedHabits>((acc, tm) => {
-          acc[tm.id] = { timeModule: tm, habits: [] }; return acc;
+        const orderedTimeModules = [...timeModules]; // Ensure correct order
+        const groups = orderedTimeModules.reduce<GroupedHabits>((acc, tm) => {
+            acc[tm.id] = { timeModule: tm, habits: [] };
+            return acc;
         }, {});
         groups['uncategorized'] = { timeModule: undefined, habits: [] };
         dueHabits.forEach(habit => {

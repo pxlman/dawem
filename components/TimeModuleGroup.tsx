@@ -20,7 +20,7 @@ const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, c
     <View style={styles.container}>
       {/* Apply new style to the header Text */}
       <Text style={styles.timeModuleHeader}>
-          {timeModule?.name?.toUpperCase() ?? 'UNASSIGNED'}
+          {timeModule?.name?.toUpperCase() ?? <Text>UNASSIGNED</Text>}
       </Text>
       {/* Render HabitItems */}
       {habits.map(habit => (

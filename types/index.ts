@@ -4,73 +4,54 @@ export type HabitRepetitionType = 'daily' | 'weekly' | 'monthly';
 export type HabitMeasurementType = 'binary' | 'count';
 export type HabitLogStatus = 'right' | 'wrong' | 'circle';
 
+// --- ADDED fields to RepetitionConfig ---
 export interface RepetitionConfig {
-    // Currently empty, future: daysOfWeek, daysOfMonth, interval etc.
+    daysOfWeek?: number[]; // 0=Sat, 1=Sun, ..., 6=Fri (For 'weekly')
+    daysPerWeek?: number; // Number of days the habit should be done in a week
+    daysOfMonth?: number[]; // 1-31 (For 'monthly')
+    // Add other future options here (interval, timesPerWeek etc.)
 }
 
-export interface HabitRepetition {
-    type: HabitRepetitionType;
-    config: RepetitionConfig;
-}
+export interface HabitRepetition { type: HabitRepetitionType; config: RepetitionConfig; }
 
+// --- ADDED targetValue to HabitMeasurement ---
 export interface HabitMeasurement {
     type: HabitMeasurementType;
     unit?: string;
+    targetValue?: number; // Target value for count habits
+    weeklyReset?: boolean; // Reset count at the end of the week
 }
 
 export interface Habit {
-    id: string;
-    title: string;
-    color: string;
-    icon?: string;
-    repetition: HabitRepetition;
-    measurement: HabitMeasurement;
-    timeModuleId: string; // Link to global TimeModule
-    createdAt: string;
-    archived?: boolean;
+    id: string; title: string; color: string; icon?: string;
+    repetition: HabitRepetition; measurement: HabitMeasurement; // Uses updated types
+    timeModuleId: string; createdAt: string; archived?: boolean;
 }
 
-// Global Time Modules
-export interface TimeModule {
-    id: string;
-    name: string;
-    startTime?: string;
-    endTime?: string;
-}
+export interface TimeModule { id: string; name: string; startTime?: string; endTime?: string; }
 
 export interface LogEntry {
-    id: string;
-    habitId: string;
-    date: string; // 'yyyy-MM-dd'
-    timestamp: string; // ISO String
-    status?: HabitLogStatus;
-    value?: number;
-    notes?: string;
+    id: string; habitId: string; date: string; // 'yyyy-MM-dd'
+    timestamp: string; status?: HabitLogStatus; value?: number; notes?: string;
 }
 
 export interface AppSettings {
-    // Future settings like theme, notifications etc.
+    startTimeOfDay?: string; // New field for the start time of the day (e.g., "08:00")
 }
 
 export interface AppState {
-    habits: Habit[];
-    timeModules: TimeModule[]; // Global list
-    logs: LogEntry[];
-    settings: AppSettings;
+    habits: Habit[]; timeModules: TimeModule[]; logs: LogEntry[]; settings: AppSettings;
 }
 
+// Actions remain the same, payload structure for ADD/UPDATE habit now includes the new fields
 export type AppAction =
     | { type: 'LOAD_STATE'; payload: AppState }
     | { type: 'RESET_STATE' }
-    // Habits
     | { type: 'ADD_HABIT'; payload: Omit<Habit, 'id' | 'createdAt'> }
     | { type: 'UPDATE_HABIT'; payload: Partial<Habit> & { id: string } }
     | { type: 'DELETE_HABIT'; payload: { id: string } }
-    // Logs
     | { type: 'LOG_HABIT'; payload: { habitId: string; date: string; status?: HabitLogStatus; value?: number } }
-    // Time Modules
     | { type: 'ADD_TIME_MODULE'; payload: { name: string } }
     | { type: 'UPDATE_TIME_MODULE'; payload: Partial<TimeModule> & { id: string } }
     | { type: 'DELETE_TIME_MODULE'; payload: { id: string } }
-    // Settings (placeholder for future)
-    ;
+    | { type: 'UPDATE_START_TIME'; payload: { startTimeOfDay: string } };

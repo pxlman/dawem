@@ -8,7 +8,7 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext'; // Adjust path if needed
-import Colors from '../constants/Colors'; // Adjust path if needed
+import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if needed
 import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig } from '../types'; // Adjust path if needed
 
 const repetitionOptions = [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, { label: 'Monthly', value: 'monthly' }, ];
@@ -29,6 +29,8 @@ export default function AddEditHabitModalScreen() {
     const [measurementType, setMeasurementType] = useState<HabitMeasurementType>('binary');
     const [measurementUnit, setMeasurementUnit] = useState<string>('');
     const [selectedTimeModuleId, setSelectedTimeModuleId] = useState<string | null>(null);
+    const [selectedDays, setSelectedDays] = useState<number[]>([]);
+    const [daysPerWeek, setDaysPerWeek] = useState<number | null>(null);
 
     // Dropdown Open State
     const [repetitionOpen, setRepetitionOpen] = useState(false);
@@ -55,6 +57,13 @@ export default function AddEditHabitModalScreen() {
     const onRepetitionOpen = useCallback(() => setTimeModuleOpen(false), []);
     const onTimeModuleOpen = useCallback(() => setRepetitionOpen(false), []);
 
+    const toggleDaySelection = (index: number) => {
+        setSelectedDays(prevSelectedDays =>
+            prevSelectedDays.includes(index)
+                ? prevSelectedDays.filter(day => day !== index)
+                : [...prevSelectedDays, index]
+        );
+    };
 
     // Handlers
     const handleSave = () => {
@@ -88,10 +97,20 @@ export default function AddEditHabitModalScreen() {
              <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="e.g., Drink Water, Read..." placeholderTextColor={Colors.text} />
 
              <Text style={styles.label}>Color</Text>
-             <View style={styles.colorInputContainer}>
-                 <View style={[styles.colorPreview, { backgroundColor: /^#([0-9A-F]{3}){1,2}$/i.test(color) ? color : Colors.grey }]} />
-                 <TextInput style={[styles.input, styles.colorInput]} value={color} onChangeText={setColor} placeholder={Colors.primary} autoCapitalize="none" maxLength={7} placeholderTextColor={Colors.textSecondary}/>
-             </View>
+             <View style={styles.colorPickerContainer}>
+                {fixedColors.map((fixedColor) => (
+                    <TouchableOpacity
+                        key={fixedColor}
+                        style={[
+                            styles.colorOption,
+                            { backgroundColor: fixedColor },
+                            color === fixedColor && styles.colorOptionSelected,
+                        ]}
+                        onPress={() => setColor(fixedColor)}
+                    />
+                ))}
+            </View>
+
              {/* Render Pickers first for potential zIndex layering */}
              {/* Repetition Dropdown */}
              <Text style={styles.label}>Repeats</Text>
@@ -138,8 +157,49 @@ export default function AddEditHabitModalScreen() {
                  <Switch value={measurementType === 'count'} onValueChange={(isOn) => setMeasurementType(isOn ? 'count' : 'binary')} trackColor={{ false: Colors.lightGrey, true: Colors.accent }} thumbColor={measurementType === 'count' ? Colors.primary : Colors.grey} />
                  <Text style={[styles.switchLabel, measurementType === 'count' && styles.switchLabelActive]}>Quantity</Text>
              </View>
-             {measurementType === 'count' && ( <><Text style={styles.label}>Unit (Optional)</Text><TextInput style={styles.input} value={measurementUnit} onChangeText={setMeasurementUnit} placeholder="e.g., glasses, pages" placeholderTextColor={Colors.textSecondary} /></> )}
-
+             {measurementType === 'count' && (
+                <>
+                    <Text style={styles.label}>Target Value</Text>
+                    <TextInput
+                        style={styles.input}
+                        keyboardType="number-pad"
+                        value={measurementUnit}
+                        onChangeText={setMeasurementUnit}
+                        placeholder="e.g., 10"
+                        placeholderTextColor={Colors.textSecondary}
+                    />
+                </>
+            )}
+            {repetitionType === 'weekly' && (
+                <>
+                    <Text style={styles.label}>Days of the Week</Text>
+                    {/* Add a multi-select dropdown or checkboxes for days of the week */}
+                    {/* Example: */}
+                    <View style={styles.weekDaysContainer}>
+                        {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[
+                                    styles.weekDayButton,
+                                    selectedDays.includes(index) && styles.weekDayButtonSelected,
+                                ]}
+                                onPress={() => toggleDaySelection(index)}
+                            >
+                                <Text style={styles.weekDayText}>{day}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                    <Text style={styles.label}>Number of Days Per Week</Text>
+                    <TextInput
+                        style={styles.input}
+                        keyboardType="number-pad"
+                        value={daysPerWeek?.toString() || ''}
+                        onChangeText={(value) => setDaysPerWeek(parseInt(value, 10))}
+                        placeholder="e.g., 3"
+                        placeholderTextColor={Colors.textSecondary}
+                    />
+                </>
+            )}
 
              {/* Action Buttons */}
              <View style={styles.buttonContainer}><Button title={isEditMode ? "Save Changes" : "Add Habit"} onPress={handleSave} color={Colors.primary} /></View>
@@ -184,6 +244,43 @@ const styles = StyleSheet.create({
     dropdownListItemLabelStyle: { color: Colors.text, }, // List item text
     dropdownArrowStyle: { tintColor: Colors.textSecondary, },
     dropdownTickStyle: { tintColor: Colors.primary, },
+    weekDaysContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    weekDayButton: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 10,
+        marginHorizontal: 2,
+        borderRadius: 5,
+        backgroundColor: Colors.surface,
+        borderWidth: 1,
+        borderColor: Colors.grey,
+    },
+    weekDayButtonSelected: {
+        backgroundColor: Colors.primary,
+    },
+    weekDayText: {
+        color: Colors.text,
+    },
+    colorPickerContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start', // Align items to the start of the row
+        marginBottom: 15,
+        paddingHorizontal: 5, // Add padding for alignment
+    },
+    colorOption: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        margin: 5, // Add consistent spacing around each color
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    colorOptionSelected: {
+        borderColor: Colors.primary,
+    },
 });
-
-// --- Removed pickerSelectStyles ---

@@ -27,3 +27,40 @@ export default {
   heatmapLevel3: '#26a641',
   heatmapLevel4: '#39d353', // Brightest Green
 };
+
+// Fixed color palette for habits
+export const fixedColors = [
+  '#BB86FC', '#03DAC5', '#4CAF50', '#F44336',
+  '#2196F3', '#FF9800', '#9C27B0', '#00BCD4',
+  '#8BC34A', '#FF5722', '#3F51B5', '#FFC107',
+].sort((a, b) => {
+  // Sort colors by hue
+  const hexToHsl = (hex: string): { h: number } => {
+    let r = 0, g = 0, b = 0;
+    if (hex.length === 4) {
+      r = parseInt(hex[1] + hex[1], 16);
+      g = parseInt(hex[2] + hex[2], 16);
+      b = parseInt(hex[3] + hex[3], 16);
+    } else if (hex.length === 7) {
+      r = parseInt(hex[1] + hex[2], 16);
+      g = parseInt(hex[3] + hex[4], 16);
+      b = parseInt(hex[5] + hex[6], 16);
+    }
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0;
+    if (max !== min) {
+      const d = max - min;
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    return { h: h * 360 };
+  };
+  return hexToHsl(a).h - hexToHsl(b).h;
+});

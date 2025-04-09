@@ -30,22 +30,34 @@ export const isLogForDate = (log: LogEntry, date: Date): boolean => {
 // Returns true for daily, weekly, monthly for now (needs enhancement later)
 export const isHabitDue = (habit: Habit, date: Date = new Date()): boolean => {
     if (!habit?.repetition) return false;
-    const { type, config } = habit.repetition; // config is currently unused here
+    const { type, config } = habit.repetition;
 
     switch (type) {
         case 'daily':
             return true;
         case 'weekly':
-            // TODO: Enhance logic (e.g., check config.daysOfWeek if added back, or logs for X times/week)
-            // console.warn(`'weekly' habit '${habit.title}' check simplified.`);
-            return true; // Simplified for now
-        case 'monthly':
-             // TODO: Enhance logic (e.g., check config.daysOfMonth if added back, or logs for X times/month)
-            // console.warn(`'monthly' habit '${habit.title}' check simplified.`);
-            return true; // Simplified for now
+            const dayOfWeek = getDay(date); // 0=Sat, 1=Sun, ..., 6=Fri
+            if (config.daysOfWeek?.includes(dayOfWeek)) {
+                return true;
+            }
+            return false;
         default:
             return false;
     }
+};
+
+export const resetWeeklyCounts = (logs: LogEntry[], habits: Habit[]): LogEntry[] => {
+    const today = new Date();
+    const isSaturday = getDay(today) === 0; // Saturday is the start of the week
+    if (!isSaturday) return logs;
+
+    return logs.map((log) => {
+        const habit = habits.find((h) => h.id === log.habitId);
+        if (habit?.measurement?.weeklyReset) {
+            return { ...log, value: 0 };
+        }
+        return log;
+    });
 };
 
 // --- Helper for Heatmap ---
