@@ -62,29 +62,34 @@ export const getLastNDates = (days: number): Date[] => {
 };
 
 // Gets completion status for a specific habit on a specific date
+import { HabitLogStatus } from '../types'; // Import the status type
+
+// Define the possible heatmap statuses we'll use for coloring
+export type HeatmapStatus = HabitLogStatus | 'none'; // 'right', 'wrong', 'circle', 'none'
+
+// Updated function to return our specific HeatmapStatus type
 export const getCompletionStatusForDate = (
     habitId: string,
     date: Date,
     logs: LogEntry[]
-): 'completed' | 'missed' | 'partial' | 'none' => { // Added 'partial' for circle/wrong maybe?
+): HeatmapStatus => { // Return the specific HeatmapStatus type
     const dateString = format(date, 'yyyy-MM-dd');
     const log = logs.find(l => l.habitId === habitId && l.date === dateString);
 
-    if (!log) {
-        return 'none'; // No log found for this date
+    if (!log || !log.status) { // If no log or log has no status (e.g., count only, or old data)
+        // Consider count habits here? If log exists and value > 0, maybe return 'right'?
+        if (log && log.value !== undefined && log.value > 0) {
+            return 'right'; // Treat positive count as 'right' for heatmap coloring
+        }
+        return 'none'; // Default to 'none'
     }
 
-    // Define completion based on log status or value
-    if (log.status === 'right' || (log.value !== undefined && log.value > 0)) {
-        return 'completed';
+    // Return the status directly if it's one we recognize
+    if (log.status === 'right' || log.status === 'wrong' || log.status === 'circle') {
+        return log.status;
     }
-    if (log.status === 'wrong') {
-        return 'missed';
-    }
-     if (log.status === 'circle') {
-         return 'partial'; // Or however you want to treat 'circle' visually
-     }
 
-    // Fallback if log exists but doesn't match completion criteria (e.g., value=0)
+    // Fallback if status is somehow invalid
+    console.warn(`Unknown log status found: ${log.status} for habit ${habitId} on ${dateString}`);
     return 'none';
 };

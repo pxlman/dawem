@@ -1,64 +1,60 @@
 // app/(tabs)/stats.tsx
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native'; // Use ScrollView instead of FlatList for simplicity now
+import React from 'react'; // Removed useMemo if not calculating overall stats here
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
 import Colors from '../../constants/Colors';
-import ActivityHeatmap from '../../components/ActivityHeatmap'; // Import the new component
+import ActivityHeatmap from '../../components/ActivityHeatmap'; // Correct import
 import { Habit } from '../../types';
 
 export default function StatsScreen() {
     const { habits, logs } = useAppState();
+    // Filter active habits directly here
     const activeHabits = habits.filter(h => !h.archived);
-
-    // Basic overall stats (optional, could be removed)
-    const overallStats = useMemo(() => {
-        // Simple completion rate (can be refined)
-        const totalLogs = logs.length;
-        const completedLogs = logs.filter(l => l.status === 'right' || (l.value && l.value > 0)).length;
-        return {
-            completion: totalLogs > 0 ? Math.round((completedLogs / totalLogs) * 100) : 0,
-        };
-    }, [logs]);
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContentContainer}>
-            {/* Optional: Overall Summary */}
-            {/* <Text style={styles.header}>Overall Stats</Text> */}
-            {/* <View style={styles.summaryCard}> ... </View> */}
-
             <Text style={styles.header}>Habit Activity (Last ~3 Months)</Text>
 
+            {/* Message if no habits exist */}
             {activeHabits.length === 0 && (
                 <Text style={styles.placeholder}>Add some habits to see their activity here.</Text>
             )}
 
+            {/* Map over active habits and render a section for each */}
             {activeHabits.map(habit => (
                 <View key={habit.id} style={styles.habitSection}>
+                    {/* Render habit title */}
                     <Text style={styles.habitTitle}>{habit.title}</Text>
+                    {/* Render the heatmap for the habit */}
                     <ActivityHeatmap
                         habit={habit}
-                        logs={logs} // Pass all logs, component will filter
-                        periodDays={91} // Approx 13 weeks * 7 days
-                        cellSize={10}
-                        cellMargin={1.5}
+                        logs={logs}
+                        periodDays={140} // ~5 months
+                        // Adjust cell size/margin if needed for your screen layout
+                        cellSize={11}
+                        cellMargin={1.2}
                     />
                 </View>
             ))}
 
-            <View style={styles.legend}>
-                 <Text style={styles.legendText}>Less</Text>
-                 <View style={[styles.legendColorBox, { backgroundColor: Colors.heatmapLevel1 }]} />
-                 <View style={[styles.legendColorBox, { backgroundColor: Colors.heatmapLevel2 }]} />
-                 <View style={[styles.legendColorBox, { backgroundColor: Colors.heatmapLevel3 }]} />
-                 <View style={[styles.legendColorBox, { backgroundColor: Colors.heatmapLevel4 }]} />
-                 <Text style={styles.legendText}>More</Text>
-             </View>
+            {/* The Legend is now part of the ActivityHeatmap component by default */}
+            {/* If you prefer a single legend at the bottom, remove it from ActivityHeatmap */}
+            {/* and uncomment/add a similar legend structure here */}
+             {/* Example of a single legend at the bottom:
+             {activeHabits.length > 0 && ( // Only show if there are habits
+                 <View style={styles.overallLegend}>
+                    <View style={styles.legendItem}><View style={[styles.legendColorBox, { backgroundColor: Colors.green }]} /><Text style={styles.legendText}>Done</Text></View>
+                    <View style={styles.legendItem}><View style={[styles.legendColorBox, { backgroundColor: Colors.red }]} /><Text style={styles.legendText}>Missed</Text></View>
+                    <View style={styles.legendItem}><View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} /><Text style={styles.legendText}>Imperfect</Text></View>
+                    <View style={styles.legendItem}><View style={[styles.legendColorBox, { backgroundColor: Colors.heatmapLevel0 }]} /><Text style={styles.legendText}>No Data</Text></View>
+                 </View>
+             )} */}
 
         </ScrollView>
     );
 }
 
-// Styles
+// Styles (Adjust as needed)
 const styles = StyleSheet.create({
      container: {
          flex: 1,
@@ -69,27 +65,28 @@ const styles = StyleSheet.create({
         paddingBottom: 40
     },
     header: {
-        fontSize: 20, // Slightly smaller header
+        fontSize: 20,
         fontWeight: 'bold',
-        marginBottom: 20, // More space after header
+        marginBottom: 20,
         color: Colors.primary,
         textAlign: 'center'
     },
     habitSection: {
         backgroundColor: Colors.surface,
         borderRadius: 8,
-        paddingVertical: 15,
-        paddingHorizontal: 10,
+        paddingVertical: 10, // Reduced vertical padding
+        paddingHorizontal: 5, // Reduced horizontal padding
         marginBottom: 15,
         elevation: 1,
         borderWidth: 1,
         borderColor: Colors.lightGrey,
+        alignItems: 'center', // Center title and heatmap within the section
     },
     habitTitle: {
         fontSize: 16,
         fontWeight: '600',
         color: Colors.text,
-        marginBottom: 10, // Space between title and heatmap
+        marginBottom: 8, // Space between title and heatmap
         textAlign: 'center',
     },
     placeholder: {
@@ -99,28 +96,35 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
         textAlign: 'center'
     },
-     legend: {
+    // Styles for the optional overall legend (if moved from heatmap component)
+    overallLegend: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         marginTop: 15,
         marginBottom: 10,
         alignItems: 'center',
-        justifyContent: 'center', // Center legend items
-        paddingHorizontal: 10,
+        justifyContent: 'center',
+        paddingHorizontal: 5,
+        borderTopWidth: 1,
+        borderTopColor: Colors.lightGrey,
+        paddingTop: 15,
     },
-    legendItem: { // Keep if using individual items later
+    legendItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: 10,
+        marginHorizontal: 6,
+        marginBottom: 4,
     },
     legendColorBox: {
-        width: 12, // Match heatmap cell size
-        height: 12,
+        width: 11,
+        height: 11,
         borderRadius: 2,
-        marginHorizontal: 1.5, // Match heatmap cell margin
+        marginRight: 4,
+        borderWidth: 0.5,
+        borderColor: 'rgba(0,0,0,0.1)',
     },
     legendText: {
-        fontSize: 11,
+        fontSize: 10,
         color: Colors.textSecondary,
-        marginHorizontal: 5, // Space around text
     },
 });

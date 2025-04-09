@@ -43,7 +43,6 @@ export default function SettingsScreen() {
             </View>
         );
     };
-    console.log("Settings rendering...");
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContentContainer} keyboardShouldPersistTaps="handled">
             <View style={styles.section}>

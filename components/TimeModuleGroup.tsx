@@ -16,7 +16,6 @@ const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, c
     return null;
   }
 
-  console.log("TimeModuleGroup rendering...");
   return (
     <View style={styles.container}>
       {/* Apply new style to the header Text */}

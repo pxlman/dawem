@@ -59,21 +59,25 @@ export default function HabitListScreen() {
         if (event.type === 'set' && selectedDate) setCurrentDate(selectedDate);
     };
     const showPicker = () => setShowDatePicker(true);
-    console.log("index");
     return (
         <View style={styles.container}>
              {/* Render Date Header */}
+             
              <DateHeader
                  currentDate={currentDate}
                  onPrevDay={() => setCurrentDate(subDays(currentDate, 1))}
                  onNextDay={() => setCurrentDate(addDays(currentDate, 1))}
                  onShowDatePicker={showPicker}
              />
+
              {/* Conditionally Render Date Picker */}
+
              {showDatePicker && (
                  <DateTimePicker value={currentDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={onDateChange} />
              )}
+
              {/* ScrollView with Content */}
+
              <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Check if there's anything to display AT ALL */}
                 {groupedHabitsForDisplay.length === 0 ? (

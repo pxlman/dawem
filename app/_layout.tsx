@@ -2,17 +2,17 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+// *** Import StatusBar from expo-status-bar ***
 import { StatusBar } from 'expo-status-bar';
-import { AppProvider } from '../context/AppStateContext'; // Adjust path if needed
-import Colors from '../constants/Colors'; // Adjust path if needed
+import { AppProvider } from '../context/AppStateContext';
+import Colors from '../constants/Colors';
 
 export default function RootLayout() {
-    // Font loading can be added here if needed
-
     return (
-        <AppProvider> {/* Ensure AppProvider is the top-level wrapper */}
+        <AppProvider>
             <SafeAreaProvider>
-                <StatusBar style="light" backgroundColor={Colors.primary} />
+                {/* *** Set style to "light" for light text/icons *** */}
+                <StatusBar style="light" backgroundColor={Colors.surface} />
                 <Stack screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen
@@ -20,8 +20,10 @@ export default function RootLayout() {
                         options={{
                             presentation: 'modal',
                             title: 'Add/Edit Habit',
-                            headerStyle: { backgroundColor: Colors.primary },
-                            headerTintColor: Colors.surface,
+                            // --- Update Header Colors ---
+                            headerStyle: { backgroundColor: Colors.surface },
+                            headerTintColor: Colors.text, // Light text color
+                            // --- End Update ---
                             headerTitleStyle: { fontWeight: 'bold' },
                             headerShown: true,
                         }}

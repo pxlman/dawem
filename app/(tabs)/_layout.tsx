@@ -7,19 +7,26 @@ import Colors from '../../constants/Colors';
 export default function TabLayout() {
     return (
         <Tabs
-            screenOptions={({ route }: { route: { name: string } }) => ({
-                tabBarActiveTintColor: Colors.primary,
-                tabBarInactiveTintColor: Colors.textSecondary,
-                tabBarStyle: { backgroundColor: Colors.surface, borderTopColor: Colors.lightGrey },
-                headerStyle: { backgroundColor: Colors.primary },
-                headerTintColor: Colors.surface,
+            screenOptions={({ route }) => ({
+                // --- Update Tab Colors ---
+                tabBarActiveTintColor: Colors.primary, // Use updated primary
+                tabBarInactiveTintColor: Colors.textSecondary, // Use dark theme secondary text
+                tabBarStyle: {
+                    backgroundColor: Colors.surface, // Dark surface for tab bar
+                    borderTopColor: Colors.grey, // Use new grey for border
+                },
+                // --- Update Default Header Colors ---
+                headerStyle: { backgroundColor: Colors.surface }, // Dark surface for headers
+                headerTintColor: Colors.text, // Light text color for headers
+                // --- End Updates ---
                 headerTitleStyle: { fontWeight: 'bold' },
-                tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
+                tabBarIcon: ({ focused, color, size }) => {
                     let iconName: keyof typeof Ionicons.glyphMap;
                     if (route.name === 'index') iconName = focused ? 'list-circle' : 'list-circle-outline';
                     else if (route.name === 'stats') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
                     else if (route.name === 'settings') iconName = focused ? 'settings' : 'settings-outline';
                     else iconName = 'help-circle-outline';
+                    // color is passed correctly based on tabBarActive/InactiveTintColor
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
             })}
