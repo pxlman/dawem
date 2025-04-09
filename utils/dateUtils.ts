@@ -1,5 +1,5 @@
 // utils/dateUtils.ts
-import { format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns';
+import { format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns'; // Ensure format is imported
 import { Habit, LogEntry, HabitRepetitionType, RepetitionConfig } from '../types';
 
 export const getTodayDateString = (): string => {
@@ -30,17 +30,24 @@ export const isLogForDate = (log: LogEntry, date: Date): boolean => {
 // Returns true for daily, weekly, monthly for now (needs enhancement later)
 export const isHabitDue = (habit: Habit, date: Date = new Date()): boolean => {
     if (!habit?.repetition) return false;
+
     const { type, config } = habit.repetition;
+    const habitStartDate = habit.startDate ? new Date(habit.startDate) : null;
+    const habitEndDate = habit.endDate ? new Date(habit.endDate) : null;
+
+    // Check if the current date is within the habit's start and end date range (inclusive)
+    if (habitStartDate && date < habitStartDate) return false; // Before start date
+    if (habitEndDate && date > habitEndDate) return false; // After end date
 
     switch (type) {
         case 'daily':
             return true;
         case 'weekly':
             const dayOfWeek = getDay(date); // 0=Sat, 1=Sun, ..., 6=Fri
-            if (config.daysOfWeek?.includes(dayOfWeek)) {
-                return true;
-            }
-            return false;
+            return config.daysOfWeek?.includes(dayOfWeek) || false;
+        case 'monthly':
+            const dayOfMonth = getDate(date); // 1-31
+            return config.daysOfMonth?.includes(dayOfMonth) || false;
         default:
             return false;
     }

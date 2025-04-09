@@ -12,12 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 interface HabitItemProps {
     habit: Habit;
     currentDate: Date; // Expecting a Date object
+    onEdit: () => void; // Add the edit handler prop
 }
 
 // Define a fixed set of colors for the color picker
 // const fixedColors = ['#FF5733', '#33FF57', '#3357FF', '#FF33A1', '#A133FF', '#33FFF5'];
 
-const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate }) => {
+const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => {
     const dispatch = useAppDispatch();
     const { logs, timeModules } = useAppState();
     const dateString = format(currentDate, 'yyyy-MM-dd');
@@ -29,7 +30,12 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate }) => {
     const todaysLog = logs.find(log => log.habitId === habit.id && isLogForDate(log, currentDate));
 
     // State for the count input value
-    const [countValue, setCountValue] = useState<string>(todaysLog?.value?.toString() ?? '');
+    const [countValue, setCountValue] = useState<number>(todaysLog?.value || 0);
+
+    useEffect(() => {
+        // Update the count value whenever the log changes
+        setCountValue(todaysLog?.value || 0);
+    }, [todaysLog]);
 
     // State for the visual appearance of the binary button
     const getInitialStatus = (): HabitLogStatus | 'none' => {
@@ -195,7 +201,12 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate }) => {
     };
 
     const renderEditModal = () => (
-        <View style={styles.modalContainer}>
+        <View style={styles.modalOverlay}>
+            <TouchableOpacity
+                style={styles.modalBackground}
+                activeOpacity={1}
+                onPress={() => setIsEditModalVisible(false)} // Dismiss modal on outside press
+            />
             <View style={styles.modalContent}>
                 <Text style={styles.modalHeader}>Edit Habit</Text>
                 <TextInput
@@ -246,13 +257,14 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate }) => {
     return (
         // Apply disabled styling to the container as well
         <View style={[styles.container, { borderLeftColor: habit.color || Colors.primary }, isFutureDate ? styles.containerDisabled : {}]}>
-            <Text style={[styles.title, isFutureDate ? styles.textDisabled : {}]}>{habit.title}</Text>
-            {habit.measurement.type === 'binary' ? renderCombinedBinaryButton() : renderCountControls()}
             <TouchableOpacity
-                onLongPress={() => setIsEditModalVisible(true)}
+                style={styles.touchableArea}
+                onLongPress={onEdit} // Trigger the edit modal
                 delayLongPress={300}
-                style={styles.editOverlay}
-            />
+            >
+                <Text style={[styles.title, isFutureDate ? styles.textDisabled : {}]}>{habit.title}</Text>
+            </TouchableOpacity>
+            {habit.measurement.type === 'binary' ? renderCombinedBinaryButton() : renderCountControls()}
             {isEditModalVisible && renderEditModal()}
         </View>
     );
@@ -266,12 +278,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         elevation: 1.5, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.18, shadowRadius: 1.0,
+        zIndex: 1, // Ensure habit items are below the modal
     },
     containerDisabled: { // Style for future date habit item container
         opacity: 0.6, // Dim the item slightly
     },
+    touchableArea: {
+        flex: 1, // Allow the touchable area to expand
+        marginRight: 10, // Add space before the buttons
+    },
     title: {
-        fontSize: 16, fontWeight: '500', flex: 1, marginRight: 10, color: Colors.text
+        fontSize: 16, fontWeight: '500', color: Colors.text
     },
     controls: { flexDirection: 'row', alignItems: 'center', },
     countButton: {
@@ -332,27 +349,41 @@ const styles = StyleSheet.create({
     },
 
     // --- Modal Styles ---
-    modalContainer: {
+    modalOverlay: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim background
+        zIndex: 1000, // Ensure the modal is above all other components
+    },
+    modalBackground: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim background
     },
     modalContent: {
         backgroundColor: Colors.surface,
         padding: 20,
         borderRadius: 8,
         width: '90%',
+        maxWidth: 400, // Limit modal width for larger screens
+        zIndex: 1001, // Ensure the content is above the background
+        elevation: 11, // For Android
+        alignItems: 'center', // Center content horizontally
     },
     modalHeader: {
         fontSize: 18,
         fontWeight: 'bold',
         color: Colors.text,
         marginBottom: 15,
+        textAlign: 'center', // Center header text
     },
     label: {
         fontSize: 14,
@@ -370,11 +401,12 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         backgroundColor: Colors.background,
         color: Colors.text,
+        width: '100%', // Ensure input spans the modal width
     },
     colorPickerContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'flex-start',
+        justifyContent: 'center', // Center color options
         marginBottom: 15,
     },
     colorOption: {
@@ -392,6 +424,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         marginBottom: 15,
+        justifyContent: 'center', // Center time module options
     },
     timeModuleOption: {
         padding: 10,
@@ -411,13 +444,7 @@ const styles = StyleSheet.create({
     modalActions: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-    },
-    editOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        width: '100%', // Ensure buttons span the modal width
     },
 });
 

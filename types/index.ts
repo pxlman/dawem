@@ -23,9 +23,17 @@ export interface HabitMeasurement {
 }
 
 export interface Habit {
-    id: string; title: string; color: string; icon?: string;
-    repetition: HabitRepetition; measurement: HabitMeasurement; // Uses updated types
-    timeModuleId: string; createdAt: string; archived?: boolean;
+    id: string;
+    title: string;
+    color: string;
+    icon?: string;
+    repetition: HabitRepetition;
+    measurement: HabitMeasurement;
+    timeModuleId: string;
+    createdAt: string;
+    archived?: boolean;
+    startDate?: string; // Start date of the habit
+    endDate?: string | null; // End date of the habit (null means "forever")
 }
 
 export interface TimeModule { id: string; name: string; startTime?: string; endTime?: string; }
@@ -54,4 +62,5 @@ export type AppAction =
     | { type: 'ADD_TIME_MODULE'; payload: { name: string } }
     | { type: 'UPDATE_TIME_MODULE'; payload: Partial<TimeModule> & { id: string } }
     | { type: 'DELETE_TIME_MODULE'; payload: { id: string } }
-    | { type: 'UPDATE_START_TIME'; payload: { startTimeOfDay: string } };
+    | { type: 'UPDATE_START_TIME'; payload: { startTimeOfDay: string } }
+    | { type: 'DELETE_HABIT_FROM_TODAY'; payload: { id: string; fromDate: string } };

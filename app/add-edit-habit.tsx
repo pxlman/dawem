@@ -10,17 +10,28 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext'; // Adjust path if needed
 import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if needed
 import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig } from '../types'; // Adjust path if needed
+import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
+import { format } from 'date-fns'; // Ensure format is imported
 
 const repetitionOptions = [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, { label: 'Monthly', value: 'monthly' }, ];
 
 export default function AddEditHabitModalScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ habitId?: string }>();
-    const { habitId } = params;
+    const params = useLocalSearchParams<{ habitId?: string; currentDate?: string }>(); // Include currentDate in params
+    const { habitId, currentDate } = params; // Destructure currentDate
     const { habits, timeModules } = useAppState();
     const dispatch = useAppDispatch();
     const [isEditMode, setIsEditMode] = useState(!!habitId);
     const habitToEdit = useMemo(() => isEditMode ? habits.find(h => h.id === habitId) : undefined, [habits, habitId, isEditMode]);
+
+    // Ensure currentDate is a valid Date object or fallback to today
+    const selectedDate = useMemo(() => {
+        try {
+            return currentDate ? new Date(currentDate) : new Date();
+        } catch {
+            return new Date(); // Fallback to today if invalid
+        }
+    }, [currentDate]);
 
     // Form State - Allow null for values set by DropDownPicker
     const [title, setTitle] = useState<string>('');
@@ -31,6 +42,11 @@ export default function AddEditHabitModalScreen() {
     const [selectedTimeModuleId, setSelectedTimeModuleId] = useState<string | null>(null);
     const [selectedDays, setSelectedDays] = useState<number[]>([]);
     const [daysPerWeek, setDaysPerWeek] = useState<number | null>(null);
+    const [startDate, setStartDate] = useState<string | null>(format(selectedDate, 'yyyy-MM-dd')); // Default to selected date
+    const [endDate, setEndDate] = useState<string | null>(null);
+    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false); // State to toggle advanced options
 
     // Dropdown Open State
     const [repetitionOpen, setRepetitionOpen] = useState(false);
@@ -46,12 +62,16 @@ export default function AddEditHabitModalScreen() {
             setMeasurementType(habitToEdit.measurement?.type || 'binary'); setMeasurementUnit(habitToEdit.measurement?.unit || '');
             setRepetitionType(habitToEdit.repetition?.type || 'daily');
             setSelectedTimeModuleId(habitToEdit.timeModuleId || null); // Allow null
+            setStartDate(habitToEdit.startDate || format(selectedDate, 'yyyy-MM-dd')); // Use habit's startDate or default to selected date
+            setEndDate(habitToEdit.endDate || null);
         } else {
             setTitle(''); setColor(Colors.primary); setRepetitionType('daily');
             setMeasurementType('binary'); setMeasurementUnit('');
             setSelectedTimeModuleId(timeModules[0]?.id || null); // Default or null
+            setStartDate(format(selectedDate, 'yyyy-MM-dd')); // Default to selected date
+            setEndDate(null);
         }
-    }, [habitId, isEditMode, timeModules, habitToEdit]); // Added timeModules dependency
+    }, [habitId, isEditMode, timeModules, habitToEdit, selectedDate]); // Added timeModules dependency
 
     // Callbacks to close other dropdowns
     const onRepetitionOpen = useCallback(() => setTimeModuleOpen(false), []);
@@ -75,7 +95,7 @@ export default function AddEditHabitModalScreen() {
 
         const config: RepetitionConfig = {};
         // Assert non-null for dispatch payload after validation
-        const habitData = { title: title.trim(), color, repetition: { type: repetitionType!, config }, measurement: { type: measurementType, unit: measurementType === 'count' ? measurementUnit.trim() : undefined }, timeModuleId: selectedTimeModuleId! };
+        const habitData = { title: title.trim(), color, repetition: { type: repetitionType!, config }, measurement: { type: measurementType, unit: measurementType === 'count' ? measurementUnit.trim() : undefined }, timeModuleId: selectedTimeModuleId!, startDate, endDate };
 
         if (isEditMode && habitId) dispatch({ type: 'UPDATE_HABIT', payload: { id: habitId, ...habitData } });
         else dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
@@ -83,6 +103,14 @@ export default function AddEditHabitModalScreen() {
         if (router.canGoBack()) router.back();
     };
      const handleDelete = () => { /* ... Keep delete logic ... */ };
+
+    const handleClearEndDate = () => {
+        setEndDate(null); // Set endDate to null to represent "forever"
+    };
+
+    const toggleAdvancedOptions = () => {
+        setShowAdvancedOptions(prev => !prev);
+    };
 
     return (
         <ScrollView
@@ -126,7 +154,7 @@ export default function AddEditHabitModalScreen() {
                 theme="DARK" mode="SIMPLE"
                 // *** Use SCROLLVIEW for inline attempt ***
                 listMode="SCROLLVIEW"
-                zIndex={3000} // Higher zIndex for the first picker
+                zIndex={3000} // Ensure dropdown is above other elements
                 zIndexInverse={1000}
              />
 
@@ -144,8 +172,8 @@ export default function AddEditHabitModalScreen() {
                 theme="DARK" mode="SIMPLE"
                 // *** Use SCROLLVIEW for inline attempt ***
                 listMode="SCROLLVIEW"
-                zIndex={2000} // Lower zIndex than the one above
-                zIndexInverse={2000}
+                zIndex={2000} // Ensure dropdown is above other elements
+                zIndexInverse={1000}
               />
                {timeModuleItems.length === 0 && <Text style={styles.infoTextError}>No Time Modules defined...</Text>}
 
@@ -153,9 +181,48 @@ export default function AddEditHabitModalScreen() {
 
              <Text style={styles.label}>Track By</Text>
              <View style={styles.switchContainer}>
-                 <Text style={[styles.switchLabel, measurementType === 'binary' && styles.switchLabelActive]}>Completion (✓/✕)</Text>
-                 <Switch value={measurementType === 'count'} onValueChange={(isOn) => setMeasurementType(isOn ? 'count' : 'binary')} trackColor={{ false: Colors.lightGrey, true: Colors.accent }} thumbColor={measurementType === 'count' ? Colors.primary : Colors.grey} />
-                 <Text style={[styles.switchLabel, measurementType === 'count' && styles.switchLabelActive]}>Quantity</Text>
+                 <TouchableOpacity
+                    onPress={() => setMeasurementType('binary')} // Set to 'binary' when "Completions" is pressed
+                    style={[
+                        styles.switchOption,
+                        measurementType === 'binary' && styles.switchOptionActive,
+                    ]}
+                >
+                    <Text
+                        style={[
+                            styles.switchLabel,
+                            measurementType === 'binary' && styles.switchLabelActive,
+                        ]}
+                    >
+                        Completion (✓/✕)
+                    </Text>
+                </TouchableOpacity>
+                <Switch
+                    value={measurementType === 'count'}
+                    onValueChange={(isOn) => setMeasurementType(isOn ? 'count' : 'binary')}
+                    trackColor={{
+                        false: Colors.grey, // Dark grey for the inactive track
+                        true: Colors.primary, // Primary color for the active track
+                    }}
+                    thumbColor={measurementType === 'count' ? Colors.surface : Colors.surface} // White thumb for both states
+                    style={styles.switch}
+                />
+                <TouchableOpacity
+                    onPress={() => setMeasurementType('count')} // Set to 'count' when "Counter" is pressed
+                    style={[
+                        styles.switchOption,
+                        measurementType === 'count' && styles.switchOptionActive,
+                    ]}
+                >
+                    <Text
+                        style={[
+                            styles.switchLabel,
+                            measurementType === 'count' && styles.switchLabelActive,
+                        ]}
+                    >
+                        Counter
+                    </Text>
+                </TouchableOpacity>
              </View>
              {measurementType === 'count' && (
                 <>
@@ -201,8 +268,81 @@ export default function AddEditHabitModalScreen() {
                 </>
             )}
 
+            <TouchableOpacity
+                style={styles.toggleButton}
+                onPress={toggleAdvancedOptions}
+            >
+                <Text style={styles.advancedOptionsTitle}>
+                    Advanced Options
+                </Text>
+                <Ionicons
+                    name={showAdvancedOptions ? 'chevron-up' : 'chevron-down'}
+                    size={16}
+                    color={Colors.textSecondary}
+                    style={styles.toggleButtonIcon}
+                />
+            </TouchableOpacity>
+
+            {showAdvancedOptions && (
+                <View style={styles.advancedOptionsContainer}>
+                    <Text style={styles.label}>Start Date</Text>
+                    <TouchableOpacity
+                        style={styles.datePickerButton}
+                        onPress={() => setShowStartDatePicker(true)}
+                    >
+                        <Text style={styles.datePickerText}>
+                            {startDate ? format(new Date(startDate), 'MMM d, yyyy') : 'Select Start Date'}
+                        </Text>
+                    </TouchableOpacity>
+                    {showStartDatePicker && (
+                        <DateTimePicker
+                            value={startDate ? new Date(startDate) : new Date()}
+                            mode="date"
+                            display="default"
+                            onChange={(event, selectedDate) => {
+                                setShowStartDatePicker(false);
+                                if (selectedDate) setStartDate(selectedDate.toISOString().split('T')[0]);
+                            }}
+                        />
+                    )}
+
+                    <Text style={styles.label}>End Date</Text>
+                    <TouchableOpacity
+                        style={styles.datePickerButton}
+                        onPress={() => setShowEndDatePicker(true)}
+                    >
+                        <Text style={styles.datePickerText}>
+                            {endDate ? format(new Date(endDate), 'MMM d, yyyy') : 'Forever'}
+                        </Text>
+                    </TouchableOpacity>
+                    {showEndDatePicker && (
+                        <DateTimePicker
+                            value={endDate ? new Date(endDate) : new Date()}
+                            mode="date"
+                            display="default"
+                            onChange={(event, selectedDate) => {
+                                setShowEndDatePicker(false);
+                                if (selectedDate) setEndDate(selectedDate.toISOString().split('T')[0]);
+                            }}
+                        />
+                    )}
+                    {endDate && (
+                        <TouchableOpacity onPress={handleClearEndDate} style={styles.clearButton}>
+                            <Text style={styles.clearButtonText}>Clear End Date (Set to Forever)</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            )}
+
              {/* Action Buttons */}
-             <View style={styles.buttonContainer}><Button title={isEditMode ? "Save Changes" : "Add Habit"} onPress={handleSave} color={Colors.primary} /></View>
+             <TouchableOpacity
+                style={styles.addHabitButton}
+                onPress={handleSave}
+            >
+                <Text style={styles.addHabitButtonText}>
+                    {isEditMode ? "Save Changes" : "Add Habit"}
+                </Text>
+            </TouchableOpacity>
              {isEditMode && ( <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}><Text style={styles.deleteButtonText}>Delete Habit</Text></TouchableOpacity> )}
              {/* No extra space needed, handled by scrollContentContainer padding */}
         </ScrollView>
@@ -221,9 +361,29 @@ const styles = StyleSheet.create({
     colorInputContainer: { flexDirection: 'row', alignItems: 'center' },
     colorPreview: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: Colors.grey, marginRight: 10 },
     colorInput: { flex: 1, marginBottom: 10 },
-    switchContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 5, marginBottom: 10, backgroundColor: Colors.surface, borderRadius: 5 },
-    switchLabel: { fontSize: 15, color: Colors.textSecondary, flex: 1, textAlign: 'center' },
-    switchLabelActive: { color: Colors.primary, fontWeight: 'bold' },
+    switchContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 5, marginBottom: 10, backgroundColor: Colors.surface, borderRadius: 8, borderWidth: 1, borderColor: Colors.grey },
+    switchOption: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 8,
+        borderRadius: 8,
+        backgroundColor: Colors.surface,
+    },
+    switchOptionActive: {
+        backgroundColor: Colors.surface, // Highlight active option
+    },
+    switchLabel: {
+        fontSize: 15,
+        color: Colors.textSecondary,
+        fontWeight: 'bold',
+    },
+    switchLabelActive: {
+        color: Colors.primary, // Light text for active option
+        fontWeight: 'bold',
+    },
+    switch: {
+        marginHorizontal: 10, // Add spacing around the switch
+    },
     buttonContainer: { marginTop: 30, marginBottom: 15 },
     deleteButton: { marginTop: 0, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 20 },
     deleteButtonText: { color: Colors.error, fontSize: 16, fontWeight: 'bold' },
@@ -282,5 +442,91 @@ const styles = StyleSheet.create({
     },
     colorOptionSelected: {
         borderColor: Colors.primary,
+    },
+    datePickerButton: {
+        backgroundColor: Colors.surface,
+        padding: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: Colors.grey, // Add a border to distinguish the button
+    },
+    datePickerText: {
+        color: Colors.textSecondary, // Use secondary text color for a dimmer look
+        fontSize: 16,
+    },
+    clearButton: {
+        marginTop: 10,
+        alignItems: 'center',
+    },
+    clearButtonText: {
+        color: Colors.error,
+        fontSize: 14,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    toggleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.grey,
+        marginBottom: 10,
+    },
+    toggleButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: Colors.text,
+    },
+    toggleButtonIcon: {
+        marginLeft: 8,
+    },
+    advancedOptionsContainer: {
+        backgroundColor: Colors.lightGrey, // Use a lighter gray background
+        padding: 15,
+        borderRadius: 8,
+        marginBottom: 15,
+    },
+    advancedOptionsTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: Colors.primary, // Use the primary color for the title
+    },
+    timeModuleOption: {
+        padding: 10,
+        borderWidth: 1,
+        borderColor: Colors.grey,
+        borderRadius: 8,
+        marginRight: 10,
+        marginBottom: 10,
+        backgroundColor: Colors.surface, // Dark background for time module option
+    },
+    timeModuleOptionSelected: {
+        backgroundColor: Colors.primary, // Highlight selected option with primary color
+        borderColor: Colors.primary,
+    },
+    timeModuleText: {
+        color: Colors.text, // Light color for text to match dark background
+    },
+    addHabitButton: {
+        backgroundColor: Colors.primary,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 25,
+        alignItems: 'center',
+        marginTop: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 5, // For Android shadow
+    },
+    addHabitButtonText: {
+        color: Colors.surface,
+        fontSize: 16,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
 });

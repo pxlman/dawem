@@ -16,13 +16,16 @@ export default function SettingsScreen() {
 
     useEffect(() => {
         if (settings.startTimeOfDay) {
-            // Construct a Date object using the saved start time
             const [hours, minutes] = settings.startTimeOfDay.split(':').map(Number);
-            const savedStartTime = new Date();
-            savedStartTime.setHours(hours, minutes, 0, 0);
-            setNewDayStartTime(savedStartTime);
+            if (!isNaN(hours) && !isNaN(minutes)) {
+                const savedStartTime = new Date();
+                savedStartTime.setHours(hours, minutes, 0, 0);
+                setNewDayStartTime(savedStartTime);
+            } else {
+                console.warn('Invalid startTimeOfDay format:', settings.startTimeOfDay);
+                setNewDayStartTime(null); // Fallback to null if invalid
+            }
         } else {
-            // Default to midnight if no start time is saved
             const defaultStartTime = new Date();
             defaultStartTime.setHours(0, 0, 0, 0);
             setNewDayStartTime(defaultStartTime);
@@ -52,6 +55,8 @@ export default function SettingsScreen() {
             setNewDayStartTime(selectedTime);
             const formattedTime = selectedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
             dispatch({ type: 'UPDATE_START_TIME', payload: { startTimeOfDay: formattedTime } });
+        } else {
+            console.warn('Invalid time selected:', selectedTime);
         }
     };
 
@@ -112,20 +117,19 @@ export default function SettingsScreen() {
                         onChangeText={setNewTimeModuleName}
                         placeholderTextColor={Colors.textSecondary}
                     />
-                    <Button
-                        title="Add Time Module"
+                    <TouchableOpacity
                         onPress={handleAddTimeModule}
+                        style={newTimeModuleName.trim() ? styles.addButton : styles.addButtonDisabled}
                         disabled={!newTimeModuleName.trim()}
-                        color={Colors.accent}
-                    />
+                    >
+                        <Text style={styles.addButtonText}>Add Time Module</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
 
             <View style={[styles.section, { marginTop: 20 }]}>
                 <Text style={styles.header}>Data Management</Text>
-                <Button
-                    title="Reset All App Data"
-                    color={Colors.error}
+                <TouchableOpacity
                     onPress={() => {
                         Alert.alert(
                             "Confirm Reset",
@@ -137,7 +141,10 @@ export default function SettingsScreen() {
                             { cancelable: true }
                         );
                     }}
-                />
+                    style={styles.resetButton}
+                >
+                    <Text style={styles.resetButtonText}>Reset All App Data</Text>
+                </TouchableOpacity>
                 <Text style={styles.infoText}>This will permanently delete all your tracked habit data.</Text>
             </View>
         </View>
@@ -197,14 +204,45 @@ const styles = StyleSheet.create({
     infoText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginTop: 10 },
     activeListItem: { backgroundColor: Colors.lightGrey },
     timePickerButton: {
-        backgroundColor: Colors.accent,
-        padding: 10,
+        backgroundColor: Colors.primary, // Use primary color for better visibility
+        padding: 12, // Slightly larger padding for better touch area
         borderRadius: 8,
         alignItems: 'center',
         marginBottom: 10,
     },
     timePickerText: {
-        color: Colors.surface,
+        color: Colors.surface, // Ensure good contrast with the button background
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    addButton: {
+        backgroundColor: Colors.primary, // Use primary color for enabled state
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    addButtonDisabled: {
+        backgroundColor: Colors.grey, // Use grey for disabled state
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    addButtonText: {
+        color: Colors.surface, // Ensure good contrast with the button background
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    resetButton: {
+        backgroundColor: Colors.error, // Use error color for destructive actions
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    resetButtonText: {
+        color: Colors.surface, // Ensure good contrast with the button background
         fontSize: 16,
         fontWeight: 'bold',
     },

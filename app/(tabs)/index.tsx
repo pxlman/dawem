@@ -1,16 +1,16 @@
 // app/(tabs)/index.tsx
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { format, addDays, subDays } from 'date-fns';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
+import { format, addDays, subDays } from 'date-fns'; // Ensure format is imported
 import { useRouter } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-
 import { useAppState } from '../../context/AppStateContext';
 import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correct import
 import { isHabitDue } from '../../utils/dateUtils';
-import Colors from '../../constants/Colors';
+import Colors, { fixedColors } from '../../constants/Colors'; // Import fixed colors
 import { Habit, TimeModule } from '../../types';
+import HabitEditModal from '../../components/HabitEditModal'; // Import the new modal component
 
 // --- Date Header Component (Keep as is) ---
 interface DateHeaderProps { currentDate: Date; onPrevDay: () => void; onNextDay: () => void; onShowDatePicker: () => void; }
@@ -29,13 +29,72 @@ interface TimeModuleGroupData { timeModule?: TimeModule; habits: Habit[] }
 // --- Main Screen Component ---
 export default function HabitListScreen() {
     const router = useRouter();
-    const { habits, timeModules } = useAppState();
+    const { habits, timeModules, dispatch } = useAppState();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
+    // State for managing the edit modal
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
+
+    const openEditModal = (habit: Habit) => {
+        setHabitToEdit(habit);
+        setIsEditModalVisible(true);
+    };
+
+    const handleDeleteFromToday = (habit: Habit) => {
+        const selectedDate = format(currentDate, 'yyyy-MM-dd');
+        const dayBeforeSelectedDate = format(subDays(currentDate, 1), 'yyyy-MM-dd');
+
+        Alert.alert(
+            'Delete Habit',
+            `Do you want to delete "${habit.title}" from ${selectedDate} onward?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete From Today',
+                    onPress: () => {
+                        dispatch({
+                            type: 'UPDATE_HABIT',
+                            payload: { id: habit.id, endDate: dayBeforeSelectedDate },
+                        });
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleDeleteFromHere = (habit: Habit) => {
+        const selectedDate = format(currentDate, 'yyyy-MM-dd');
+
+        Alert.alert(
+            'Delete Habit',
+            `Do you want to delete "${habit.title}" from ${selectedDate} onward?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete From Here',
+                    onPress: () => {
+                        dispatch({
+                            type: 'DELETE_HABIT_FROM_TODAY',
+                            payload: { id: habit.id, fromDate: selectedDate },
+                        });
+                    },
+                },
+            ]
+        );
+    };
+
+    const closeEditModal = () => {
+        setHabitToEdit(null);
+        setIsEditModalVisible(false);
+    };
+
     // Grouping Logic
     const groupedHabitsForDisplay: TimeModuleGroupData[] = useMemo(() => {
-        const dueHabits = habits.filter(habit => !habit.archived && isHabitDue(habit, currentDate));
+        const dueHabits = habits.filter(habit => 
+            !habit.archived && isHabitDue(habit, currentDate) // Use updated isHabitDue
+        );
         const orderedTimeModules = [...timeModules]; // Ensure correct order
         const groups = orderedTimeModules.reduce<GroupedHabits>((acc, tm) => {
             acc[tm.id] = { timeModule: tm, habits: [] };
@@ -47,12 +106,10 @@ export default function HabitListScreen() {
             if (groups[targetGroupId]) groups[targetGroupId].habits.push(habit);
             else groups['uncategorized'].habits.push(habit);
         });
-        // Order groups based on time module definition order + uncategorized at end? (Optional enhancement)
         const orderedGroupIds = [...timeModules.map(tm => tm.id), 'uncategorized'];
         return orderedGroupIds
-                .map(id => groups[id])
-                .filter(group => group && group.habits.length > 0); // Ensure group exists and is not empty
-
+            .map(id => groups[id])
+            .filter(group => group && group.habits.length > 0); // Ensure group exists and is not empty
     }, [habits, timeModules, currentDate]);
 
     // Date Picker Handlers
@@ -61,6 +118,14 @@ export default function HabitListScreen() {
         if (event.type === 'set' && selectedDate) setCurrentDate(selectedDate);
     };
     const showPicker = () => setShowDatePicker(true);
+
+    const openAddHabitScreen = () => {
+        router.push({
+            pathname: '/add-edit-habit',
+            params: { currentDate: format(currentDate, 'yyyy-MM-dd') }, // Pass the selected date as a valid string
+        });
+    };
+
     return (
         <View style={styles.container}>
              {/* Render Date Header */}
@@ -93,15 +158,28 @@ export default function HabitListScreen() {
                             timeModule={timeModule}
                             habits={habits}
                             currentDate={currentDate}
+                            onEditHabit={openEditModal} // Pass the edit handler
+                            onDeleteHabit={handleDeleteFromToday} // Pass the delete handler
                         />
                     ))
                  )}
                 {/* Remove extra padding View, handle with scrollContent padding */}
              </ScrollView>
              {/* Floating Action Button */}
-             <TouchableOpacity style={styles.addButton} onPress={() => router.push('/add-edit-habit')}>
+             <TouchableOpacity style={styles.addButton} onPress={openAddHabitScreen}>
                  <Text style={styles.addButtonText}>+</Text>
              </TouchableOpacity>
+
+             {/* Render the edit modal */}
+             {isEditModalVisible && (
+                 <HabitEditModal
+                     habit={habitToEdit}
+                     timeModules={timeModules} // Pass time modules
+                     fixedColors={fixedColors} // Pass fixed colors
+                     currentDate={currentDate} // Pass the selected date
+                     onClose={closeEditModal}
+                 />
+             )}
         </View>
     );
 }

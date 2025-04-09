@@ -6,9 +6,12 @@ import { generateId } from '../utils/helpers'; // Ensure correct path
 export const initialState: AppState = {
     habits: [],
     timeModules: [
-        { id: 'global_morning', name: 'Morning' },
-        { id: 'global_afternoon', name: 'Afternoon' },
-        { id: 'global_evening', name: 'Evening' },
+        { id: 'global_fajr', name: 'فجر' },
+        { id: 'global_sunrise', name: 'شروق' },
+        { id: 'global_dhuhr', name: 'ظهر' },
+        { id: 'global_asr', name: 'عصر' },
+        { id: 'global_sunset', name: 'مغرب' },
+        { id: 'global_night', name: 'عشاء' },
     ],
     logs: [],
     settings: {},
@@ -44,39 +47,20 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, habits: [...state.habits, newHabit] };
         }
         case 'UPDATE_HABIT': {
-             const payload = action.payload;
-             return {
-                 ...state,
-                 habits: state.habits.map(habit => {
-                     if (habit.id === payload.id) {
-                         const { dayTypeId, ...restOfPayload } = payload as any; // Exclude potential rogue field
-                         const updatedHabit = { ...habit, ...restOfPayload }; // Base update
-
-                         // --- Correct Deep Merging for Nested Objects ---
-                         if (payload.repetition) {
-                             updatedHabit.repetition = {
-                                 ...habit.repetition, // Start with existing repetition state
-                                 ...payload.repetition, // Overwrite with payload type/config
-                                 // Ensure config object merges correctly, keeping old keys if not in payload.config
-                                 config: {
-                                     ...habit.repetition.config, // Start with existing config
-                                     ...(payload.repetition.config ?? {}) // Overwrite with payload config keys
-                                 }
-                             };
-                         }
-                         if (payload.measurement) {
-                             updatedHabit.measurement = {
-                                 ...habit.measurement, // Start with existing measurement state
-                                 ...payload.measurement // Overwrite with payload type/unit/targetValue
-                             };
-                         }
-                         // --- End Deep Merging ---
-
-                         return updatedHabit;
-                     }
-                     return habit;
-                 }),
-             };
+            const payload = action.payload;
+            return {
+                ...state,
+                habits: state.habits.map(habit => {
+                    if (habit.id === payload.id) {
+                        return {
+                            ...habit,
+                            ...payload,
+                            endDate: payload.endDate ?? null, // Ensure endDate is explicitly set to null if not provided
+                        };
+                    }
+                    return habit;
+                }),
+            };
         }
         case 'DELETE_HABIT': {
              return { ...state, habits: state.habits.filter(habit => habit.id !== action.payload.id), };
@@ -168,6 +152,22 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     ...state.settings,
                     startTimeOfDay: action.payload.startTimeOfDay, // Update start time in settings
                 },
+            };
+        }
+        case 'DELETE_HABIT_FROM_TODAY': {
+            const { id, fromDate } = action.payload;
+
+            // Set the endDate to the selected date (inclusive)
+            const newEndDate = new Date(fromDate).toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
+
+            // Update the habit's endDate
+            const updatedHabits = state.habits.map(habit =>
+                habit.id === id ? { ...habit, endDate: newEndDate } : habit
+            );
+
+            return {
+                ...state,
+                habits: updatedHabits,
             };
         }
         default:
