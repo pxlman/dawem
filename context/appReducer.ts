@@ -95,6 +95,13 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, logs: newLogs };
         }
 
+        case 'RESET_LOGS': {
+            return {
+                ...state,
+                logs: [], // Clear all logs
+            };
+        }
+
          // --- Time Modules ---
          case 'ADD_TIME_MODULE': {
             const newTimeModule: TimeModule = { name: action.payload.name, id: generateId() };

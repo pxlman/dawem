@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert, FlatList } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../../context/AppStateContext';
@@ -60,6 +60,22 @@ export default function SettingsScreen() {
         }
     };
 
+    const handleResetLogs = () => {
+        Alert.alert(
+            "Confirm Reset",
+            "Delete ALL habit logs? This will not delete your habits.",
+            [
+                { text: "Cancel", style: 'cancel' },
+                { 
+                    text: "Reset Logs", 
+                    style: 'destructive', 
+                    onPress: () => dispatch({ type: 'RESET_LOGS' }) 
+                }
+            ],
+            { cancelable: true }
+        );
+    };
+
     const renderTimeModuleItem = ({ item, drag, isActive }: { item: TimeModule; drag: () => void; isActive: boolean }) => (
         <TouchableOpacity
             onLongPress={drag}
@@ -79,75 +95,79 @@ export default function SettingsScreen() {
     );
 
     return (
-        <View style={styles.container}>
-            <View style={styles.section}>
-                <Text style={styles.header}>Start Time of New Day</Text>
-                <TouchableOpacity onPress={() => setIsTimePickerVisible(true)} style={styles.timePickerButton}>
-                    <Text style={styles.timePickerText}>
-                        {newDayStartTime
-                            ? newDayStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-                            : '00:00'}
-                    </Text>
-                </TouchableOpacity>
-                {isTimePickerVisible && newDayStartTime && (
-                    <DateTimePicker
-                        value={newDayStartTime}
-                        mode="time"
-                        display="default"
-                        onChange={handleTimeChange}
-                    />
-                )}
-            </View>
-
-            <View style={styles.section}>
-                <Text style={styles.header}>Time Modules</Text>
-                <DraggableFlatList
-                    data={timeModules}
-                    renderItem={renderTimeModuleItem}
-                    keyExtractor={(item) => item.id}
-                    onDragEnd={({ data }) => dispatch({ type: 'REORDER_TIME_MODULES', payload: data })}
-                    contentContainerStyle={styles.timeModulesList}
-                />
-                <View style={styles.addSection}>
-                    <Text style={styles.label}>Add New Time Module</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="New Time Module Name (e.g., Morning)"
-                        value={newTimeModuleName}
-                        onChangeText={setNewTimeModuleName}
-                        placeholderTextColor={Colors.textSecondary}
-                    />
-                    <TouchableOpacity
-                        onPress={handleAddTimeModule}
-                        style={newTimeModuleName.trim() ? styles.addButton : styles.addButtonDisabled}
-                        disabled={!newTimeModuleName.trim()}
-                    >
-                        <Text style={styles.addButtonText}>Add Time Module</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <View style={[styles.section, { marginTop: 20 }]}>
-                <Text style={styles.header}>Data Management</Text>
-                <TouchableOpacity
-                    onPress={() => {
-                        Alert.alert(
-                            "Confirm Reset",
-                            "Delete ALL habits and logs?",
-                            [
-                                { text: "Cancel", style: 'cancel' },
-                                { text: "Reset Data", style: 'destructive', onPress: () => dispatch({ type: 'RESET_STATE' }) }
-                            ],
-                            { cancelable: true }
-                        );
-                    }}
-                    style={styles.resetButton}
-                >
-                    <Text style={styles.resetButtonText}>Reset All App Data</Text>
-                </TouchableOpacity>
-                <Text style={styles.infoText}>This will permanently delete all your tracked habit data.</Text>
-            </View>
-        </View>
+        <FlatList
+            data={[{ key: 'startTime' }, { key: 'timeModules' }, { key: 'dataManagement' }]}
+            renderItem={({ item }) => {
+                if (item.key === 'startTime') {
+                    return (
+                        <View style={styles.section}>
+                            <Text style={styles.header}>Start Time of New Day</Text>
+                            <TouchableOpacity onPress={() => setIsTimePickerVisible(true)} style={styles.timePickerButton}>
+                                <Text style={styles.timePickerText}>
+                                    {newDayStartTime
+                                        ? newDayStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+                                        : '00:00'}
+                                </Text>
+                            </TouchableOpacity>
+                            {isTimePickerVisible && newDayStartTime && (
+                                <DateTimePicker
+                                    value={newDayStartTime}
+                                    mode="time"
+                                    display="default"
+                                    onChange={handleTimeChange}
+                                />
+                            )}
+                        </View>
+                    );
+                } else if (item.key === 'timeModules') {
+                    return (
+                        <View style={styles.section}>
+                            <Text style={styles.header}>Time Modules</Text>
+                            <DraggableFlatList
+                                data={timeModules}
+                                renderItem={renderTimeModuleItem}
+                                keyExtractor={(item) => item.id}
+                                onDragEnd={({ data }) => dispatch({ type: 'REORDER_TIME_MODULES', payload: data })}
+                                contentContainerStyle={styles.timeModulesList}
+                            />
+                            <View style={styles.addSection}>
+                                <Text style={styles.label}>Add New Time Module</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="New Time Module Name (e.g., Morning)"
+                                    value={newTimeModuleName}
+                                    onChangeText={setNewTimeModuleName}
+                                    placeholderTextColor={Colors.textSecondary}
+                                />
+                                <TouchableOpacity
+                                    onPress={handleAddTimeModule}
+                                    style={newTimeModuleName.trim() ? styles.addButton : styles.addButtonDisabled}
+                                    disabled={!newTimeModuleName.trim()}
+                                >
+                                    <Text style={styles.addButtonText}>Add Time Module</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    );
+                } else if (item.key === 'dataManagement') {
+                    return (
+                        <View style={[styles.section, { marginTop: 20 }]}>
+                            <Text style={styles.header}>Data Management</Text>
+                            <TouchableOpacity
+                                onPress={handleResetLogs}
+                                style={styles.resetButton}
+                            >
+                                <Text style={styles.resetButtonText}>Reset All Habit Logs</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.infoText}>This will permanently delete all your habit logs but keep your habits intact.</Text>
+                        </View>
+                    );
+                }
+                return null;
+            }}
+            keyExtractor={(item) => item.key}
+            contentContainerStyle={styles.flatListContentContainer} // Updated style
+        />
     );
 }
 
@@ -157,8 +177,12 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background,
         padding: 15,
     },
+    flatListContentContainer: {
+        padding: 15, // Ensure consistent padding
+        backgroundColor: Colors.background, // Match the background color
+    },
     section: {
-        marginBottom: 20,
+        marginBottom: 15, // Reduce spacing between sections
         backgroundColor: Colors.surface,
         borderRadius: 8,
         padding: 15,
@@ -248,5 +272,8 @@ const styles = StyleSheet.create({
     },
     timeModulesList: {
         marginTop: 10,
+    },
+    scrollContentContainer: {
+        paddingBottom: 40, // Add padding to ensure content is scrollable
     },
 });
