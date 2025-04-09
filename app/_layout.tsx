@@ -1,39 +1,33 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
+// app/_layout.tsx
+import React from 'react';
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+import { AppProvider } from '../context/AppStateContext'; // Adjust path if needed
+import Colors from '../constants/Colors'; // Adjust path if needed
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+    // Font loading can be added here if needed
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+    return (
+        <AppProvider> {/* Ensure AppProvider is the top-level wrapper */}
+            <SafeAreaProvider>
+                <StatusBar style="light" backgroundColor={Colors.primary} />
+                <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen
+                        name="add-edit-habit"
+                        options={{
+                            presentation: 'modal',
+                            title: 'Add/Edit Habit',
+                            headerStyle: { backgroundColor: Colors.primary },
+                            headerTintColor: Colors.surface,
+                            headerTitleStyle: { fontWeight: 'bold' },
+                            headerShown: true,
+                        }}
+                    />
+                </Stack>
+            </SafeAreaProvider>
+        </AppProvider>
+    );
 }

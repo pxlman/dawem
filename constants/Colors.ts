@@ -1,26 +1,22 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+// constants/Colors.ts
+export default {
+  primary: '#6200ee',
+  accent: '#03dac4',
+  background: '#f5f5f5',
+  surface: '#ffffff',
+  text: '#000000',
+  textSecondary: '#666666',
+  error: '#b00020',
+  grey: '#ccc',
+  lightGrey: '#eee',
+  darkGrey: '#888',
+  green: '#4CAF50', // Right
+  red: '#F44336',   // Wrong
+  blue: '#2196F3',  // Circle
+  // Heatmap Colors (Example: Shades of Green)
+  heatmapLevel0: '#ebedf0', // No activity / default
+  heatmapLevel1: '#9be9a8', // Low
+  heatmapLevel2: '#40c463',
+  heatmapLevel3: '#30a14e',
+  heatmapLevel4: '#216e39', // High
 };

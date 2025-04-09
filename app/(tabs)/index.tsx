@@ -1,74 +1,130 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+// app/(tabs)/index.tsx
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { format, addDays, subDays } from 'date-fns';
+import { useRouter } from 'expo-router';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { useAppState } from '../../context/AppStateContext';
+import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correct import
+import { isHabitDue } from '../../utils/dateUtils';
+import Colors from '../../constants/Colors';
+import { Habit, TimeModule } from '../../types';
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+// --- Date Header Component (Keep as is) ---
+interface DateHeaderProps { currentDate: Date; onPrevDay: () => void; onNextDay: () => void; onShowDatePicker: () => void; }
+const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker }) => (
+    <View style={styles.datePickerContainer}>
+        <TouchableOpacity onPress={onPrevDay} style={styles.dateArrow} hitSlop={10}><Ionicons name="chevron-back" size={24} color={Colors.primary} /></TouchableOpacity>
+        <TouchableOpacity onPress={onShowDatePicker}><Text style={styles.dateText}>{format(currentDate, 'EEE, MMM d, yyyy')}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={onNextDay} style={styles.dateArrow} hitSlop={10}><Ionicons name="chevron-forward" size={24} color={Colors.primary} /></TouchableOpacity>
+    </View>
+);
+
+// --- Type for grouped data ---
+interface GroupedHabits { [key: string]: { timeModule?: TimeModule; habits: Habit[] } }
+interface TimeModuleGroupData { timeModule?: TimeModule; habits: Habit[] }
+
+// --- Main Screen Component ---
+export default function HabitListScreen() {
+    const router = useRouter();
+    const { habits, timeModules } = useAppState();
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
+    // Grouping Logic
+    const groupedHabitsForDisplay: TimeModuleGroupData[] = useMemo(() => {
+        const dueHabits = habits.filter(habit => !habit.archived && isHabitDue(habit, currentDate));
+        const groups = timeModules.reduce<GroupedHabits>((acc, tm) => {
+          acc[tm.id] = { timeModule: tm, habits: [] }; return acc;
+        }, {});
+        groups['uncategorized'] = { timeModule: undefined, habits: [] };
+        dueHabits.forEach(habit => {
+            const targetGroupId = habit.timeModuleId && groups[habit.timeModuleId] ? habit.timeModuleId : 'uncategorized';
+            if (groups[targetGroupId]) groups[targetGroupId].habits.push(habit);
+            else groups['uncategorized'].habits.push(habit);
+        });
+        // Order groups based on time module definition order + uncategorized at end? (Optional enhancement)
+        const orderedGroupIds = [...timeModules.map(tm => tm.id), 'uncategorized'];
+        return orderedGroupIds
+                .map(id => groups[id])
+                .filter(group => group && group.habits.length > 0); // Ensure group exists and is not empty
+
+    }, [habits, timeModules, currentDate]);
+
+    // Date Picker Handlers
+    const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+        setShowDatePicker(Platform.OS === 'ios');
+        if (event.type === 'set' && selectedDate) setCurrentDate(selectedDate);
+    };
+    const showPicker = () => setShowDatePicker(true);
+    console.log("index");
+    return (
+        <View style={styles.container}>
+             {/* Render Date Header */}
+             <DateHeader
+                 currentDate={currentDate}
+                 onPrevDay={() => setCurrentDate(subDays(currentDate, 1))}
+                 onNextDay={() => setCurrentDate(addDays(currentDate, 1))}
+                 onShowDatePicker={showPicker}
+             />
+             {/* Conditionally Render Date Picker */}
+             {showDatePicker && (
+                 <DateTimePicker value={currentDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={onDateChange} />
+             )}
+             {/* ScrollView with Content */}
+             <ScrollView contentContainerStyle={styles.scrollContent}>
+                {/* Check if there's anything to display AT ALL */}
+                {groupedHabitsForDisplay.length === 0 ? (
+                     <Text style={styles.noHabitsText}>
+                         No habits due on {format(currentDate, 'MMM d')}.
+                     </Text>
+                 ) : (
+                    groupedHabitsForDisplay.map(({ timeModule, habits }) => (
+                        <TimeModuleGroup
+                            key={timeModule?.id ?? 'uncategorized'} // Use unique key
+                            timeModule={timeModule}
+                            habits={habits}
+                            currentDate={currentDate}
+                        />
+                    ))
+                 )}
+                {/* Remove extra padding View, handle with scrollContent padding */}
+             </ScrollView>
+             {/* Floating Action Button */}
+             <TouchableOpacity style={styles.addButton} onPress={() => router.push('/add-edit-habit')}>
+                 <Text style={styles.addButtonText}>+</Text>
+             </TouchableOpacity>
+        </View>
+    );
 }
 
+// --- Styles ---
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: Colors.background
+    },
+    datePickerContainer: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        paddingVertical: 12, paddingHorizontal: 15, backgroundColor: Colors.surface,
+        borderBottomWidth: 1, borderBottomColor: Colors.lightGrey,
+    },
+    dateArrow: { padding: 8, },
+    dateText: { fontSize: 17, fontWeight: '600', color: Colors.primary, paddingVertical: 5, },
+    scrollContent: { // Style for ScrollView content
+        paddingBottom: 90, // Ensure space below last item for FAB
+        // Removed paddingHorizontal, let TimeModuleGroup handle margins
+    },
+    noHabitsText: {
+        textAlign: 'center', marginTop: 50, fontSize: 16,
+        color: Colors.textSecondary, paddingHorizontal: 20
+    },
+    addButton: {
+        position: 'absolute', bottom: 20, right: 20, backgroundColor: Colors.primary,
+        width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center',
+        elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3,
+    },
+    addButtonText: { color: Colors.surface, fontSize: 30, lineHeight: 34, },
 });
