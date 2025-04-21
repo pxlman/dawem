@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Vibration, 
 import { format, isAfter, startOfDay } from 'date-fns';
 import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if needed
 import { useAppDispatch, useAppState } from '../context/AppStateContext'; // Adjust path if needed
-import { isLogForDate } from '../utils/dateUtils'; // Adjust path if needed
+import { isLogForDate, getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
 import { Habit, LogEntry, HabitLogStatus } from '../types'; // Adjust path if needed
 import { Ionicons } from '@expo/vector-icons';
 
@@ -23,11 +23,22 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
     const { logs, timeModules } = useAppState();
     const dateString = format(currentDate, 'yyyy-MM-dd');
 
+    // Remove the duplicate function definition
+
     // Determine if the viewed date is in the future (compare start of day)
     const isFutureDate = isAfter(startOfDay(currentDate), startOfDay(new Date()));
 
-    // Find the log entry for this habit on the specific date being viewed
-    const todaysLog = logs.find(log => log.habitId === habit.id && isLogForDate(log, currentDate));
+    // For weekly counter habits, find the log entry for the Saturday of the viewed week
+    // For other habits, find the log entry for the specific date being viewed
+    const todaysLog = logs.find(log => {
+        if (habit.repetition.type === 'weekly' && habit.measurement.type === 'count') {
+            // For weekly counters, compare with Saturday's date
+            return log.habitId === habit.id && log.date === getSaturdayDateString(currentDate);
+        } else {
+            // For other habits, use the original logic
+            return log.habitId === habit.id && isLogForDate(log, currentDate);
+        }
+    });
 
     // State for the count input value
     const [countValue, setCountValue] = useState<number>(todaysLog?.value || 0);
@@ -51,22 +62,27 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
 
     // Update local state if the relevant log entry changes
     useEffect(() => {
-        setCountValue(todaysLog?.value?.toString() ?? '');
+        setCountValue(todaysLog?.value?? 0);
         setCurrentButtonStatus(getInitialStatus());
     }, [todaysLog]); // Dependency is the log entry itself
 
-    // Helper function to dispatch log updates, now includes future date check
+    // Helper function to dispatch log updates, now includes weekly counter handling
     const updateLog = (newStatus?: HabitLogStatus, newValue?: number) => {
         if (isFutureDate) {
-            // console.log("Blocked logging for future date."); // Optional log
             return; // Prevent logging for future dates
         }
         if (newStatus === undefined && newValue === undefined) {
-            // Basic check for empty update - enhance if 'undo' needed
             return;
         }
+        
+        // For weekly counter habits, use the Saturday date
+        let logDate = dateString;
+        if (habit.repetition.type === 'weekly' && habit.measurement.type === 'count') {
+            logDate = getSaturdayDateString(currentDate);
+        }
+        
         const payload: { habitId: string; date: string; status?: HabitLogStatus; value?: number } = {
-            habitId: habit.id, date: dateString,
+            habitId: habit.id, date: logDate,
             ...(newStatus !== undefined && { status: newStatus }),
             ...(newValue !== undefined && { value: newValue }),
         };
@@ -147,14 +163,14 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
         const handleIncrement = () => {
             if (isFutureDate) return; // Prevent logging for future dates
             const newValue = (todaysLog?.value || 0) + 1;
-            setCountValue(newValue.toString());
+            setCountValue(newValue);
             updateLog(undefined, newValue);
         };
 
         const handleDecrement = () => {
             if (isFutureDate) return; // Prevent logging for future dates
             const newValue = Math.max((todaysLog?.value || 0) - 1, 0); // Ensure value doesn't go below 0
-            setCountValue(newValue.toString());
+            setCountValue(newValue);
             updateLog(undefined, newValue);
         };
 
@@ -168,7 +184,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
                     <Ionicons name="remove-circle-outline" size={24} color={isFutureDate ? Colors.grey : Colors.primary} />
                 </TouchableOpacity>
                 <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}]}>
-                    {countValue || '0'}
+                    {countValue || '0'} / {habit.measurement.targetValue}
                 </Text>
                 <TouchableOpacity
                     style={[styles.countButton, isFutureDate ? styles.disabled : {}]}
@@ -342,11 +358,6 @@ const styles = StyleSheet.create({
     // Optional log button styles (if used)
     // logButton: { backgroundColor: Colors.primary, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 15 },
     // logButtonText: { color: Colors.surface, fontWeight: 'bold', fontSize: 13, },
-
-    // General disabled style
-    disabled: {
-        opacity: 0.5, // Make buttons/inputs more transparent
-    },
 
     // --- Modal Styles ---
     modalOverlay: {

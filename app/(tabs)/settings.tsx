@@ -44,8 +44,44 @@ export default function SettingsScreen() {
 
     const handleDeleteTimeModule = (id: string, name: string) => {
         if (timeModules.length <= 1) { return Alert.alert("Error", "Cannot delete the last Time Module."); }
-        Alert.alert("Confirm Delete", `Delete Time Module "${name}"?\n\nHabits using it will be reassigned.`,
-            [{ text: "Cancel", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => dispatch({ type: 'DELETE_TIME_MODULE', payload: { id } }) }], { cancelable: true }
+        Alert.alert(
+          "Confirm Delete",
+          `Delete Time Module "${name}"?\n\nHabits using it will be reassigned.`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () =>
+                dispatch({ type: "DELETE_TIME_MODULE", payload: { id } }),
+            },
+          ],
+          { cancelable: true }
+        );
+    };
+
+    const handleRenameTimeModule = (id: string, currentName: string) => {
+        if (timeModules.length < 1) { return Alert.alert("Error", "There is no Time Module to rename."); }
+        Alert.prompt(
+            "Update Time Module", // Updated title
+            `Enter a new name for "${currentName}":`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Rename", // Updated button text
+                    style: 'default',
+                    onPress: (newName) => {
+                        const trimmedName = newName?.trim()?? currentName;
+                        if (!trimmedName) return Alert.alert("Error", "Time Module name cannot be empty.");
+                        if (timeModules.some(tm => tm.name.toLowerCase() === trimmedName.toLowerCase())) {
+                            return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
+                        }
+                        dispatch({ type: 'UPDATE_TIME_MODULE', payload: { id, name: trimmedName } }); // Updated payload
+                    },
+                },
+            ],
+            "plain-text",
+            currentName
         );
     };
 
@@ -86,11 +122,18 @@ export default function SettingsScreen() {
         >
             <Ionicons name="time-outline" size={20} color={Colors.textSecondary} style={styles.itemIcon} />
             <Text style={styles.itemName}>{item.name}</Text>
-            {timeModules.length > 1 && (
-                <TouchableOpacity onPress={() => handleDeleteTimeModule(item.id, item.name)} hitSlop={15}>
-                    <Ionicons name="trash-outline" size={22} color={Colors.error} />
-                </TouchableOpacity>
-            )}
+            <View style={styles.actionButtons}>
+                {timeModules.length > 1 && (
+                    <>
+                        <TouchableOpacity onPress={() => handleRenameTimeModule(item.id, item.name)} hitSlop={15}>
+                            <Ionicons name="create-outline" size={22} color={Colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleDeleteTimeModule(item.id, item.name)} hitSlop={15}>
+                            <Ionicons name="trash-outline" size={22} color={Colors.error} />
+                        </TouchableOpacity>
+                    </>
+                )}
+            </View>
         </TouchableOpacity>
     );
 
@@ -275,5 +318,10 @@ const styles = StyleSheet.create({
     },
     scrollContentContainer: {
         paddingBottom: 40, // Add padding to ensure content is scrollable
+    },
+    actionButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10, // Add spacing between action buttons
     },
 });

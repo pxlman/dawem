@@ -28,44 +28,27 @@ export const isLogForDate = (log: LogEntry, date: Date): boolean => {
 
 // Simplified isHabitDue - checks repetition type
 // Returns true for daily, weekly, monthly for now (needs enhancement later)
-export const isHabitDue = (habit: Habit, date: Date = new Date()): boolean => {
-    if (!habit?.repetition) return false;
+export function isHabitDue(habit: Habit, currentDate: Date): boolean {
+    const today = currentDate.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
 
-    const { type, config } = habit.repetition;
-    const habitStartDate = habit.startDate ? new Date(habit.startDate) : null;
-    const habitEndDate = habit.endDate ? new Date(habit.endDate) : null;
+    // Check if the habit is within its start and end dates
+    if (habit.startDate && today < habit.startDate) return false;
+    if (habit.endDate && today > habit.endDate) return false;
 
-    // Check if the current date is within the habit's start and end date range (inclusive)
-    if (habitStartDate && date < habitStartDate) return false; // Before start date
-    if (habitEndDate && date > habitEndDate) return false; // After end date
-
-    switch (type) {
-        case 'daily':
-            return true;
-        case 'weekly':
-            const dayOfWeek = getDay(date); // 0=Sat, 1=Sun, ..., 6=Fri
-            return config.daysOfWeek?.includes(dayOfWeek) || false;
-        case 'monthly':
-            const dayOfMonth = getDate(date); // 1-31
-            return config.daysOfMonth?.includes(dayOfMonth) || false;
-        default:
-            return false;
+    // Handle daily habits
+    if (habit.repetition.type === 'daily') {
+        return true;
     }
-};
 
-export const resetWeeklyCounts = (logs: LogEntry[], habits: Habit[]): LogEntry[] => {
-    const today = new Date();
-    const isSaturday = getDay(today) === 0; // Saturday is the start of the week
-    if (!isSaturday) return logs;
-
-    return logs.map((log) => {
-        const habit = habits.find((h) => h.id === log.habitId);
-        if (habit?.measurement?.weeklyReset) {
-            return { ...log, value: 0 };
-        }
-        return log;
-    });
-};
+    // Handle weekly habits
+    if (habit.repetition.type === 'weekly') {
+        const dayOfWeek = (currentDate.getDay() + 1 ) % 7; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        if (habit.repetition.config.ndaysPerWeek !== undefined ) return true;
+        else
+        return habit.repetition.config.daysOfWeek?.includes(dayOfWeek) ?? false;
+    }
+    return false;
+}
 
 // --- Helper for Heatmap ---
 // Gets an array of Dates for the last N days, including today
@@ -111,4 +94,26 @@ export const getCompletionStatusForDate = (
     // Fallback if status is somehow invalid
     console.warn(`Unknown log status found: ${log.status} for habit ${habitId} on ${dateString}`);
     return 'none';
+};
+
+/**
+ * Returns the date string of the Saturday for the week containing the given date
+ * @param date The date to find the week's Saturday for
+ * @returns ISO date string (YYYY-MM-DD) for the Saturday
+ */
+export const getSaturdayDateString = (date: Date | string): string => {
+    const d = new Date(date);
+    const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // Calculate the date of Saturday for the current week
+    if (dayOfWeek === 0) {
+        // Sunday: go back 1 day to previous Saturday
+        d.setDate(d.getDate() - 1);
+    } else if (dayOfWeek !== 6) {
+        // Monday-Friday: go forward to next Saturday
+        d.setDate(d.getDate() - (dayOfWeek + 1));
+    }
+    // If dayOfWeek === 6, it's already Saturday, no adjustment needed
+    
+    return d.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
 };

@@ -4,6 +4,7 @@ import Colors from '../constants/Colors';
 import { Habit, TimeModule } from '../types';
 import { useAppDispatch } from '../context/AppStateContext';
 import { format } from 'date-fns'; // Ensure format is imported
+import DateTimePicker from '@react-native-community/datetimepicker'; // added
 
 interface HabitEditModalProps {
     habit: Habit | null;
@@ -18,6 +19,19 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, timeModules, fix
     const [editedName, setEditedName] = useState(habit?.title || '');
     const [editedColor, setEditedColor] = useState(habit?.color || '');
     const [editedTimeModuleId, setEditedTimeModuleId] = useState(habit?.timeModuleId || '');
+    // New states for end date and target value (if counter)
+    const [editedEndDate, setEditedEndDate] = useState(habit?.endDate || '');
+    const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    const [editedTargetValue, setEditedTargetValue] = useState(
+        habit && habit.measurement && habit.measurement.type === 'count'
+            ? habit.measurement.targetValue.toString()
+            : ''
+    );
+
+    // New handler to clear the end date (set to endless)
+    const handleClearEndDate = () => {
+        setEditedEndDate('');
+    };
 
     const handleSave = () => {
         if (!habit) return;
@@ -28,6 +42,11 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, timeModules, fix
                 title: editedName.trim(),
                 color: editedColor,
                 timeModuleId: editedTimeModuleId,
+                // New fields added:
+                endDate: editedEndDate,
+                targetValue: habit.measurement && habit.measurement.type === 'count'
+                    ? parseFloat(editedTargetValue)
+                    : undefined,
             },
         });
         onClose();
@@ -44,19 +63,19 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, timeModules, fix
                     style: 'cancel',
                 },
                 {
-                    text: 'Delete Entirely',
-                    style: 'destructive',
-                    onPress: () => {
-                        dispatch({ type: 'DELETE_HABIT', payload: { id: habit.id } });
-                        onClose();
-                    },
-                },
-                {
                     text: 'Delete From Here',
                     style: 'default',
                     onPress: () => {
                         const selectedDate = format(currentDate, 'yyyy-MM-dd'); // Use the selected date
                         dispatch({ type: 'DELETE_HABIT_FROM_TODAY', payload: { id: habit.id, fromDate: selectedDate } });
+                        onClose();
+                    },
+                },
+                {
+                    text: 'Delete Entirely',
+                    style: 'destructive',
+                    onPress: () => {
+                        dispatch({ type: 'DELETE_HABIT', payload: { id: habit.id } });
                         onClose();
                     },
                 },
@@ -111,6 +130,43 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, timeModules, fix
                         </TouchableOpacity>
                     ))}
                 </View>
+                {/* Conditionally render Target Value input if habit is counter */}
+                {habit && habit.measurement && habit.measurement.type === 'count' && (
+                    <>
+                        <Text style={styles.label}>Target Value</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={editedTargetValue}
+                            onChangeText={setEditedTargetValue}
+                            placeholder="Target Value"
+                            keyboardType="numeric"
+                        />
+                    </>
+                )}
+                {/* End Date selector */}
+                <Text style={styles.label}>End Date</Text>
+                <TouchableOpacity style={styles.input} onPress={() => setShowEndDatePicker(true)}>
+                    <Text style={{ color: editedEndDate ? Colors.text : Colors.textSecondary }}>
+                        {editedEndDate ? format(new Date(editedEndDate), "MMM d, yyyy") : "Select End Date"}
+                    </Text>
+                </TouchableOpacity>
+                {showEndDatePicker && (
+                    <DateTimePicker
+                        value={editedEndDate ? new Date(editedEndDate) : new Date()}
+                        mode="date"
+                        display="default"
+                        onChange={(event, date) => {
+                            setShowEndDatePicker(false);
+                            if (date) setEditedEndDate(date.toISOString().split('T')[0]);
+                        }}
+                    />
+                )}
+                {/* Option to make the end date endless */}
+                {editedEndDate !== '' && (
+                    <TouchableOpacity onPress={handleClearEndDate} style={styles.clearButton}>
+                        <Text style={styles.clearButtonText}>Clear End Date (Set to Forever)</Text>
+                    </TouchableOpacity>
+                )}
                 <View style={styles.actions}>
                     <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                         <Text style={styles.buttonText}>Save</Text>
@@ -242,6 +298,17 @@ const styles = StyleSheet.create({
         color: Colors.error,
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    // New styles for clear button
+    clearButton: {
+        marginTop: 10,
+        alignItems: 'center',
+    },
+    clearButtonText: {
+        color: Colors.error,
+        fontSize: 14,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 });
 

@@ -1,20 +1,22 @@
 // context/appReducer.ts
 import { AppState, AppAction, Habit, TimeModule, LogEntry } from '../types'; // Ensure correct path
 import { generateId } from '../utils/helpers'; // Ensure correct path
+import { getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
 
 // Initial State with default global Time Modules
 export const initialState: AppState = {
     habits: [],
     timeModules: [
-        { id: 'global_fajr', name: 'فجر' },
-        { id: 'global_sunrise', name: 'شروق' },
-        { id: 'global_dhuhr', name: 'ظهر' },
-        { id: 'global_asr', name: 'عصر' },
-        { id: 'global_sunset', name: 'مغرب' },
-        { id: 'global_night', name: 'عشاء' },
+        { id: 'global_fajr', name: 'الفجر - الشروق' },
+        { id: 'global_sunrise', name: 'الشروق - الظهر' },
+        { id: 'global_dhuhr', name: 'الظهر - العصر' },
+        { id: 'global_asr', name: 'العصر - المغرب' },
+        { id: 'global_sunset', name: 'المغرب -العشاء' },
+        { id: 'global_night', name: 'العشاء - النوم' },
     ],
     logs: [],
     settings: {},
+    dispatch: () => { },
 };
 
 export const appReducer = (state: AppState, action: AppAction): AppState => {
@@ -40,7 +42,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                  },
                  measurement: {
                       type: payload.measurement.type,
-                      unit: payload.measurement.unit,
+                    //   unit: payload.measurement.unit,
                       targetValue: payload.measurement.targetValue // Include targetValue
                  }
             };
@@ -70,22 +72,32 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         case 'LOG_HABIT': {
             const { habitId, date, status, value } = action.payload;
             if (!habitId || !date) { console.error("LOG_HABIT Error: Missing habitId or date."); return state; }
-            const existingLogIndex = state.logs.findIndex(log => log.habitId === habitId && log.date === date);
+            
+            // Find the habit being logged
+            const habit = state.habits.find(h => h.id === habitId);
+            
+            // If it's a weekly counter habit, adjust the date to the Saturday of the current week
+            let logDate = date;
+            if (habit && habit.repetition.type === 'weekly' && habit.measurement.type === 'count') {
+                logDate = getSaturdayDateString(date);
+            }
+
+            const existingLogIndex = state.logs.findIndex(log => log.habitId === habitId && log.date === logDate);
             let newLogs: LogEntry[];
             // Include only defined status/value in base update
             const logBase: Partial<LogEntry> & { habitId: string, date: string, timestamp: string } = {
-                habitId, date, timestamp: new Date().toISOString(),
+                habitId, date: logDate, timestamp: new Date().toISOString(),
                 ...(status !== undefined && { status }), ...(value !== undefined && { value }),
             };
             const isClearing = status === undefined && value === undefined; // Check if it's a clear request
 
             if (existingLogIndex > -1) {
-                 if (isClearing) { // If clearing, remove the log
+                if (isClearing) { // If clearing, remove the log
                     newLogs = state.logs.filter((_, index) => index !== existingLogIndex);
-                 } else { // Otherwise, update the existing log
+                } else { // Otherwise, update the existing log
                     const originalLogId = state.logs[existingLogIndex].id;
-                    newLogs = state.logs.map((log, index) => index === existingLogIndex ? { ...log, ...logBase, id: originalLogId } : log );
-                 }
+                    newLogs = state.logs.map((log, index) => index === existingLogIndex ? { ...log, ...logBase, id: originalLogId } : log);
+                }
             } else if (!isClearing) { // Add new log only if not clearing
                 const newLogEntry: LogEntry = { ...logBase, id: generateId(), };
                 newLogs = [...state.logs, newLogEntry];
@@ -101,15 +113,13 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 logs: [], // Clear all logs
             };
         }
-
          // --- Time Modules ---
          case 'ADD_TIME_MODULE': {
             const newTimeModule: TimeModule = { name: action.payload.name, id: generateId() };
             return { ...state, timeModules: [...state.timeModules, newTimeModule] };
          }
         case 'UPDATE_TIME_MODULE': {
-             // Exclude potential rogue dayTypeId field safely
-             const { dayTypeId, ...restPayload } = action.payload as Partial<TimeModule> & { id: string; dayTypeId?: any };
+             const { ...restPayload } = action.payload as Partial<TimeModule> & { id: string; };
             return { ...state, timeModules: state.timeModules.map(tm => tm.id === action.payload.id ? { ...tm, ...restPayload } : tm ), };
            }
         case 'DELETE_TIME_MODULE': {
@@ -138,8 +148,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             // Perform safe merge, cleaning old fields and validating references
             const mergedState: AppState = {
                 ...initialState,
-                habits: Array.isArray(loadedState.habits) ? loadedState.habits.map(({ dayTypeId, ...rest }) => ({...rest})) : initialState.habits,
-                timeModules: Array.isArray(loadedState.timeModules) ? loadedState.timeModules.map(({ dayTypeId, ...rest }) => ({...rest})) : initialState.timeModules,
+                habits: Array.isArray(loadedState.habits) ? loadedState.habits.map(({ ...rest }) => ({...rest})) : initialState.habits,
+                timeModules: Array.isArray(loadedState.timeModules) ? loadedState.timeModules.map(({ ...rest }) => ({...rest})) : initialState.timeModules,
                 logs: Array.isArray(loadedState.logs) ? loadedState.logs : initialState.logs,
                 settings: (loadedState.settings && typeof loadedState.settings === 'object') ? loadedState.settings : initialState.settings,
             };

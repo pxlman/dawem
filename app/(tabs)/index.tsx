@@ -93,7 +93,7 @@ export default function HabitListScreen() {
     // Grouping Logic
     const groupedHabitsForDisplay: TimeModuleGroupData[] = useMemo(() => {
         const dueHabits = habits.filter(habit => 
-            !habit.archived && isHabitDue(habit, currentDate) // Use updated isHabitDue
+            isHabitDue(habit, currentDate) // Only check if habit is due
         );
         const orderedTimeModules = [...timeModules]; // Ensure correct order
         const groups = orderedTimeModules.reduce<GroupedHabits>((acc, tm) => {
@@ -121,7 +121,7 @@ export default function HabitListScreen() {
 
     const openAddHabitScreen = () => {
         router.push({
-            pathname: '/add-edit-habit',
+            pathname: '/add-habit',
             params: { currentDate: format(currentDate, 'yyyy-MM-dd') }, // Pass the selected date as a valid string
         });
     };
@@ -159,7 +159,7 @@ export default function HabitListScreen() {
                             habits={habits}
                             currentDate={currentDate}
                             onEditHabit={openEditModal} // Pass the edit handler
-                            onDeleteHabit={handleDeleteFromToday} // Pass the delete handler
+                            // onDeleteHabit={handleDeleteFromToday} // Pass the delete handler
                         />
                     ))
                  )}

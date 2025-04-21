@@ -1,25 +1,28 @@
 // types/index.ts
 
-export type HabitRepetitionType = 'daily' | 'weekly' | 'monthly';
-export type HabitMeasurementType = 'binary' | 'count';
-export type HabitLogStatus = 'right' | 'wrong' | 'circle';
+export type HabitRepetitionType = "daily" | "weekly";
+export type HabitMeasurementType = "binary" | "count";
+export type HabitLogStatus = "right" | "wrong" | "circle";
 
 // --- ADDED fields to RepetitionConfig ---
 export interface RepetitionConfig {
     daysOfWeek?: number[]; // 0=Sat, 1=Sun, ..., 6=Fri (For 'weekly')
-    daysPerWeek?: number; // Number of days the habit should be done in a week
-    daysOfMonth?: number[]; // 1-31 (For 'monthly')
+    ndaysPerWeek?: number; // Number of days the habit should be done in a week
+    // daysOfMonth?: number[]; // 1-31 (For 'monthly')
     // Add other future options here (interval, timesPerWeek etc.)
 }
 
-export interface HabitRepetition { type: HabitRepetitionType; config: RepetitionConfig; }
+export interface HabitRepetition {
+    type: HabitRepetitionType;
+    config: RepetitionConfig;
+}
 
 // --- ADDED targetValue to HabitMeasurement ---
 export interface HabitMeasurement {
     type: HabitMeasurementType;
-    unit?: string;
-    targetValue?: number; // Target value for count habits
-    weeklyReset?: boolean; // Reset count at the end of the week
+    // unit?: string;
+    targetValue?: number | undefined; // Target value for count habits
+    // weeklyReset?: boolean; // Reset count at the end of the week
 }
 
 export interface Habit {
@@ -31,16 +34,26 @@ export interface Habit {
     measurement: HabitMeasurement;
     timeModuleId: string;
     createdAt: string;
-    archived?: boolean;
+    // archived?: boolean;
     startDate?: string; // Start date of the habit
     endDate?: string | null; // End date of the habit (null means "forever")
 }
 
-export interface TimeModule { id: string; name: string; startTime?: string; endTime?: string; }
+export interface TimeModule {
+    id: string;
+    name: string;
+    startTime?: string;
+    endTime?: string;
+}
 
 export interface LogEntry {
-    id: string; habitId: string; date: string; // 'yyyy-MM-dd'
-    timestamp: string; status?: HabitLogStatus; value?: number; notes?: string;
+    id: string;
+    habitId: string;
+    date: string; // 'yyyy-MM-dd'
+    timestamp: string;
+    status?: HabitLogStatus;
+    value?: number;
+    notes?: string;
 }
 
 export interface AppSettings {
@@ -48,19 +61,36 @@ export interface AppSettings {
 }
 
 export interface AppState {
-    habits: Habit[]; timeModules: TimeModule[]; logs: LogEntry[]; settings: AppSettings;
+    habits: Habit[];
+    timeModules: TimeModule[];
+    logs: LogEntry[];
+    settings: AppSettings;
+    dispatch: (action: AppAction) => void;
 }
 
 // Actions remain the same, payload structure for ADD/UPDATE habit now includes the new fields
 export type AppAction =
-    | { type: 'LOAD_STATE'; payload: AppState }
-    | { type: 'RESET_STATE' }
-    | { type: 'ADD_HABIT'; payload: Omit<Habit, 'id' | 'createdAt'> }
-    | { type: 'UPDATE_HABIT'; payload: Partial<Habit> & { id: string } }
-    | { type: 'DELETE_HABIT'; payload: { id: string } }
-    | { type: 'LOG_HABIT'; payload: { habitId: string; date: string; status?: HabitLogStatus; value?: number } }
-    | { type: 'ADD_TIME_MODULE'; payload: { name: string } }
-    | { type: 'UPDATE_TIME_MODULE'; payload: Partial<TimeModule> & { id: string } }
-    | { type: 'DELETE_TIME_MODULE'; payload: { id: string } }
-    | { type: 'UPDATE_START_TIME'; payload: { startTimeOfDay: string } }
-    | { type: 'DELETE_HABIT_FROM_TODAY'; payload: { id: string; fromDate: string } };
+    | { type: "LOAD_STATE"; payload: AppState }
+    | { type: "RESET_STATE" }
+    | { type: "ADD_HABIT"; payload: Omit<Habit, "id" | "createdAt"> }
+    | { type: "UPDATE_HABIT"; payload: Partial<Habit> & { id: string } }
+    | { type: "DELETE_HABIT"; payload: { id: string } }
+    | {
+        type: "LOG_HABIT";
+        payload: {
+            habitId: string;
+            date: string;
+            status?: HabitLogStatus;
+            value?: number;
+        };
+    }
+    | { type: "ADD_TIME_MODULE"; payload: { name: string } }
+    | { type: "UPDATE_TIME_MODULE"; payload: Partial<TimeModule> & { id: string }; }
+    | { type: "DELETE_TIME_MODULE"; payload: { id: string } }
+    | { type: "UPDATE_START_TIME"; payload: { startTimeOfDay: string } }
+    | {
+        type: "DELETE_HABIT_FROM_TODAY";
+        payload: { id: string; fromDate: string };
+    }
+    | { type: "REORDER_TIME_MODULES"; payload: TimeModule[] }
+    | { type: "RESET_LOGS" };
