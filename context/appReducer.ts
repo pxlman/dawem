@@ -183,14 +183,45 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         case 'DELETE_HABIT_FROM_TODAY': {
             const { id, fromDate } = action.payload;
 
-            // Set the endDate to the selected date (inclusive)
-            const newEndDate = new Date(fromDate).toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
+            // Set the endDate to the day before the selected date
+            const date = new Date(fromDate);
+            date.setDate(date.getDate() - 1);
+            const newEndDate = date.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
 
             // Update the habit's endDate
             const updatedHabits = state.habits.map(habit =>
                 habit.id === id ? { ...habit, endDate: newEndDate } : habit
             );
 
+            return {
+                ...state,
+                habits: updatedHabits,
+            };
+        }
+        case 'REORDER_HABITS_IN_MODULE': {
+            const { timeModuleId, habits: reorderedHabits } = action.payload;
+            
+            // Create a map of habit IDs to their updated habits with sort orders
+            const reorderedHabitsMap = new Map(
+                reorderedHabits.map(habit => [habit.id, habit])
+            );
+            
+            // Update the habits array
+            const updatedHabits = state.habits.map(habit => {
+                // Check if this habit belongs to the time module we're reordering
+                const isInTargetModule = 
+                    habit.timeModuleId === timeModuleId || 
+                    (timeModuleId === 'uncategorized' && !habit.timeModuleId);
+                    
+                if (isInTargetModule && reorderedHabitsMap.has(habit.id)) {
+                    return {
+                        ...habit,
+                        ...reorderedHabitsMap.get(habit.id)
+                    };
+                }
+                return habit;
+            });
+            
             return {
                 ...state,
                 habits: updatedHabits,

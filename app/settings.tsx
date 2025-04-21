@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert, FlatList, Modal, Platform } from 'react-native';
+import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert, FlatList, Modal, Platform, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,9 +7,11 @@ import { useAppState, useAppDispatch } from '../context/AppStateContext';
 import Colors from '../constants/Colors';
 import { TimeModule } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 
 export default function SettingsScreen() {
-    const { timeModules, settings } = useAppState();
+    const { timeModules, settings, habits } = useAppState();
     const dispatch = useAppDispatch();
     const [newTimeModuleName, setNewTimeModuleName] = useState<string>('');
     const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null);
@@ -194,6 +196,92 @@ export default function SettingsScreen() {
         });
     };
 
+    // Handle exporting habits to a file
+    const handleExportHabits = async () => {
+        try {
+            // Create a data object with habits and time modules
+            const exportData = {
+                habits,
+                timeModules,
+                exportDate: new Date().toISOString()
+            };
+            
+            const jsonString = JSON.stringify(exportData, null, 2);
+            
+            // Create a filename with current date
+            const date = new Date();
+            // const filename = `habits_export_${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}.json`;
+            
+            // Share the file
+            await Share.share({
+                title: 'Export Habits',
+                message: jsonString,
+                // On iOS we could use a URL, on Android we use the data directly
+                url: Platform.OS === 'ios' ? `data:text/json;base64,${Buffer.from(jsonString).toString('base64')}` : undefined
+            });
+        } catch (error) {
+            console.error('Error exporting habits:', error);
+            Alert.alert('Export Error', 'Could not export habits. Please try again.');
+        }
+    };
+
+    // Handle importing habits from a file
+    const handleImportHabits = async () => {
+        try {
+            // Show file picker
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/json',
+                copyToCacheDirectory: true
+            });
+            
+            if (result.canceled) {
+                return;
+            }
+
+            // Read file content
+            const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+            
+            // Parse JSON
+            let importedData;
+            try {
+                importedData = JSON.parse(fileContent);
+            } catch (error) {
+                throw new Error('Invalid file format. Please select a valid habits export file.');
+            }
+            
+            // Validate imported data structure
+            if (!importedData.habits || !Array.isArray(importedData.habits)) {
+                throw new Error('Invalid file format. The file does not contain valid habit data.');
+            }
+            
+            // Confirm import
+            Alert.alert(
+                'Confirm Import',
+                `This will import ${importedData.habits.length} habits. Your existing habits will be kept. Continue?`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                        text: 'Import',
+                        onPress: () => {
+                            // Dispatch import action
+                            dispatch({ 
+                                type: 'IMPORT_HABITS', 
+                                payload: { 
+                                    habits: importedData.habits,
+                                    timeModules: importedData.timeModules || []
+                                }
+                            });
+                            Alert.alert('Success', 'Habits imported successfully!');
+                        }
+                    }
+                ]
+            );
+        } catch (error) {
+            console.error('Error importing habits:', error);
+            Alert.alert('Import Error', error instanceof Error ? error.message : 'Could not import habits. Please try again.');
+        }
+    };
+
     // Updated render item to show optional start time with clear button
     const renderTimeModuleItem = ({ item, drag, isActive }: { item: TimeModule; drag: () => void; isActive: boolean }) => (
         <TouchableOpacity
@@ -249,7 +337,7 @@ export default function SettingsScreen() {
     return (
         <>
             <FlatList
-                data={[{ key: 'startTime' }, { key: 'timeModules' }, { key: 'dataManagement' }]}
+                data={[{ key: 'startTime' }, { key: 'timeModules' }, { key: 'importExport' }, { key: 'dataManagement' }]}
                 renderItem={({ item }) => {
                     if (item.key === 'startTime') {
                         return (
@@ -300,6 +388,30 @@ export default function SettingsScreen() {
                                         <Text style={styles.addButtonText}>Add Time Module</Text>
                                     </TouchableOpacity>
                                 </View>
+                            </View>
+                        );
+                    } else if (item.key === 'importExport') {
+                        return (
+                            <View style={styles.section}>
+                                <Text style={styles.header}>Import / Export</Text>
+                                <View style={styles.importExportContainer}>
+                                    <TouchableOpacity
+                                        onPress={handleImportHabits}
+                                        style={[styles.actionButton, styles.secondaryButton]}
+                                    >
+                                        <Ionicons name="arrow-down-circle-outline" size={22} color={Colors.text} />
+                                        <Text style={styles.secondaryButtonText}>Import Habits</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={handleExportHabits}
+                                        style={[styles.actionButton, styles.secondaryButton]}
+                                    >
+                                        <Ionicons name="arrow-up-circle-outline" size={22} color={Colors.text} />
+                                        <Text style={styles.secondaryButtonText}>Export Habits</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <Text style={styles.infoText}>Export your habits for backup or to transfer to another device.</Text>
                             </View>
                         );
                     } else if (item.key === 'dataManagement') {
@@ -586,5 +698,42 @@ const styles = StyleSheet.create({
     addTimeText: {
         color: Colors.primary,
         fontSize: 14,
+    },
+    // Updated styles for import/export section
+    importExportContainer: {
+        flexDirection: 'column',
+        marginTop: 10,
+    },
+    exportButton: {
+        backgroundColor: Colors.primary,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    // New shared button style
+    actionButton: {
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    secondaryButton: {
+        backgroundColor: Colors.grey, 
+        marginTop: 10,
+    },
+    actionButtonText: {
+        color: Colors.surface,
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 8,
+    },
+    secondaryButtonText: {
+        color: Colors.text,
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 8,
     },
 });

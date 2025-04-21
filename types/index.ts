@@ -39,6 +39,7 @@ export interface Habit {
     // archived?: boolean;
     startDate?: string; // Start date of the habit
     endDate?: string | null; // End date of the habit (null means "forever")
+    sortOrder?: number; // Track the order of habits within a time module
 }
 
 export interface TimeModule {
@@ -94,4 +95,11 @@ export type AppAction =
         payload: { id: string; fromDate: string };
     }
     | { type: "REORDER_TIME_MODULES"; payload: TimeModule[] }
+    | { 
+        type: "REORDER_HABITS_IN_MODULE"; 
+        payload: { 
+            timeModuleId: string;
+            habits: Habit[];
+        } 
+    }
     | { type: "RESET_LOGS" };

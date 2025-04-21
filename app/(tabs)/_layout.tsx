@@ -22,7 +22,7 @@ export default function TabLayout() {
                 headerTitleStyle: { fontWeight: 'bold' },
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName: keyof typeof Ionicons.glyphMap;
-                    if (route.name === 'index') iconName = focused ? 'list-circle' : 'list-circle-outline';
+                    if (route.name === 'index') iconName = focused ? 'checkbox' : 'checkbox-outline';
                     else if (route.name === 'stats') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
                     // else if (route.name === 'settings') iconName = focused ? 'settings' : 'settings-outline';
                     else iconName = 'help-circle-outline';
