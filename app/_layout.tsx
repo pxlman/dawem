@@ -26,6 +26,28 @@ export default function RootLayout() {
                                 headerShown: true,
                             }}
                         />
+                        <Stack.Screen
+                            name="all-habits"
+                            options={{
+                                presentation: 'modal',
+                                title: 'All Habits',
+                                headerStyle: { backgroundColor: Colors.surface },
+                                headerTintColor: Colors.text,
+                                headerTitleStyle: { fontWeight: 'bold' },
+                                headerShown: true,
+                            }}
+                        />
+                        <Stack.Screen
+                            name="settings"
+                            options={{
+                                presentation: 'modal',
+                                title: 'Settings',
+                                headerStyle: { backgroundColor: Colors.surface },
+                                headerTintColor: Colors.text,
+                                headerTitleStyle: { fontWeight: 'bold' },
+                                headerShown: true,
+                            }}
+                        />
                     </Stack>
                 </SafeAreaProvider>
             </AppProvider>

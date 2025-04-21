@@ -1,8 +1,8 @@
 // app/(tabs)/index.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
 import { format, addDays, subDays } from 'date-fns'; // Ensure format is imported
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState } from '../../context/AppStateContext';
@@ -12,13 +12,25 @@ import Colors, { fixedColors } from '../../constants/Colors'; // Import fixed co
 import { Habit, TimeModule } from '../../types';
 import HabitEditModal from '../../components/HabitEditModal'; // Import the new modal component
 
-// --- Date Header Component (Keep as is) ---
-interface DateHeaderProps { currentDate: Date; onPrevDay: () => void; onNextDay: () => void; onShowDatePicker: () => void; }
+// --- Date Header Component (Reverted to original without All Habits button) ---
+interface DateHeaderProps { 
+    currentDate: Date; 
+    onPrevDay: () => void; 
+    onNextDay: () => void; 
+    onShowDatePicker: () => void;
+}
+
 const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker }) => (
     <View style={styles.datePickerContainer}>
-        <TouchableOpacity onPress={onPrevDay} style={styles.dateArrow} hitSlop={10}><Ionicons name="chevron-back" size={24} color={Colors.primary} /></TouchableOpacity>
-        <TouchableOpacity onPress={onShowDatePicker}><Text style={styles.dateText}>{format(currentDate, 'EEE, MMM d, yyyy')}</Text></TouchableOpacity>
-        <TouchableOpacity onPress={onNextDay} style={styles.dateArrow} hitSlop={10}><Ionicons name="chevron-forward" size={24} color={Colors.primary} /></TouchableOpacity>
+        <TouchableOpacity onPress={onPrevDay} style={styles.dateArrow} hitSlop={10}>
+            <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onShowDatePicker}>
+            <Text style={styles.dateText}>{format(currentDate, 'EEE, MMM d, yyyy')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onNextDay} style={styles.dateArrow} hitSlop={10}>
+            <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
+        </TouchableOpacity>
     </View>
 );
 
@@ -29,9 +41,32 @@ interface TimeModuleGroupData { timeModule?: TimeModule; habits: Habit[] }
 // --- Main Screen Component ---
 export default function HabitListScreen() {
     const router = useRouter();
+    const navigation = useNavigation();
     const { habits, timeModules, dispatch } = useAppState();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+
+    // Add header buttons using useLayoutEffect
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity 
+                        onPress={navigateToAllHabits}
+                        style={{ marginRight: 16 }}
+                    >
+                        <Ionicons name="list" size={24} color={Colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                        onPress={navigateToSettings}
+                        style={{ marginRight: 16 }}
+                    >
+                        <Ionicons name="settings-outline" size={24} color={Colors.primary} />
+                    </TouchableOpacity>
+                </View>
+            ),
+        });
+    }, [navigation]);
 
     // State for managing the edit modal
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -126,10 +161,19 @@ export default function HabitListScreen() {
         });
     };
 
+    const navigateToAllHabits = () => {
+        router.push({
+            pathname: '/all-habits'
+        });
+    };
+
+    const navigateToSettings = () => {
+        router.push('/settings');
+    };
+
     return (
         <View style={styles.container}>
              {/* Render Date Header */}
-             
              <DateHeader
                  currentDate={currentDate}
                  onPrevDay={() => setCurrentDate(subDays(currentDate, 1))}
@@ -191,12 +235,37 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background
     },
     datePickerContainer: {
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: 12, paddingHorizontal: 15, backgroundColor: Colors.surface,
-        borderBottomWidth: 1, borderBottomColor: Colors.lightGrey,
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        paddingVertical: 12, 
+        paddingHorizontal: 15, 
+        backgroundColor: Colors.surface,
+        borderBottomWidth: 1, 
+        borderBottomColor: Colors.lightGrey,
     },
-    dateArrow: { padding: 8, },
-    dateText: { fontSize: 17, fontWeight: '600', color: Colors.primary, paddingVertical: 5, },
+    dateArrow: { padding: 8 },
+    dateText: { 
+        fontSize: 17, 
+        fontWeight: '600', 
+        color: Colors.primary, 
+        paddingVertical: 5,
+    },
+    allHabitsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.surface,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.lightGrey,
+    },
+    allHabitsButtonText: {
+        color: Colors.primary,
+        fontWeight: '600',
+        fontSize: 14,
+        marginLeft: 8,
+    },
     scrollContent: { // Style for ScrollView content
         paddingBottom: 90, // Ensure space below last item for FAB
         // Removed paddingHorizontal, let TimeModuleGroup handle margins
@@ -211,4 +280,10 @@ const styles = StyleSheet.create({
         elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3,
     },
     addButtonText: { color: Colors.surface, fontSize: 30, lineHeight: 34, },
+    viewAllButton: {
+        // Remove this style or keep it for future reference
+    },
+    viewAllText: {
+        // Remove this style or keep it for future reference
+    },
 });

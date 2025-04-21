@@ -14,6 +14,7 @@ export default {
   green: '#4CAF50',    // Keep green
   red: '#F44336',      // Keep red
   blue: '#2196F3',     // Keep blue
+  buff: '#DAA06D',     // Gold color for exceeding targets
 
   // Greys for Borders / Disabled states etc.
   grey: '#333333',       // A noticeable dark grey for borders/dividers

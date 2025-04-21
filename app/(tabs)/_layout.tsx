@@ -24,7 +24,7 @@ export default function TabLayout() {
                     let iconName: keyof typeof Ionicons.glyphMap;
                     if (route.name === 'index') iconName = focused ? 'list-circle' : 'list-circle-outline';
                     else if (route.name === 'stats') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
-                    else if (route.name === 'settings') iconName = focused ? 'settings' : 'settings-outline';
+                    // else if (route.name === 'settings') iconName = focused ? 'settings' : 'settings-outline';
                     else iconName = 'help-circle-outline';
                     // color is passed correctly based on tabBarActive/InactiveTintColor
                     return <Ionicons name={iconName} size={size} color={color} />;
@@ -33,7 +33,7 @@ export default function TabLayout() {
         >
             <Tabs.Screen name="index" options={{ title: 'Habits' }} />
             <Tabs.Screen name="stats" options={{ title: 'Stats' }} />
-            <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+            {/* <Tabs.Screen name="settings" options={{ title: 'Settings' }} /> */}
         </Tabs>
     );
 }

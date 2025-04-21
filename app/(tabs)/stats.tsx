@@ -79,15 +79,51 @@ export default function StatsScreen() {
             date.getFullYear() === today.getFullYear();
     };
 
-    // Split habits by repetition type (daily/weekly)
-    const { dailyHabits, weeklyHabits } = useMemo(() => {
+    // Group dates by week (for weekly counter habits)
+    const weeklyDates = useMemo(() => {
+        const weeks: { startDate: Date, endDate: Date }[] = [];
+        
+        if (dates.length === 0) return weeks;
+        
+        // Dates are in reverse order (most recent first)
+        let currentWeekStart: Date | null = null;
+        let currentWeekEnd: Date | null = null;
+        
+        // Group dates into weeks (Saturday to Friday)
+        for (const date of dates) {
+            // If it's a Saturday (day 6) or first date encountered, start a new week
+            if (date.getDay() === 6 || currentWeekStart === null) {
+                if (currentWeekStart !== null && currentWeekEnd !== null) {
+                    weeks.push({ startDate: new Date(currentWeekStart), endDate: new Date(currentWeekEnd) });
+                }
+                currentWeekStart = new Date(date);
+                currentWeekEnd = new Date(date);
+            } else {
+                // Update the end date of the current week
+                currentWeekEnd = new Date(date);
+            }
+        }
+        
+        // Add the last week if needed
+        if (currentWeekStart !== null && currentWeekEnd !== null) {
+            weeks.push({ startDate: new Date(currentWeekStart), endDate: new Date(currentWeekEnd) });
+        }
+        
+        return weeks;
+    }, [dates]);
+
+    // Split habits by repetition type and measurement type
+    const { dailyHabits, weeklyBinaryHabits, weeklyCounterHabits } = useMemo(() => {
         return {
             dailyHabits: habits.filter(h => h.repetition.type === 'daily'),
-            weeklyHabits: habits.filter(h => h.repetition.type === 'weekly')
+            weeklyBinaryHabits: habits.filter(h => 
+                h.repetition.type === 'weekly' && h.measurement.type === 'binary'),
+            weeklyCounterHabits: habits.filter(h => 
+                h.repetition.type === 'weekly' && h.measurement.type === 'count')
         };
     }, [habits]);
 
-    // Get habit status for a specific date - updated to include due status
+    // Get habit status for a specific date - updated to include due status and exceeded status
     const getHabitStatus = (habit: Habit, date: Date) => {
         // First check if the habit is due on this date
         const isDue = isHabitDue(habit, date);
@@ -114,7 +150,9 @@ export default function StatsScreen() {
             const target = habit.measurement.targetValue || 0;
             const value = log.value || 0;
             
-            if (value >= target && target > 0) {
+            if (value > target && target > 0) {
+                return { status: 'exceeded', value, isDue }; // New status for exceeding target
+            } else if (value === target && target > 0) {
                 return { status: 'completed', value, isDue };
             } else if (value > 0) {
                 return { status: 'partial', value, isDue };
@@ -124,7 +162,32 @@ export default function StatsScreen() {
         }
     };
 
-    // Render table for a specific habit type
+    // Get weekly counter habit status for a specific week (using Saturday's value)
+    const getWeeklyCounterStatus = (habit: Habit, weekStart: Date) => {
+        // For weekly counter habits, use the Saturday date as the key date
+        const saturdayDate = new Date(weekStart);
+        const dateStr = saturdayDate.toISOString().split('T')[0];
+        const log = logs.find(l => l.habitId === habit.id && l.date === dateStr);
+        
+        const targetValue = habit.measurement.targetValue || 0;
+        const value = log?.value || 0;
+        
+        // Determine if the habit was due this week
+        const isDue = isHabitDue(habit, saturdayDate);
+        
+        if (value > targetValue && targetValue > 0) {
+            return { status: 'exceeded', value, isDue, percentage: Math.round((value / targetValue) * 100) }; // Exceeded status
+        } else if (value === targetValue && targetValue > 0) {
+            return { status: 'completed', value, isDue, percentage: 100 };
+        } else if (value > 0) {
+            const percentage = targetValue > 0 ? Math.min(100, Math.round((value / targetValue) * 100)) : 0;
+            return { status: 'partial', value, isDue, percentage };
+        } else {
+            return { status: 'missed', value: 0, isDue, percentage: 0 };
+        }
+    };
+
+    // Render table for daily or weekly binary habits
     const renderTable = (tableHabits: Habit[], title: string) => {
         if (tableHabits.length === 0) return null;
         
@@ -164,10 +227,9 @@ export default function StatsScreen() {
                                         key={`date-${index}`} 
                                         style={[
                                             styles.dateCell, 
-                                            isToday(date) && styles.todayCell,
-                                            date.getDate() === 1 && styles.firstOfMonthCell,
+                                            date.getDay() === 5 && styles.startOfWeekCell, // Week start at saturday
                                             // Highlight today for current month (should be first day in the list)
-                                            monthOffset === 0 && index === 0 && styles.todayCellHeader
+                                            isToday(date) && styles.todayCellHeader,
                                         ]}
                                     >
                                         <Text style={styles.dateText}>
@@ -187,6 +249,8 @@ export default function StatsScreen() {
                                         
                                         if (status.status === 'completed') {
                                             cellStyle = styles.completedCell;
+                                        } else if (status.status === 'exceeded') {
+                                            cellStyle = styles.exceededCell; // New style for exceeded
                                         } else if (status.status === 'partial') {
                                             cellStyle = styles.partialCell;
                                         } else if (status.status === 'missed') {
@@ -233,8 +297,12 @@ export default function StatsScreen() {
                     </ScrollView>
                 </View>
                 
-                {/* Legend for this table - updated to include not due */}
+                {/* Legend for this table - updated to include exceeded */}
                 <View style={styles.legendContainer}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
+                        <Text style={styles.legendText}>Exceeded</Text>
+                    </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.green }]} />
                         <Text style={styles.legendText}>Completed</Text>
@@ -250,6 +318,141 @@ export default function StatsScreen() {
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.heatmapLevel0 }]} />
                         <Text style={styles.legendText}>No Data</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <Ionicons name="lock-closed" size={10} color={Colors.darkGrey} style={{marginRight: 4}} />
+                        <Text style={styles.legendText}>Not Due</Text>
+                    </View>
+                </View>
+            </View>
+        );
+    };
+
+    // Render table for weekly counter habits
+    const renderWeeklyCounterTable = (tableHabits: Habit[]) => {
+        if (tableHabits.length === 0) return null;
+
+        return (
+            <View style={styles.tableContainer}>
+                <Text style={styles.tableTitle}>Weekly Counters </Text>
+                
+                <View style={styles.tableContent}>
+                    {/* Fixed left column for habit names */}
+                    <View style={styles.fixedColumn}>
+                        {/* Header cell */}
+                        <View style={[styles.habitNameCell, styles.headerNameCell]}>
+                            <Text style={styles.headerText}>Habit</Text>
+                        </View>
+                        
+                        {/* Habit name cells */}
+                        {tableHabits.map(habit => (
+                            <View key={`fixed-${habit.id}`} style={styles.habitNameCell}>
+                                <Text 
+                                    style={styles.habitNameText}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
+                                    {habit.title}
+                                </Text>
+                            </View>
+                        ))}
+                    </View>
+                    
+                    {/* Scrollable right part */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.scrollableArea}>
+                        <View>
+                            {/* Header row with weeks */}
+                            <View style={styles.headerRow}>
+                                {weeklyDates.map((week, index) => (
+                                    <View 
+                                        key={`week-${index}`} 
+                                        style={[
+                                            styles.weekCell,
+                                            // Highlight current week
+                                            isToday(week.startDate) && styles.todayCell
+                                        ]}
+                                    >
+                                        <Text style={styles.weekDateText}>
+                                            {formatDate(week.startDate)}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                            
+                            {/* Habit data rows */}
+                            {tableHabits.map(habit => (
+                                <View key={habit.id} style={styles.habitRow}>
+                                    {/* Data cells for each week */}
+                                    {weeklyDates.map((week, index) => {
+                                        const status = getWeeklyCounterStatus(habit, week.startDate);
+                                        let cellStyle = styles.emptyCell;
+                                        
+                                        if (status.status === 'exceeded') {
+                                            cellStyle = styles.exceededCell; // New style for exceeded
+                                        } else if (status.status === 'completed') {
+                                            cellStyle = styles.completedCell;
+                                        } else if (status.status === 'partial') {
+                                            cellStyle = styles.partialCell;
+                                        } else if (status.status === 'missed') {
+                                            cellStyle = styles.missedCell;
+                                        }
+                                        
+                                        // Add not-due styling
+                                        const notDueStyle = !status.isDue ? styles.notDueCell : {};
+                                        
+                                        return (
+                                            <View 
+                                                key={`${habit.id}-week-${index}`} 
+                                                style={[
+                                                    styles.weekDataCell, 
+                                                    cellStyle,
+                                                    notDueStyle,
+                                                ]}
+                                            >
+                                                {/* Show value and percentage */}
+                                                {status.value > 0 && (
+                                                    <Text style={[
+                                                        styles.weekCountText,
+                                                        !status.isDue && styles.notDueText
+                                                    ]}>
+                                                        {status.value}/{habit.measurement.targetValue || 0} ({status.percentage}%)
+                                                    </Text>
+                                                )}
+                                                
+                                                {/* Show lock icon for non-due habits with no data */}
+                                                {!status.isDue && status.value === 0 && (
+                                                    <Ionicons 
+                                                        name="lock-closed" 
+                                                        size={12} 
+                                                        color={Colors.darkGrey} 
+                                                    />
+                                                )}
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            ))}
+                        </View>
+                    </ScrollView>
+                </View>
+                
+                {/* Legend for this table */}
+                <View style={styles.legendContainer}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
+                        <Text style={styles.legendText}>Exceeded Target</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.green }]} />
+                        <Text style={styles.legendText}>Completed (100%)</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
+                        <Text style={styles.legendText}>Partial Progress</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.red }]} />
+                        <Text style={styles.legendText}>No Progress</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <Ionicons name="lock-closed" size={10} color={Colors.darkGrey} style={{marginRight: 4}} />
@@ -326,13 +529,14 @@ export default function StatsScreen() {
             </View>
 
             {/* Message if no habits exist */}
-            {dailyHabits.length === 0 && weeklyHabits.length === 0 && (
+            {dailyHabits.length === 0 && weeklyBinaryHabits.length === 0 && weeklyCounterHabits.length === 0 && (
                 <Text style={styles.placeholder}>Add some habits to see their activity here.</Text>
             )}
 
             {/* Render tables for daily and weekly habits */}
             {renderTable(dailyHabits, "Daily Habits")}
-            {renderTable(weeklyHabits, "Weekly Habits")}
+            {renderTable(weeklyBinaryHabits, "Weekly Habits")}
+            {renderWeeklyCounterTable(weeklyCounterHabits)}
         </ScrollView>
     );
 }
@@ -506,6 +710,9 @@ const styles = StyleSheet.create({
     completedCell: {
         backgroundColor: Colors.green,
     },
+    exceededCell: {
+        backgroundColor: Colors.buff, // New style for exceeded targets
+    },
     partialCell: {
         backgroundColor: Colors.blue,
     },
@@ -569,5 +776,36 @@ const styles = StyleSheet.create({
     
     notDueText: {
         color: Colors.darkGrey, // Darker text for not due items
+    },
+    // New styles for weekly counter habits table
+    weekCell: {
+        width: 70, // Wider cell for weekly view
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 4,
+        marginHorizontal: 2,
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.lightGrey,
+    },
+    weekDateText: {
+        fontSize: 10,
+        color: Colors.textSecondary,
+        textAlign: 'center',
+    },
+    weekDataCell: {
+        width: 70, // Match width of weekCell
+        height: 30, // Taller to fit more content
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 4,
+        marginHorizontal: 2,
+        marginVertical: 2,
+        padding: 2,
+    },
+    weekCountText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: 'white',
+        textAlign: 'center',
     },
 });

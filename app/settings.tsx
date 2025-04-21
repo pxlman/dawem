@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert, FlatList, Modal, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppState, useAppDispatch } from '../../context/AppStateContext';
-import Colors from '../../constants/Colors';
-import { TimeModule } from '../../types';
+import { useAppState, useAppDispatch } from '../context/AppStateContext';
+import Colors from '../constants/Colors';
+import { TimeModule } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function SettingsScreen() {
