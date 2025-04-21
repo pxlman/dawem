@@ -115,7 +115,16 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         }
          // --- Time Modules ---
          case 'ADD_TIME_MODULE': {
-            const newTimeModule: TimeModule = { name: action.payload.name, id: generateId() };
+            const payload = action.payload;
+            // Basic validation
+            if (!payload || !payload.name) {
+                console.error("ADD_TIME_MODULE Error: Invalid payload."); 
+                return state;
+            }
+            const newTimeModule: TimeModule = {
+                id: generateId(),
+                ...payload
+            };
             return { ...state, timeModules: [...state.timeModules, newTimeModule] };
          }
         case 'UPDATE_TIME_MODULE': {

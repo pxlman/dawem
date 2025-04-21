@@ -18,6 +18,10 @@ export default function SettingsScreen() {
     const [renameModalVisible, setRenameModalVisible] = useState(false);
     const [moduleToRename, setModuleToRename] = useState<{id: string, name: string} | null>(null);
     const [newModuleName, setNewModuleName] = useState('');
+    
+    // Simplified state - no longer tracking isEditingStartTime since we only edit start time
+    const [timeEditingModule, setTimeEditingModule] = useState<string | null>(null);
+    const [selectedModuleTime, setSelectedModuleTime] = useState(new Date());
 
     useEffect(() => {
         if (settings.startTimeOfDay) {
@@ -43,7 +47,14 @@ export default function SettingsScreen() {
         if (timeModules.some(tm => tm.name.toLowerCase() === trimmedName.toLowerCase())) {
             return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
         }
-        dispatch({ type: 'ADD_TIME_MODULE', payload: { name: trimmedName } });
+        // Add without a default start time
+        dispatch({ 
+            type: 'ADD_TIME_MODULE', 
+            payload: { 
+                name: trimmedName,
+                // No startTime property means it's not set
+            } as Omit<TimeModule, 'id'>
+        });
         setNewTimeModuleName('');
     };
 
@@ -135,6 +146,54 @@ export default function SettingsScreen() {
         );
     };
 
+    // Simplified to handle only start time
+    const handleEditModuleTime = (moduleId: string) => {
+        const module = timeModules.find(m => m.id === moduleId);
+        if (!module) return;
+        
+        const timeStr = module.startTime || '00:00';
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        
+        setSelectedModuleTime(date);
+        setTimeEditingModule(moduleId);
+    };
+
+    // Simplified time change handler - no start/end validation needed
+    const handleModuleTimeChange = (event: any, selectedTime?: Date) => {
+        setTimeEditingModule(null);
+        
+        if (selectedTime && timeEditingModule) {
+            const formattedTime = selectedTime.toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false 
+            });
+            
+            dispatch({
+                type: 'UPDATE_TIME_MODULE',
+                payload: {
+                    id: timeEditingModule,
+                    startTime: formattedTime
+                }
+            });
+        }
+    };
+
+    // Clear start time for a module
+    const handleClearModuleTime = (moduleId: string) => {
+        dispatch({
+            type: 'UPDATE_TIME_MODULE',
+            payload: {
+                id: moduleId,
+                startTime: undefined  // Clear the start time
+            }
+        });
+    };
+
+    // Updated render item to show optional start time with clear button
     const renderTimeModuleItem = ({ item, drag, isActive }: { item: TimeModule; drag: () => void; isActive: boolean }) => (
         <TouchableOpacity
             onLongPress={drag}
@@ -144,7 +203,33 @@ export default function SettingsScreen() {
             ]}
         >
             <Ionicons name="time-outline" size={20} color={Colors.textSecondary} style={styles.itemIcon} />
-            <Text style={styles.itemName}>{item.name}</Text>
+            <View style={styles.moduleInfoContainer}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                {item.startTime ? (
+                    <View style={styles.timeContainer}>
+                        <TouchableOpacity 
+                            style={styles.timeButton}
+                            onPress={() => handleEditModuleTime(item.id)}
+                        >
+                            <Text style={styles.timeButtonText}>Starts at: {item.startTime}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            onPress={() => handleClearModuleTime(item.id)}
+                            style={styles.clearTimeButton}
+                            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                        >
+                            <Ionicons name="close-circle" size={16} color={Colors.error} />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <TouchableOpacity 
+                        style={styles.addTimeButton}
+                        onPress={() => handleEditModuleTime(item.id)}
+                    >
+                        <Text style={styles.addTimeText}>+ Add start time</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
             <View style={styles.actionButtons}>
                 {timeModules.length > 1 && (
                     <>
@@ -277,6 +362,16 @@ export default function SettingsScreen() {
                     </View>
                 </View>
             </Modal>
+            
+            {/* Time picker for module start times */}
+            {timeEditingModule && (
+                <DateTimePicker
+                    value={selectedModuleTime}
+                    mode="time"
+                    display="default"
+                    onChange={handleModuleTimeChange}
+                />
+            )}
         </>
     );
 }
@@ -321,7 +416,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     itemIcon: { marginRight: 12 },
-    itemName: { fontSize: 16, flex: 1, color: Colors.text },
+    itemName: { fontSize: 18, flex: 1, color: Colors.text },
     addSection: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: Colors.lightGrey },
     input: {
         borderWidth: 1,
@@ -450,5 +545,45 @@ const styles = StyleSheet.create({
     cancelButtonText: {
         color: Colors.text,
         fontWeight: 'bold',
+    },
+    moduleInfoContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    timeButton: {
+        backgroundColor: Colors.lightGrey,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 5,
+        marginTop: 5,
+        alignSelf: 'flex-start', // Only take up as much width as needed
+    },
+    timeButtonText: {
+        fontSize: 12,
+        color: Colors.text,
+    },
+    timeRangeSeparator: {
+        marginHorizontal: 5,
+        fontSize: 12,
+        color: Colors.textSecondary,
+    },
+    // Updated and new styles for optional time
+    timeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    clearTimeButton: {
+        marginLeft: 8,
+        justifyContent: 'center',
+    },
+    addTimeButton: {
+        marginTop: 5,
+        paddingVertical: 4,
+        paddingHorizontal: 0,
+    },
+    addTimeText: {
+        color: Colors.primary,
+        fontSize: 14,
     },
 });

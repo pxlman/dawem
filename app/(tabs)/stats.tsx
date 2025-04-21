@@ -429,12 +429,13 @@ const styles = StyleSheet.create({
     },
     headerRow: {
         flexDirection: 'row',
-        height: 30, // Fixed height to match headerNameCell
+        alignItems:'stretch',
+        height: 50, // Fixed height to match headerNameCell
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
     },
     headerNameCell: {
-        height: 30, // Fixed height to match headerRow
+        height: 50, // Fixed height to match headerRow
         backgroundColor: Colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
@@ -457,7 +458,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     habitNameText: {
-        fontSize: 13,
+        fontSize: 14,
         color: Colors.text,
         fontWeight: '500',
     },
@@ -484,6 +485,7 @@ const styles = StyleSheet.create({
         fontSize: 8, // Smaller font for dates
         color: Colors.textSecondary,
         textAlign: 'center',
+        margin:'auto'
     },
     dataCell: {
         width: 16, // GitHub-style cell width

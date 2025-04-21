@@ -3,6 +3,8 @@
 export type HabitRepetitionType = "daily" | "weekly";
 export type HabitMeasurementType = "binary" | "count";
 export type HabitLogStatus = "right" | "wrong" | "circle";
+export type prayer = "الفجر" | "الشروق" | "الظهر" | "العصر" | "المغرب" | "العشاء";
+export type prayerId = "fajr" | "sunrise" | "dhuhr" | "asr" | "sunset" | "isha";
 
 // --- ADDED fields to RepetitionConfig ---
 export interface RepetitionConfig {
@@ -43,7 +45,6 @@ export interface TimeModule {
     id: string;
     name: string;
     startTime?: string;
-    endTime?: string;
 }
 
 export interface LogEntry {
@@ -84,7 +85,7 @@ export type AppAction =
             value?: number;
         };
     }
-    | { type: "ADD_TIME_MODULE"; payload: { name: string } }
+    | { type: "ADD_TIME_MODULE"; payload: Omit<TimeModule, 'id'> }
     | { type: "UPDATE_TIME_MODULE"; payload: Partial<TimeModule> & { id: string }; }
     | { type: "DELETE_TIME_MODULE"; payload: { id: string } }
     | { type: "UPDATE_START_TIME"; payload: { startTimeOfDay: string } }

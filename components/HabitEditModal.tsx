@@ -24,7 +24,7 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, timeModules, fix
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [editedTargetValue, setEditedTargetValue] = useState(
         habit && habit.measurement && habit.measurement.type === 'count'
-            ? habit.measurement.targetValue.toString()
+            ? habit.measurement.targetValue?.toString()
             : ''
     );
 
@@ -44,9 +44,12 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, timeModules, fix
                 timeModuleId: editedTimeModuleId,
                 // New fields added:
                 endDate: editedEndDate,
-                targetValue: habit.measurement && habit.measurement.type === 'count'
-                    ? parseFloat(editedTargetValue)
-                    : undefined,
+                measurement: {
+                    type: habit.measurement.type,
+                    targetValue: habit.measurement && habit.measurement.type === 'count'
+                        ? parseInt(editedTargetValue?? '')
+                        : habit.measurement.targetValue,
+                }
             },
         });
         onClose();
