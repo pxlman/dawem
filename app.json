@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "HabitTrackerv1",
-    "slug": "HabitTrackerv1",
+    "name": "dawem",
+    "slug": "dawem",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#333"
       }
     },
