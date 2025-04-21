@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert, FlatList } from 'react-native';
+import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert, FlatList, Modal, Platform } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../../context/AppStateContext';
@@ -11,8 +11,13 @@ export default function SettingsScreen() {
     const { timeModules, settings } = useAppState();
     const dispatch = useAppDispatch();
     const [newTimeModuleName, setNewTimeModuleName] = useState<string>('');
-    const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null); // Initialize as null
+    const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null);
     const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
+    
+    // New state for rename modal
+    const [renameModalVisible, setRenameModalVisible] = useState(false);
+    const [moduleToRename, setModuleToRename] = useState<{id: string, name: string} | null>(null);
+    const [newModuleName, setNewModuleName] = useState('');
 
     useEffect(() => {
         if (settings.startTimeOfDay) {
@@ -61,28 +66,46 @@ export default function SettingsScreen() {
     };
 
     const handleRenameTimeModule = (id: string, currentName: string) => {
-        if (timeModules.length < 1) { return Alert.alert("Error", "There is no Time Module to rename."); }
-        Alert.prompt(
-            "Update Time Module", // Updated title
-            `Enter a new name for "${currentName}":`,
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Rename", // Updated button text
-                    style: 'default',
-                    onPress: (newName) => {
-                        const trimmedName = newName?.trim()?? currentName;
-                        if (!trimmedName) return Alert.alert("Error", "Time Module name cannot be empty.");
-                        if (timeModules.some(tm => tm.name.toLowerCase() === trimmedName.toLowerCase())) {
-                            return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
-                        }
-                        dispatch({ type: 'UPDATE_TIME_MODULE', payload: { id, name: trimmedName } }); // Updated payload
+        if (timeModules.length < 1) { 
+            return Alert.alert("Error", "There is no Time Module to rename."); 
+        }
+        
+        // For iOS, we can use Alert.prompt
+        if (Platform.OS === 'ios') {
+            Alert.prompt(
+                "Update Time Module",
+                `Enter a new name for "${currentName}":`,
+                [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                        text: "Rename",
+                        style: 'default',
+                        onPress: (newName) => {
+                            processRename(id, currentName, newName);
+                        },
                     },
-                },
-            ],
-            "plain-text",
-            currentName
-        );
+                ],
+                "plain-text",
+                currentName
+            );
+        } else {
+            // For Android, use our custom modal
+            setModuleToRename({ id, name: currentName });
+            setNewModuleName(currentName);
+            setRenameModalVisible(true);
+        }
+    };
+    
+    // Function to process the rename action
+    const processRename = (id: string, currentName: string, newName?: string) => {
+        const trimmedName = newName?.trim() ?? currentName;
+        if (!trimmedName) {
+            return Alert.alert("Error", "Time Module name cannot be empty.");
+        }
+        if (timeModules.some(tm => tm.id !== id && tm.name.toLowerCase() === trimmedName.toLowerCase())) {
+            return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
+        }
+        dispatch({ type: 'UPDATE_TIME_MODULE', payload: { id, name: trimmedName } });
     };
 
     const handleTimeChange = (event: any, selectedTime?: Date) => {
@@ -138,79 +161,123 @@ export default function SettingsScreen() {
     );
 
     return (
-        <FlatList
-            data={[{ key: 'startTime' }, { key: 'timeModules' }, { key: 'dataManagement' }]}
-            renderItem={({ item }) => {
-                if (item.key === 'startTime') {
-                    return (
-                        <View style={styles.section}>
-                            <Text style={styles.header}>Start Time of New Day</Text>
-                            <TouchableOpacity onPress={() => setIsTimePickerVisible(true)} style={styles.timePickerButton}>
-                                <Text style={styles.timePickerText}>
-                                    {newDayStartTime
-                                        ? newDayStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-                                        : '00:00'}
-                                </Text>
-                            </TouchableOpacity>
-                            {isTimePickerVisible && newDayStartTime && (
-                                <DateTimePicker
-                                    value={newDayStartTime}
-                                    mode="time"
-                                    display="default"
-                                    onChange={handleTimeChange}
-                                />
-                            )}
-                        </View>
-                    );
-                } else if (item.key === 'timeModules') {
-                    return (
-                        <View style={styles.section}>
-                            <Text style={styles.header}>Time Modules</Text>
-                            <DraggableFlatList
-                                data={timeModules}
-                                renderItem={renderTimeModuleItem}
-                                keyExtractor={(item) => item.id}
-                                onDragEnd={({ data }) => dispatch({ type: 'REORDER_TIME_MODULES', payload: data })}
-                                contentContainerStyle={styles.timeModulesList}
-                            />
-                            <View style={styles.addSection}>
-                                <Text style={styles.label}>Add New Time Module</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="New Time Module Name (e.g., Morning)"
-                                    value={newTimeModuleName}
-                                    onChangeText={setNewTimeModuleName}
-                                    placeholderTextColor={Colors.textSecondary}
-                                />
-                                <TouchableOpacity
-                                    onPress={handleAddTimeModule}
-                                    style={newTimeModuleName.trim() ? styles.addButton : styles.addButtonDisabled}
-                                    disabled={!newTimeModuleName.trim()}
-                                >
-                                    <Text style={styles.addButtonText}>Add Time Module</Text>
+        <>
+            <FlatList
+                data={[{ key: 'startTime' }, { key: 'timeModules' }, { key: 'dataManagement' }]}
+                renderItem={({ item }) => {
+                    if (item.key === 'startTime') {
+                        return (
+                            <View style={styles.section}>
+                                <Text style={styles.header}>Start Time of New Day</Text>
+                                <TouchableOpacity onPress={() => setIsTimePickerVisible(true)} style={styles.timePickerButton}>
+                                    <Text style={styles.timePickerText}>
+                                        {newDayStartTime
+                                            ? newDayStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+                                            : '00:00'}
+                                    </Text>
                                 </TouchableOpacity>
+                                {isTimePickerVisible && newDayStartTime && (
+                                    <DateTimePicker
+                                        value={newDayStartTime}
+                                        mode="time"
+                                        display="default"
+                                        onChange={handleTimeChange}
+                                    />
+                                )}
                             </View>
-                        </View>
-                    );
-                } else if (item.key === 'dataManagement') {
-                    return (
-                        <View style={[styles.section, { marginTop: 20 }]}>
-                            <Text style={styles.header}>Data Management</Text>
+                        );
+                    } else if (item.key === 'timeModules') {
+                        return (
+                            <View style={styles.section}>
+                                <Text style={styles.header}>Time Modules</Text>
+                                <DraggableFlatList
+                                    data={timeModules}
+                                    renderItem={renderTimeModuleItem}
+                                    keyExtractor={(item) => item.id}
+                                    onDragEnd={({ data }) => dispatch({ type: 'REORDER_TIME_MODULES', payload: data })}
+                                    contentContainerStyle={styles.timeModulesList}
+                                />
+                                <View style={styles.addSection}>
+                                    <Text style={styles.label}>Add New Time Module</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="New Time Module Name (e.g., Morning)"
+                                        value={newTimeModuleName}
+                                        onChangeText={setNewTimeModuleName}
+                                        placeholderTextColor={Colors.textSecondary}
+                                    />
+                                    <TouchableOpacity
+                                        onPress={handleAddTimeModule}
+                                        style={newTimeModuleName.trim() ? styles.addButton : styles.addButtonDisabled}
+                                        disabled={!newTimeModuleName.trim()}
+                                    >
+                                        <Text style={styles.addButtonText}>Add Time Module</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        );
+                    } else if (item.key === 'dataManagement') {
+                        return (
+                            <View style={[styles.section, { marginTop: 20 }]}>
+                                <Text style={styles.header}>Data Management</Text>
+                                <TouchableOpacity
+                                    onPress={handleResetLogs}
+                                    style={styles.resetButton}
+                                >
+                                    <Text style={styles.resetButtonText}>Reset All Habit Logs</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.infoText}>This will permanently delete all your habit logs but keep your habits intact.</Text>
+                            </View>
+                        );
+                    }
+                    return null;
+                }}
+                keyExtractor={(item) => item.key}
+                contentContainerStyle={styles.flatListContentContainer} // Updated style
+            />
+            
+            {/* Custom Rename Modal for Android */}
+            <Modal
+                animationType='none'
+                transparent={true}
+                visible={renameModalVisible}
+                onRequestClose={() => setRenameModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Update Time Module</Text>
+                        <Text style={styles.modalText}>
+                            Enter a new name for "{moduleToRename?.name}":
+                        </Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            value={newModuleName}
+                            onChangeText={setNewModuleName}
+                            autoFocus={true}
+                        />
+                        <View style={styles.modalButtons}>
                             <TouchableOpacity
-                                onPress={handleResetLogs}
-                                style={styles.resetButton}
+                                style={[styles.modalButton, styles.cancelButton]}
+                                onPress={() => setRenameModalVisible(false)}
                             >
-                                <Text style={styles.resetButtonText}>Reset All Habit Logs</Text>
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
-                            <Text style={styles.infoText}>This will permanently delete all your habit logs but keep your habits intact.</Text>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.confirmButton]}
+                                onPress={() => {
+                                    if (moduleToRename) {
+                                        processRename(moduleToRename.id, moduleToRename.name, newModuleName);
+                                    }
+                                    setRenameModalVisible(false);
+                                }}
+                            >
+                                <Text style={styles.buttonText}>Rename</Text>
+                            </TouchableOpacity>
                         </View>
-                    );
-                }
-                return null;
-            }}
-            keyExtractor={(item) => item.key}
-            contentContainerStyle={styles.flatListContentContainer} // Updated style
-        />
+                    </View>
+                </View>
+            </Modal>
+        </>
     );
 }
 
@@ -323,5 +390,65 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10, // Add spacing between action buttons
+    },
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        backgroundColor: Colors.surface,
+        borderRadius: 10,
+        padding: 20,
+        width: '80%',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3.84,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: Colors.text,
+    },
+    modalText: {
+        marginBottom: 15,
+        color: Colors.text,
+    },
+    modalInput: {
+        borderWidth: 1,
+        borderColor: Colors.grey,
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 20,
+        color: Colors.text,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
+    modalButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 5,
+        marginLeft: 10,
+    },
+    cancelButton: {
+        backgroundColor: Colors.grey,
+    },
+    confirmButton: {
+        backgroundColor: Colors.primary,
+    },
+    buttonText: {
+        color: Colors.surface,
+        fontWeight: 'bold',
+    },
+    cancelButtonText: {
+        color: Colors.text,
+        fontWeight: 'bold',
     },
 });
