@@ -172,8 +172,8 @@ export default function AddHabitModalScreen() {
           textStyle={styles.dropdownTextStyle}
           labelStyle={styles.dropdownLabelStyle}
           listItemLabelStyle={styles.dropdownListItemLabelStyle}
-          arrowIconStyle={styles.dropdownArrowStyle}
-          tickIconStyle={styles.dropdownTickStyle}
+          // arrowIconStyle={styles.dropdownArrowStyle}
+          // tickIconStyle={styles.dropdownTickStyle}
           theme="DARK"
           mode="SIMPLE"
           listMode="SCROLLVIEW"
@@ -201,8 +201,8 @@ export default function AddHabitModalScreen() {
           textStyle={styles.dropdownTextStyle}
           labelStyle={styles.dropdownLabelStyle}
           listItemLabelStyle={styles.dropdownListItemLabelStyle}
-          arrowIconStyle={styles.dropdownArrowStyle}
-          tickIconStyle={styles.dropdownTickStyle}
+          // arrowIconStyle={styles.dropdownArrowStyle}
+          // tickIconStyle={styles.dropdownTickStyle}
           theme="DARK"
           mode="SIMPLE"
           // *** Use SCROLLVIEW for inline attempt ***
