@@ -81,6 +81,12 @@ export default function AddHabitModalScreen() {
         if (!repetitionType) return Alert.alert('Input Error', 'Please select a repetition type.');
         if (!selectedTimeModuleId) return Alert.alert('Input Error', 'Please select a Time Module.');
         if (!/^#([0-9A-F]{3}){1,2}$/i.test(color)) return Alert.alert('Input Error', 'Invalid hex color (e.g., #BB86FC).');
+        
+        // Validate that at least one day is selected for weekly binary habits
+        if (repetitionType === 'weekly' && measurementType === 'binary' && selectedDays.length === 0) {
+            return Alert.alert('Input Error', 'Please select at least one day of the week.');
+        }
+        
         if(measurementType === 'binary') {
           setnDaysPerWeek(null);
         }else {

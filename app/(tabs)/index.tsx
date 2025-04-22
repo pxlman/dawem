@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx
-import React, { useState, useMemo, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
+import React, { useState, useMemo, useLayoutEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, Animated } from 'react-native';
 import { format, addDays, subDays } from 'date-fns'; // Ensure format is imported
 import { useRouter, useNavigation } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -12,7 +12,7 @@ import Colors, { fixedColors } from '../../constants/Colors'; // Import fixed co
 import { Habit, TimeModule } from '../../types';
 import HabitEditModal from '../../components/HabitEditModal'; // Import the new modal component
 
-// --- Date Header Component (Reverted to original without All Habits button) ---
+// --- Date Header Component (With animation for today button) ---
 interface DateHeaderProps { 
     currentDate: Date; 
     onPrevDay: () => void; 
@@ -21,22 +21,103 @@ interface DateHeaderProps {
     onTodayPress: () => void; // Add new prop for going to today
 }
 
-const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker, onTodayPress }) => (
-    <View style={styles.datePickerContainer}>
-        <TouchableOpacity onPress={onPrevDay} style={styles.dateArrow} hitSlop={10}>
-            <Ionicons name="chevron-back" size={24} color={Colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onTodayPress}>
-            <Text style={styles.dateText}>{format(currentDate, 'EEE, MMM d, yyyy')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onShowDatePicker} style={styles.todayButton}>
-            <Ionicons name='calendar-outline' style={styles.todayButtonIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onNextDay} style={styles.dateArrow} hitSlop={10}>
-            <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
-        </TouchableOpacity>
-    </View>
-);
+const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker, onTodayPress }) => {
+    // Create animated values for scale and slide effects
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const slideAnim = useRef(new Animated.Value(0)).current;
+    
+    // Function that triggers animation and calls onTodayPress
+    const handleTodayPress = () => {
+        // Start with quick scale up
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 1.15,
+                duration: 150,
+                useNativeDriver: true
+            }),
+            // Then scale back down
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true
+            })
+        ]).start();
+        
+        // Call the original onTodayPress function
+        onTodayPress();
+    };
+    
+    // Animation for going to previous day (slide right)
+    const handlePrevDay = () => {
+        // First slide out to the right
+        Animated.timing(slideAnim, {
+            toValue: 100,
+            duration: 150,
+            useNativeDriver: true
+        }).start(() => {
+            // Reset position and call onPrevDay
+            slideAnim.setValue(-100);
+            onPrevDay();
+            
+            // Then slide in from the left
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 150,
+                useNativeDriver: true
+            }).start();
+        });
+    };
+    
+    // Animation for going to next day (slide left)
+    const handleNextDay = () => {
+        // First slide out to the left
+        Animated.timing(slideAnim, {
+            toValue: -100,
+            duration: 150,
+            useNativeDriver: true
+        }).start(() => {
+            // Reset position and call onNextDay
+            slideAnim.setValue(100);
+            onNextDay();
+            
+            // Then slide in from the right
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 150,
+                useNativeDriver: true
+            }).start();
+        });
+    };
+    
+    return (
+        <View style={styles.datePickerContainer}>
+            <TouchableOpacity onPress={handlePrevDay} style={styles.dateArrow} hitSlop={10}>
+                <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleTodayPress}>
+                <Animated.Text 
+                    style={[
+                        styles.dateText, 
+                        { 
+                            transform: [
+                                { scale: scaleAnim },
+                                { translateX: slideAnim }
+                            ] 
+                        }
+                    ]}
+                >
+                    {format(currentDate, 'EEE, MMM d, yyyy')}
+                </Animated.Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onShowDatePicker} style={styles.todayButton}>
+                <Ionicons name='calendar-outline' style={styles.todayButtonIcon} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleNextDay} style={styles.dateArrow} hitSlop={10}>
+                <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+        </View>
+    );
+};
 
 // --- Type for grouped data ---
 interface GroupedHabits { [key: string]: { timeModule?: TimeModule; habits: Habit[] } }
@@ -46,8 +127,30 @@ interface TimeModuleGroupData { timeModule?: TimeModule; habits: Habit[] }
 export default function HabitListScreen() {
     const router = useRouter();
     const navigation = useNavigation();
-    const { habits, timeModules, dispatch } = useAppState();
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const { habits, timeModules, settings, dispatch } = useAppState();
+    
+    // Get default date based on current time
+    const getDefaultDate = () => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        
+        // Assuming startTimeOfDay is 4:00 AM (04:00)
+        // You can replace this with a value from your app settings if available
+        const startTimeOfDay = settings.startTimeOfDay;
+        const startHour = parseInt(startTimeOfDay?.split(':')[0]?? '0');
+        const startMinute = parseInt(startTimeOfDay?.split(':')[1]?? '0');
+        
+        // If current time is before the start time of day, return yesterday
+        if (currentHour < startHour || (currentHour === startHour && currentMinute < startMinute)) {
+            return subDays(now, 1);
+        }
+        
+        // Otherwise return today
+        return now;
+    };
+    
+    const [currentDate, setCurrentDate] = useState(getDefaultDate());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
     // Add header buttons using useLayoutEffect
@@ -134,7 +237,7 @@ export default function HabitListScreen() {
 
     // Add function to go to today's date
     const goToToday = () => {
-        setCurrentDate(new Date());
+        setCurrentDate(getDefaultDate());
     };
 
     return (
