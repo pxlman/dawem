@@ -7,7 +7,7 @@ import Colors from '../../constants/Colors';
 export default function TabLayout() {
     return (
         <Tabs
-            screenOptions={({ route }) => ({
+            screenOptions={({ route }:{route:{name:string}}) => ({
                 // --- Update Tab Colors ---
                 tabBarActiveTintColor: Colors.primary, // Use updated primary
                 tabBarInactiveTintColor: Colors.textSecondary, // Use dark theme secondary text
@@ -20,7 +20,7 @@ export default function TabLayout() {
                 headerTintColor: Colors.text, // Light text color for headers
                 // --- End Updates ---
                 headerTitleStyle: { fontWeight: 'bold' },
-                tabBarIcon: ({ focused, color, size }) => {
+                tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
                     let iconName: keyof typeof Ionicons.glyphMap;
                     if (route.name === 'index') iconName = focused ? 'checkbox' : 'checkbox-outline';
                     else if (route.name === 'stats') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
