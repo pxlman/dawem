@@ -6,6 +6,13 @@ export type HabitLogStatus = "right" | "wrong" | "circle";
 export type prayer = "الفجر" | "الشروق" | "الظهر" | "العصر" | "المغرب" | "العشاء";
 export type prayerId = "fajr" | "sunrise" | "dhuhr" | "asr" | "sunset" | "isha";
 
+export interface Goal {
+    id: string;
+    title: string;
+    subgoal?: Goal;
+    habitsIds?: string[]; // habits ids
+}
+
 // --- ADDED fields to RepetitionConfig ---
 export interface RepetitionConfig {
     daysOfWeek?: number[]; // 0=Sat, 1=Sun, ..., 6=Fri (For 'weekly')
