@@ -5,6 +5,7 @@ import Colors from '../../constants/Colors';
 import { Habit, LogEntry, HabitRepetitionType } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { isHabitDue } from '../../utils/dateUtils';
+import { addDays,subDays,isBefore } from 'date-fns';
 
 export default function StatsScreen() {
     const { habits, logs } = useAppState();
@@ -85,28 +86,11 @@ export default function StatsScreen() {
         
         if (dates.length === 0) return weeks;
         
-        // Dates are in reverse order (most recent first)
-        let currentWeekStart: Date | null = null;
-        let currentWeekEnd: Date | null = null;
-        
         // Group dates into weeks (Saturday to Friday)
         for (const date of dates) {
-            // If it's a Saturday (day 6) or first date encountered, start a new week
-            if (date.getDay() === 6 || currentWeekStart === null) {
-                if (currentWeekStart !== null && currentWeekEnd !== null) {
-                    weeks.push({ startDate: new Date(currentWeekStart), endDate: new Date(currentWeekEnd) });
-                }
-                currentWeekStart = new Date(date);
-                currentWeekEnd = new Date(date);
-            } else {
-                // Update the end date of the current week
-                currentWeekEnd = new Date(date);
+            if (date.getDay() === 6){
+                weeks.push({startDate: date, endDate: addDays(date,7)})
             }
-        }
-        
-        // Add the last week if needed
-        if (currentWeekStart !== null && currentWeekEnd !== null) {
-            weeks.push({ startDate: new Date(currentWeekStart), endDate: new Date(currentWeekEnd) });
         }
         
         return weeks;
@@ -369,7 +353,7 @@ export default function StatsScreen() {
                                         style={[
                                             styles.weekCell,
                                             // Highlight current week
-                                            isToday(week.startDate) && styles.todayCell
+                                            isBefore(new Date(), week.endDate) && styles.todayCell
                                         ]}
                                     >
                                         <Text style={styles.weekDateText}>
