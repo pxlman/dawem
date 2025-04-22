@@ -36,7 +36,7 @@ export default function AddHabitModalScreen() {
     const [color, setColor] = useState<string>(Colors.primary);
     const [repetitionType, setRepetitionType] = useState<HabitRepetitionType | null>('daily');
     const [measurementType, setMeasurementType] = useState<HabitMeasurementType>('binary');
-    const [targetValue, setTargetValue] = useState<number>(1);
+    const [targetValue, setTargetValue] = useState<number>(0);
     const [selectedTimeModuleId, setSelectedTimeModuleId] = useState<string | null>(null);
     const [selectedDays, setSelectedDays] = useState<number[]>([]);
     const [ndaysPerWeek, setnDaysPerWeek] = useState<number | null>(null);
@@ -56,7 +56,7 @@ export default function AddHabitModalScreen() {
     // Effect to populate form
     useEffect(() => {
             setTitle(''); setColor(Colors.primary); setRepetitionType('daily');
-            setMeasurementType('binary'); setTargetValue(1);
+            setMeasurementType('binary'); setTargetValue(0);
             setSelectedTimeModuleId(timeModules[0]?.id || null); // Default or null
             setStartDate(format(selectedDate, 'yyyy-MM-dd')); // Default to selected date
             setEndDate(null);
@@ -98,7 +98,7 @@ export default function AddHabitModalScreen() {
           repetition: { type: repetitionType!, config },
           measurement: {
             type: measurementType,
-            targetValue: targetValue?? undefined,
+            targetValue: targetValue?? 1,
           },
           timeModuleId: selectedTimeModuleId!,
           startDate,
@@ -131,8 +131,8 @@ export default function AddHabitModalScreen() {
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g., Drink Water, Read..."
-          placeholderTextColor={Colors.text}
+          placeholder="e.g., صلاة الوتر, قراءة جزء..."
+          placeholderTextColor={Colors.textSecondary}
         />
 
         <Text style={styles.label}>Color</Text>
@@ -253,9 +253,9 @@ export default function AddHabitModalScreen() {
             <TextInput
               style={styles.input}
               keyboardType="number-pad"
-              value={targetValue.toString()}
-              onChangeText={(text) => setTargetValue(Number(text))}
-              placeholder="e.g., 10"
+              defaultValue=''
+              onChangeText={(text) => setTargetValue(parseInt(text))}
+              placeholder="e.g., 3"
               placeholderTextColor={Colors.textSecondary}
             />
           </>
@@ -268,8 +268,8 @@ export default function AddHabitModalScreen() {
                 <TextInput
                   style={styles.input}
                   keyboardType="number-pad"
-                  value={ndaysPerWeek?.toString() || ""}
-                  onChangeText={(value) => setnDaysPerWeek(parseInt(value, 10))}
+                  defaultValue=''
+                  onChangeText={(text) => setTargetValue(parseInt(text))}
                   placeholder="e.g., 3"
                   placeholderTextColor={Colors.textSecondary}
                 />

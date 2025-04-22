@@ -18,15 +18,19 @@ interface DateHeaderProps {
     onPrevDay: () => void; 
     onNextDay: () => void; 
     onShowDatePicker: () => void;
+    onTodayPress: () => void; // Add new prop for going to today
 }
 
-const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker }) => (
+const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker, onTodayPress }) => (
     <View style={styles.datePickerContainer}>
         <TouchableOpacity onPress={onPrevDay} style={styles.dateArrow} hitSlop={10}>
             <Ionicons name="chevron-back" size={24} color={Colors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={onShowDatePicker}>
+        <TouchableOpacity onPress={onTodayPress}>
             <Text style={styles.dateText}>{format(currentDate, 'EEE, MMM d, yyyy')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onShowDatePicker} style={styles.todayButton}>
+            <Ionicons name='calendar-outline' style={styles.todayButtonIcon} />
         </TouchableOpacity>
         <TouchableOpacity onPress={onNextDay} style={styles.dateArrow} hitSlop={10}>
             <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
@@ -75,49 +79,6 @@ export default function HabitListScreen() {
     const openEditModal = (habit: Habit) => {
         setHabitToEdit(habit);
         setIsEditModalVisible(true);
-    };
-
-    const handleDeleteFromToday = (habit: Habit) => {
-        const selectedDate = format(currentDate, 'yyyy-MM-dd');
-        const dayBeforeSelectedDate = format(subDays(currentDate, 1), 'yyyy-MM-dd');
-
-        Alert.alert(
-            'Delete Habit',
-            `Do you want to delete "${habit.title}" from ${selectedDate} onward?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete From Today',
-                    onPress: () => {
-                        dispatch({
-                            type: 'UPDATE_HABIT',
-                            payload: { id: habit.id, endDate: dayBeforeSelectedDate },
-                        });
-                    },
-                },
-            ]
-        );
-    };
-
-    const handleDeleteFromHere = (habit: Habit) => {
-        const selectedDate = format(currentDate, 'yyyy-MM-dd');
-
-        Alert.alert(
-            'Delete Habit',
-            `Do you want to delete "${habit.title}" from ${selectedDate} onward?`,
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete From Here',
-                    onPress: () => {
-                        dispatch({
-                            type: 'DELETE_HABIT_FROM_TODAY',
-                            payload: { id: habit.id, fromDate: selectedDate },
-                        });
-                    },
-                },
-            ]
-        );
     };
 
     const closeEditModal = () => {
@@ -171,6 +132,11 @@ export default function HabitListScreen() {
         router.push('/settings');
     };
 
+    // Add function to go to today's date
+    const goToToday = () => {
+        setCurrentDate(new Date());
+    };
+
     return (
         <View style={styles.container}>
              {/* Render Date Header */}
@@ -179,6 +145,7 @@ export default function HabitListScreen() {
                  onPrevDay={() => setCurrentDate(subDays(currentDate, 1))}
                  onNextDay={() => setCurrentDate(addDays(currentDate, 1))}
                  onShowDatePicker={showPicker}
+                 onTodayPress={goToToday}
              />
 
              {/* Conditionally Render Date Picker */}
@@ -280,6 +247,19 @@ const styles = StyleSheet.create({
         elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3,
     },
     addButtonText: { color: Colors.surface, fontSize: 30, lineHeight: 34, },
+    todayButton: {
+        backgroundColor: Colors.surface,
+        paddingHorizontal: 2,
+        paddingVertical: 6,
+        borderRadius: 16,
+        marginLeft: 8,
+    },
+    todayButtonIcon: {
+        color: Colors.primary,
+        fontWeight: 'thin',
+        fontSize: 24
+        // fontSize: 14,
+    },
     viewAllButton: {
         // Remove this style or keep it for future reference
     },
