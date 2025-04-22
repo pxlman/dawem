@@ -102,4 +102,11 @@ export type AppAction =
             habits: Habit[];
         } 
     }
-    | { type: "RESET_LOGS" };
+    | { type: "RESET_LOGS" }
+    | { 
+        type: "IMPORT_HABITS";
+        payload: {
+            habits: Habit[];
+            timeModules: TimeModule[];
+        }
+    };

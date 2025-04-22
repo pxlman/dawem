@@ -227,6 +227,44 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 habits: updatedHabits,
             };
         }
+
+        case 'IMPORT_HABITS': {
+            const { habits: importedHabits, timeModules: importedModules } = action.payload;
+            
+            // Get existing habit and module IDs to avoid duplicates
+            const existingHabitIds = new Set(state.habits.map(h => h.id));
+            const existingModuleIds = new Set(state.timeModules.map(m => m.id));
+            
+            // Filter out any imported items that already exist
+            const newHabits = importedHabits.filter(h => !existingHabitIds.has(h.id));
+            const newModules = importedModules.filter(m => !existingModuleIds.has(m.id));
+            
+            // Create maps of imported module IDs to ensure we have valid module references
+            const importedModuleIds = new Set(importedModules.map(m => m.id));
+            
+            // Default to the first existing module if imported module doesn't exist
+            const defaultModuleId = state.timeModules[0]?.id || '';
+            
+            // Add imported items to the state, ensuring each habit has a valid module ID
+            return {
+                ...state,
+                habits: [
+                    ...state.habits,
+                    ...newHabits.map(habit => ({
+                        ...habit,
+                        // If the habit's module doesn't exist in current or imported modules, use default
+                        timeModuleId: existingModuleIds.has(habit.timeModuleId) || 
+                                      importedModuleIds.has(habit.timeModuleId) ? 
+                                      habit.timeModuleId : defaultModuleId
+                    }))
+                ],
+                timeModules: [
+                    ...state.timeModules,
+                    ...newModules
+                ]
+            };
+        }
+
         default:
             // console.warn(`Unhandled action type: ${(action as any).type}`); // Optional
             return state;
