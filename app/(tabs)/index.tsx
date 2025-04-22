@@ -22,9 +22,9 @@ interface DateHeaderProps {
 }
 
 const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker, onTodayPress }) => {
-    // Create animated values for scale and slide effects
+    // Create animated values for scale and shake effects
     const scaleAnim = useRef(new Animated.Value(1)).current;
-    const slideAnim = useRef(new Animated.Value(0)).current;
+    const shakeAnim = useRef(new Animated.Value(0)).current;
     
     // Function that triggers animation and calls onTodayPress
     const handleTodayPress = () => {
@@ -47,46 +47,70 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
         onTodayPress();
     };
     
-    // Animation for going to previous day (slide right)
+    // Animation for going to previous day (vibrate right)
     const handlePrevDay = () => {
-        // First slide out to the right
-        Animated.timing(slideAnim, {
-            toValue: 100,
-            duration: 150,
-            useNativeDriver: true
-        }).start(() => {
-            // Reset position and call onPrevDay
-            slideAnim.setValue(-100);
-            onPrevDay();
-            
-            // Then slide in from the left
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 150,
+        // Reset position first if needed
+        shakeAnim.setValue(0);
+        
+        // Create vibration sequence to the right
+        Animated.sequence([
+            // Quick move right
+            Animated.timing(shakeAnim, {
+                toValue: 10,
+                duration: 50,
                 useNativeDriver: true
-            }).start();
-        });
+            }),
+            // Back to almost center
+            Animated.timing(shakeAnim, {
+                toValue: -5,
+                duration: 50,
+                useNativeDriver: true
+            }),
+            // Back to center
+            Animated.timing(shakeAnim, {
+                toValue: 0,
+                duration: 50,
+                useNativeDriver: true
+            })
+        ]).start();
+        
+        // Call the date change function with a slight delay
+        setTimeout(() => {
+            onPrevDay();
+        }, 75);
     };
     
-    // Animation for going to next day (slide left)
+    // Animation for going to next day (vibrate left)
     const handleNextDay = () => {
-        // First slide out to the left
-        Animated.timing(slideAnim, {
-            toValue: -100,
-            duration: 150,
-            useNativeDriver: true
-        }).start(() => {
-            // Reset position and call onNextDay
-            slideAnim.setValue(100);
-            onNextDay();
-            
-            // Then slide in from the right
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 150,
+        // Reset position first if needed
+        shakeAnim.setValue(0);
+        
+        // Create vibration sequence to the left
+        Animated.sequence([
+            // Quick move left
+            Animated.timing(shakeAnim, {
+                toValue: -10,
+                duration: 50,
                 useNativeDriver: true
-            }).start();
-        });
+            }),
+            // Back to almost center
+            Animated.timing(shakeAnim, {
+                toValue: 5,
+                duration: 50,
+                useNativeDriver: true
+            }),
+            // Back to center
+            Animated.timing(shakeAnim, {
+                toValue: 0,
+                duration: 50,
+                useNativeDriver: true
+            })
+        ]).start();
+        
+        // Call the date change function with a slight delay
+        setTimeout(() => {
+            onNextDay();
+        }, 75);
     };
     
     return (
@@ -101,7 +125,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
                         { 
                             transform: [
                                 { scale: scaleAnim },
-                                { translateX: slideAnim }
+                                { translateX: shakeAnim }
                             ] 
                         }
                     ]}
