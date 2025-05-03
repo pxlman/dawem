@@ -8,7 +8,7 @@ export const NODE_BASE_HEIGHT = 40; // Base height, might increase with text wra
 import React, { useRef, useState, useCallback, useMemo, useEffect, memo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, LayoutChangeEvent, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Goal, NodeLayout } from '../../types';
+import { Goal, NodeLayout } from '../../types/index';
 import Colors from '@/constants/Colors';
 
 interface GoalNodeMindMapProps {

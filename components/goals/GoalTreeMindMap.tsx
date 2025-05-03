@@ -21,7 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import GoalNodeMindMap, { NODE_WIDTH, NODE_BASE_HEIGHT, NODE_VERTICAL_SPACING, NODE_HORIZONTAL_SPACING, } from "./GoalNodeMindMap";
 import HabitNodeMindMap  from "./HabitNodeMindMap";
-import { Goal, NodeLayout, Habit } from "../../types";
+import { Goal, NodeLayout, Habit } from "../../types/index";
 import { useAppDispatch, useAppState } from "@/context/AppStateContext";
 import Colors from "@/constants/Colors";
 import SelectHabitModal from "../SelectHabitModal";
