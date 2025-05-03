@@ -63,7 +63,7 @@ const themes: Record<ThemeType, ColorPalette> = {
   
     // Status/Specific Colors
     green: '#4CAF50',    
-    red: '#F44336',      
+    red: '#ff3b30',      
     blue: '#2196F3',     
     buff: '#DAA06D',     // Gold color for exceeding targets
   

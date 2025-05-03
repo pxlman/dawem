@@ -100,11 +100,16 @@ export default function StatsScreen() {
     // Split habits by repetition type and measurement type
     const { dailyHabits, weeklyBinaryHabits, weeklyCounterHabits } = useMemo(() => {
         return {
-            dailyHabits: habits.filter(h => h.repetition.type === 'daily'),
+            dailyHabits: habits.filter(h => 
+                h.repetition.type === 'daily' && h.enabled !== false),
             weeklyBinaryHabits: habits.filter(h => 
-                h.repetition.type === 'weekly' && h.measurement.type === 'binary'),
+                h.repetition.type === 'weekly' && 
+                h.measurement.type === 'binary' && 
+                h.enabled !== false),
             weeklyCounterHabits: habits.filter(h => 
-                h.repetition.type === 'weekly' && h.measurement.type === 'count')
+                h.repetition.type === 'weekly' && 
+                h.measurement.type === 'count' && 
+                h.enabled !== false)
         };
     }, [habits]);
 

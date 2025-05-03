@@ -5,7 +5,7 @@ import { format, addDays, subDays } from 'date-fns'; // Ensure format is importe
 import { useRouter, useNavigation } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppState } from '../../context/AppStateContext';
+import { useAppDispatch, useAppState } from '../../context/AppStateContext';
 import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correct import
 import { isHabitDue } from '../../utils/dateUtils';
 import Colors, { fixedColors } from '../../constants/Colors'; // Import fixed colors
@@ -151,7 +151,8 @@ interface TimeModuleGroupData { timeModule?: TimeModule; habits: Habit[] }
 export default function HabitListScreen() {
     const router = useRouter();
     const navigation = useNavigation();
-    const { habits, timeModules, settings, dispatch } = useAppState();
+    const dispatch = useAppDispatch();
+    const { habits, timeModules, settings} = useAppState();
     
     // Get default date based on current time
     const getDefaultDate = () => {
@@ -312,8 +313,6 @@ export default function HabitListScreen() {
              {isEditModalVisible && (
                  <HabitEditModal
                      habit={habitToEdit}
-                     timeModules={timeModules} // Pass time modules
-                     fixedColors={fixedColors} // Pass fixed colors
                      currentDate={currentDate} // Pass the selected date
                      onClose={closeEditModal}
                  />

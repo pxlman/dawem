@@ -323,8 +323,6 @@ export default function AllHabitsScreen() {
             {isEditModalVisible && habitToEdit && (
                 <HabitEditModal
                     habit={habitToEdit}
-                    timeModules={timeModules}
-                    fixedColors={fixedColors}
                     currentDate={currentDate}
                     onClose={closeEditModal}
                 />

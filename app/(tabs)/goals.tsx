@@ -1,16 +1,219 @@
-// src/screens/GoalsScreen.tsx
-import React, { useState, useCallback } from 'react';
-import { ScrollView, View, Button, StyleSheet, Text, SafeAreaView, Alert } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Button, StyleSheet, Text, SafeAreaView, Alert, Platform, Switch } from 'react-native';
 import Constants from 'expo-constants';
-import 'react-native-get-random-values'; // Required for uuid
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
-import GoalTree from '../../components/goals/GoalTree'; // Adjust path if needed
-import { Goal } from '../../types'; // Import the Goal interface
+import GoalTreeMindMap from '../../components/goals/GoalTreeMindMap';
+import { Goal } from '../../types';
+import Colors from '@/constants/Colors';
+import { useAppDispatch, useAppState } from '@/context/AppStateContext';
 
-// --- Helper Functions for Immutable Updates (Typed) ---
+// Keep INITIAL_GOALS for testing
+const INITIAL_GOALS: Goal[] = [
+    {
+        id: uuidv4(),
+        title: 'Improve Fitness Plan for the Year End',
+        color: '#4CAF50', // Green
+        enabled:true,
+        subgoals: [
+            { id: uuidv4(), title: 'Run 3 times a week consistently', color: '#8BC34A', enabled: true },
+            {
+                id: uuidv4(), title: 'Go to the Gym Regularly', color: '#CDDC39',
+                subgoals: [
+                     { id: uuidv4(), title: 'Strength Training Focus', color: '#FFEB3B', enabled: true},
+                     { id: uuidv4(), title: 'Cardio Session Planning', color: '#FFC107', enabled: true}
+                ],
+                enabled: true
+            },
+             { id: uuidv4(), title: 'Improve Flexibility', color: '#00BCD4', subgoals: [
+                 { id: uuidv4(), title: 'Daily Stretching', color: '#009688', enabled: true},
+                 { id: uuidv4(), title: 'Yoga Class Once a Week', color: '#00796B', enabled: true}
+             ],
+             enabled: true
+            },
+        ],
+    },
+    {
+        id: uuidv4(),
+        title: 'Learn React Native & Expo',
+        color: '#2196F3', // Blue
+        habitsIds: ['habit_read_docs', 'habit_build_project'], // Example linked habits
+        enabled:true
+    },
+    {
+        id: uuidv4(),
+        title: 'Read More Books',
+        color: '#9C27B0', // Purple
+        enabled:true,
+        subgoals: [
+             { id: uuidv4(), title: 'Finish 1 Book/Month', color: '#7B1FA2', enabled:true},
+             { id: uuidv4(), title: 'Explore New Genres', color: '#673AB7', enabled: true}
+        ]
+    }
+];
 
-// Recursive function to find and update a goal
+const GoalsScreen: React.FC = () => {
+    // Get app state and dispatch
+    const appState = useAppState();
+    const dispatch = useAppDispatch();
+    
+    // Local state with INITIAL_GOALS
+    // const [localGoals, setLocalGoals] = useState<Goal[]>(INITIAL_GOALS);
+    
+    // State to switch between local goals and app state goals for testing
+    // const [useLocalGoals, setUseLocalGoals] = useState<boolean>(false);
+    
+    // Choose which goals to use based on testing mode
+    // const goals = useLocalGoals ? localGoals : appState.goals;
+    const goals = appState.goals;
+    
+    // If app state goals are empty and we're not in local mode, 
+    // initialize them with INITIAL_GOALS once
+    useEffect(() => {
+        if ( goals.length === 0 && INITIAL_GOALS.length > 0) {
+            // Initialize app state with initial goals
+            INITIAL_GOALS.forEach(goal => {
+                dispatch({
+                    type: 'ADD_GOAL',
+                    payload: {
+                        title: goal.title,
+                        color: goal.color,
+                        enabled: true,
+                        // Include subgoals if any
+                        ...(goal.subgoals && { subgoals: goal.subgoals }),
+                        // Include habitsIds if any
+                        ...(goal.habitsIds && { habitsIds: goal.habitsIds })
+                    }
+                });
+            });
+        }
+    }, [goals.length, dispatch]);
+
+    // Handle adding a goal
+    const handleAddGoal = useCallback(
+      (parentGoalId: string | null = null) => {
+        const newGoal = {
+          title: "New Goal - Edit Me!",
+          color: `#${Math.floor(Math.random() * 16777215)
+            .toString(16)
+            .padStart(6, "0")}`,
+            enabled: true
+        };
+
+        // Using app state
+        if (parentGoalId === null) {
+          dispatch({
+            type: "ADD_GOAL",
+            payload: newGoal,
+          });
+        } else {
+          dispatch({
+            type: "ADD_SUBGOAL",
+            payload: { parentGoalId, newGoal },
+          });
+        }
+      },
+      [dispatch]
+    );
+
+    // Handle editing a goal
+    const handleEditGoal = useCallback((goalId: string, newTitle: string, newColor: string) => {
+      // Using app state
+      dispatch({
+        type: "UPDATE_GOAL",
+        payload: {
+          id: goalId,
+          title: newTitle,
+          color: newColor,
+        },
+      });
+    }, [dispatch]);
+
+    // Handle removing a goal
+    const handleRemoveGoal = useCallback((goalId: string) => {
+        // Using app state
+        dispatch({
+            type: 'DELETE_GOAL',
+            payload: { id: goalId }
+        });
+    }, [dispatch]);
+
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            {/* Header with testing mode toggle */}
+            <View style={styles.headerContainer}>
+                <Text style={styles.header}>My Goals Map</Text>
+                <View style={styles.headerActions}>
+                    {/* Testing mode toggle */}
+                    <Button
+                        title="Add Top Goal"
+                        onPress={() => handleAddGoal(null)}
+                    />
+                </View>
+            </View>
+            
+            {/* Display goals count for debugging */}
+            <Text style={styles.debugText}>
+                Goals: {goals?.length || 0} ({'App State'})
+            </Text>
+
+            {/* Mind map component */}
+            <GoalTreeMindMap
+                // goals={goals}
+                onAddGoal={handleAddGoal}
+                onEditGoal={handleEditGoal}
+                onRemoveGoal={handleRemoveGoal}
+            />
+        </SafeAreaView>
+    );
+};
+
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: Colors.surface,
+         paddingTop: Platform.OS === 'android' ? Constants.statusBarHeight : 0, // Safer status bar handling
+    },
+     headerContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingTop: 10, // Adjust as needed
+        paddingBottom: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+     },
+    header: {
+        fontSize: 20, // Slightly smaller header
+        fontWeight: 'bold',
+        color: Colors.text
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    testingModeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    testingModeText: {
+        fontSize: 12,
+        marginRight: 5,
+        color: Colors.text,
+    },
+    debugText: {
+        fontSize: 12,
+        textAlign: 'center',
+        color: Colors.textSecondary,
+        paddingVertical: 4,
+        backgroundColor: Colors.surface,
+    },
+});
+
+// Helper functions remain the same
 const updateGoalRecursive = (goals: Goal[], goalId: string, updateFn: (goal: Goal) => Goal): Goal[] => {
     return goals.map(goal => {
         if (goal.id === goalId) {
@@ -26,7 +229,6 @@ const updateGoalRecursive = (goals: Goal[], goalId: string, updateFn: (goal: Goa
     });
 };
 
-// Recursive function to find and remove a goal
 const removeGoalRecursive = (goals: Goal[], goalId: string): Goal[] => {
     // Filter out the goal at the current level
     const filteredGoals = goals.filter(goal => goal.id !== goalId);
@@ -52,9 +254,8 @@ const removeGoalRecursive = (goals: Goal[], goalId: string): Goal[] => {
     return filteredGoals;
 };
 
-// Recursive function to add a subgoal
 const addSubgoalRecursive = (goals: Goal[], parentGoalId: string, newGoal: Goal): Goal[] => {
-     return goals.map(goal => {
+    return goals.map(goal => {
         if (goal.id === parentGoalId) {
              // Constraint check: Cannot add subgoal if habits exist
              if (goal.habitsIds && goal.habitsIds.length > 0) {
@@ -77,164 +278,5 @@ const addSubgoalRecursive = (goals: Goal[], parentGoalId: string, newGoal: Goal)
         return goal; // No change
     });
 };
-
-// --- Add Habit Linking Logic Here (Example Typed Placeholder) ---
-// const linkHabitRecursive = (goals: Goal[], goalId: string, habitId: string): Goal[] => {
-//     return goals.map(goal => {
-//         if (goal.id === goalId) {
-//             // Constraint check: Cannot add habits if subgoals exist
-//             if (goal.subgoals && goal.subgoals.length > 0) {
-//                 console.warn(`Attempted to link habit to goal ${goalId} which has subgoals.`);
-//                 Alert.alert("Operation Failed", "Cannot link a habit to a goal that has subgoals. Remove subgoals first.");
-//                 return goal; // Return unchanged goal
-//             }
-//             // Use Set for uniqueness, then convert back to array
-//             const habitsIds = Array.from(new Set([...(goal.habitsIds ?? []), habitId]));
-//             // Remove subgoals if we are adding habits (enforce constraint)
-//             const { subgoals, ...rest } = goal;
-//             return { ...rest, habitsIds };
-//         }
-//         if (goal.subgoals) {
-//              const updatedSubgoals = linkHabitRecursive(goal.subgoals, goalId, habitId);
-//              if (updatedSubgoals !== goal.subgoals) {
-//                 return { ...goal, subgoals: updatedSubgoals };
-//             }
-//         }
-//         return goal;
-//     });
-// };
-
-
-// --- Initial Data Example ---
-const INITIAL_GOALS: Goal[] = [ // Explicitly type the initial data
-    {
-        id: uuidv4(),
-        title: 'Improve Fitness',
-        color: '#4CAF50',
-        subgoals: [
-            { id: uuidv4(), title: 'Run 3 times a week', color: '#8BC34A' },
-            {
-                id: uuidv4(), title: 'Go to the Gym', color: '#CDDC39',
-                subgoals: [
-                     { id: uuidv4(), title: 'Strength Training', color: '#FFEB3B'},
-                     { id: uuidv4(), title: 'Cardio Session', color: '#FFC107'}
-                ]
-            },
-        ],
-    },
-    {
-        id: uuidv4(),
-        title: 'Learn React Native',
-        color: '#2196F3',
-        habitsIds: ['habit_abc', 'habit_def'], // Example IDs
-    },
-    {
-        id: uuidv4(),
-        title: 'Read More Books',
-        color: '#9C27B0',
-    }
-];
-
-// --- Component ---
-const GoalsScreen: React.FC = () => { // No props needed for the screen itself
-    const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
-
-    // Use useCallback for performance optimization, especially if passing down deeply
-    const handleAddGoal = useCallback((parentGoalId: string | null = null) => {
-        const newGoal: Goal = { // Create a new Goal object
-            id: uuidv4(),
-            title: 'New Goal',
-            color: `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`,
-            // Initially no subgoals or habits
-        };
-
-        if (parentGoalId === null) {
-            // Add top-level goal
-            setGoals(prevGoals => [...prevGoals, newGoal]);
-        } else {
-            // Add as subgoal using the recursive helper
-             setGoals(prevGoals => addSubgoalRecursive(prevGoals, parentGoalId, newGoal));
-        }
-    }, []); // Dependency array is empty as we use functional updates
-
-    const handleEditGoal = useCallback((goalId: string, newTitle: string, newColor: string) => {
-        setGoals(prevGoals => updateGoalRecursive(prevGoals, goalId, (goal) => ({
-            ...goal,
-            title: newTitle,
-            color: newColor, // Persist color change if needed
-        })));
-    }, []); // Dependency array empty
-
-    const handleRemoveGoal = useCallback((goalId: string) => {
-        setGoals(prevGoals => removeGoalRecursive(prevGoals, goalId));
-    }, []); // Dependency array empty
-
-    // Example Habit Linking Handler
-    // const handleLinkHabitToGoal = useCallback((goalId: string, habitId: string) => {
-    //     setGoals(prevGoals => linkHabitRecursive(prevGoals, goalId, habitId));
-    // }, []);
-
-
-    return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.container}>
-                <Text style={styles.header}>My Goals</Text>
-                <GoalTree
-                    goals={goals}
-                    onAddGoal={handleAddGoal}
-                    onEditGoal={handleEditGoal}
-                    onRemoveGoal={handleRemoveGoal}
-                    // Pass habit linking handlers here if implemented
-                />
-                <View style={styles.addButtonContainer}>
-                    <Button
-                        title="Add Top-Level Goal"
-                        onPress={() => handleAddGoal(null)} // null signifies top-level
-                    />
-                     {/* Example Button to Link Habit (requires more implementation) */}
-                    {/* <Button
-                        title="Link Habit to 'Read More'"
-                        onPress={() => {
-                            const readMoreGoal = goals.find(g => g.title === 'Read More Books');
-                            if (readMoreGoal) {
-                                // Check constraint before attempting to link
-                                if (!readMoreGoal.subgoals || readMoreGoal.subgoals.length === 0) {
-                                     handleLinkHabitToGoal(readMoreGoal.id, `habit_${Date.now()}`);
-                                } else {
-                                     Alert.alert("Cannot Link", "Goal 'Read More Books' has subgoals.");
-                                }
-                            } else {
-                                Alert.alert("Error", "Goal not found.");
-                            }
-                        }}
-                    /> */}
-                </View>
-            </ScrollView>
-        </SafeAreaView>
-    );
-};
-
-// Styles remain the same
-const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#fff',
-         paddingTop: Constants.statusBarHeight,
-    },
-    container: {
-        flex: 1,
-        paddingHorizontal: 15,
-    },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginVertical: 15,
-        textAlign: 'center',
-    },
-     addButtonContainer: {
-        marginVertical: 20,
-        paddingHorizontal: 30,
-    }
-});
 
 export default GoalsScreen;

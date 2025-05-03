@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import Colors from '../constants/Colors';
+import Colors , {fixedColors} from '../constants/Colors';
 import { Habit, TimeModule } from '../types';
-import { useAppDispatch } from '../context/AppStateContext';
+import { useAppDispatch, useAppState } from '../context/AppStateContext';
 import { format } from 'date-fns'; // Ensure format is imported
 import DateTimePicker from '@react-native-community/datetimepicker'; // added
 
 interface HabitEditModalProps {
     habit: Habit | null;
-    timeModules: TimeModule[];
-    fixedColors: string[];
     currentDate: Date; // Add currentDate prop
     onClose: () => void;
 }
 
-const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, timeModules, fixedColors, currentDate, onClose }) => {
+const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onClose }) => {
     const dispatch = useAppDispatch();
+    const {timeModules} = useAppState();
     const [editedName, setEditedName] = useState(habit?.title || '');
     const [editedColor, setEditedColor] = useState(habit?.color || '');
     const [editedTimeModuleId, setEditedTimeModuleId] = useState(habit?.timeModuleId || '');

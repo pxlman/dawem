@@ -109,6 +109,7 @@ export default function AddHabitModalScreen() {
           timeModuleId: selectedTimeModuleId!,
           startDate,
           endDate,
+          enabled:true
         };
 
         dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });

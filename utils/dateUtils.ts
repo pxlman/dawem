@@ -29,6 +29,9 @@ export const isLogForDate = (log: LogEntry, date: Date): boolean => {
 // Simplified isHabitDue - checks repetition type
 // Returns true for daily, weekly, monthly for now (needs enhancement later)
 export function isHabitDue(habit: Habit, currentDate: Date): boolean {
+    // First check if the habit is enabled, if not, return false immediately
+    if (habit.enabled === false) return false;
+    
     const today = currentDate.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
 
     // Check if the habit is within its start and end dates
@@ -43,7 +46,6 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     // Handle weekly habits
     if (habit.repetition.type === 'weekly') {
         const dayOfWeek = (currentDate.getDay() + 1 ) % 7; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        console.log(habit.repetition.config.daysOfWeek, dayOfWeek, habit.title)
         return habit.repetition.config.daysOfWeek?.includes(dayOfWeek) ?? false;
     }
     return false;

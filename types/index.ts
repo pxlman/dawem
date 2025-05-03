@@ -11,9 +11,20 @@ export interface Goal {
     id: string;
     title: string;
     color: string;
+    enabled: boolean;
     subgoals?: Goal[];
     habitsIds?: string[]; // habits ids
 }
+export interface NodeLayout { // for the goal mind map
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  parentId: string | null; // To draw lines
+  goalData: Goal; // Keep original data for rendering node content
+}
+
 
 // --- ADDED fields to RepetitionConfig ---
 export interface RepetitionConfig {
@@ -45,10 +56,12 @@ export interface Habit {
     measurement: HabitMeasurement;
     timeModuleId: string;
     createdAt: string;
+    enabled: boolean; // New property to control if the habit is active
     // archived?: boolean;
     startDate: string; // Start date of the habit
     endDate?: string | null; // End date of the habit (null means "forever")
     sortOrder?: number; // Track the order of habits within a time module
+    goalId?: string | null;
 }
 
 export interface TimeModule {
@@ -73,10 +86,11 @@ export interface AppSettings {
 
 export interface AppState {
     habits: Habit[];
+    goals: Goal[];
     timeModules: TimeModule[];
     logs: LogEntry[];
     settings: AppSettings;
-    dispatch: (action: AppAction) => void;
+    // dispatch: (action: AppAction) => void;
 }
 
 // Actions remain the same, payload structure for ADD/UPDATE habit now includes the new fields
@@ -86,6 +100,15 @@ export type AppAction =
     | { type: "ADD_HABIT"; payload: Omit<Habit, "id" | "createdAt"> }
     | { type: "UPDATE_HABIT"; payload: Partial<Habit> & { id: string } }
     | { type: "DELETE_HABIT"; payload: { id: string } }
+    // Goal-related actions
+    | { type: "ADD_GOAL"; payload: Omit<Goal, "id"> }
+    | { type: "ADD_SUBGOAL"; payload: { parentGoalId: string, newGoal: Omit<Goal, "id"> } }
+    | { type: "UPDATE_GOAL"; payload: Partial<Goal> & { id: string } }
+    | { type: "DELETE_GOAL"; payload: { id: string } }
+    | {type: 'UPDATE_GOAL_SUBGOALS'; payload: { goalId: string, subGoals: Goal[] }}
+    | {type: 'UPDATE_GOAL_HABITS'; payload: { goalId: string, habitsIds: string[] }}
+    | { type: "LINK_HABIT_TO_GOAL"; payload: { goalId: string, habitId: string } }
+    // Existing actions continue
     | {
         type: "LOG_HABIT";
         payload: {

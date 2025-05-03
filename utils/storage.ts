@@ -6,9 +6,17 @@ const APP_STATE_KEY = 'HabitTrackerAppState';
 
 export const saveState = async (state: AppState): Promise<void> => {
   try {
-    const jsonState = JSON.stringify(state);
+    // Create a clean version of the state for storage
+    const stateToSave = {
+      habits: state.habits || [],
+      goals: state.goals || [], // Ensure goals are included
+      timeModules: state.timeModules || [],
+      logs: state.logs || [],
+      settings: state.settings || {}
+    };
+    
+    const jsonState = JSON.stringify(stateToSave);
     await AsyncStorage.setItem(APP_STATE_KEY, jsonState);
-    // console.log('State saved successfully.'); // Optional logging
   } catch (e) {
     console.error('Failed to save state:', e);
   }
@@ -19,7 +27,11 @@ export const loadState = async (): Promise<AppState | null> => {
     const jsonState = await AsyncStorage.getItem(APP_STATE_KEY);
     if (jsonState !== null) {
       const state = JSON.parse(jsonState) as AppState;
-      // Ensure default values for new fields
+      // Ensure default values for fields
+      state.habits = state.habits || [];
+      state.goals = state.goals || []; // Ensure goals are initialized
+      state.timeModules = state.timeModules || [];
+      state.logs = state.logs || [];
       state.settings = state.settings || {};
       return state;
     }
