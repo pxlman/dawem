@@ -5,11 +5,13 @@ export type HabitMeasurementType = "binary" | "count";
 export type HabitLogStatus = "right" | "wrong" | "circle";
 export type prayer = "الفجر" | "الشروق" | "الظهر" | "العصر" | "المغرب" | "العشاء";
 export type prayerId = "fajr" | "sunrise" | "dhuhr" | "asr" | "sunset" | "isha";
+export type HabitStatus = 'empty' | 'partial' | 'completed' | 'exceeded' | 'missed' | 'notdue';
 
 export interface Goal {
     id: string;
     title: string;
-    subgoal?: Goal;
+    color: string;
+    subgoals?: Goal[];
     habitsIds?: string[]; // habits ids
 }
 
@@ -44,7 +46,7 @@ export interface Habit {
     timeModuleId: string;
     createdAt: string;
     // archived?: boolean;
-    startDate?: string; // Start date of the habit
+    startDate: string; // Start date of the habit
     endDate?: string | null; // End date of the habit (null means "forever")
     sortOrder?: number; // Track the order of habits within a time module
 }

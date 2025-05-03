@@ -1,7 +1,7 @@
 // constants/Colors.ts
 
 // Define theme types
-export type ThemeType = 'light' | 'dark';
+export type ThemeType = 'light' | 'dark' | 'browny';
 
 // Define color palette interface
 export interface ColorPalette {
@@ -12,6 +12,7 @@ export interface ColorPalette {
   text: string;
   textSecondary: string;
   error: string;
+  special: string;
   green: string;
   red: string;
   blue: string;
@@ -19,11 +20,11 @@ export interface ColorPalette {
   grey: string;
   lightGrey: string;
   darkGrey: string;
-  heatmapLevel0: string;
-  heatmapLevel1: string;
-  heatmapLevel2: string;
-  heatmapLevel3: string;
-  heatmapLevel4: string;
+  // heatmapLevel0: string;
+  // heatmapLevel1: string;
+  // heatmapLevel2: string;
+  // heatmapLevel3: string;
+  // heatmapLevel4: string;
 }
 
 // Define themes
@@ -36,6 +37,7 @@ const themes: Record<ThemeType, ColorPalette> = {
     text: '#E1E1E1',    // Light grey/off-white for primary text
     textSecondary: '#A0A0A0', // Dimmer grey for secondary text
     error: '#CF6679',    // Material Design dark theme error color
+    special: '#DAA06D',     // Gold color for exceeding targets
   
     // Status/Specific Colors (keep vibrant or adjust contrast)
     green: '#4CAF50',    // Keep green
@@ -48,12 +50,6 @@ const themes: Record<ThemeType, ColorPalette> = {
     lightGrey: '#2c2c2c',   // Used maybe for subtle backgrounds if needed, close to surface
     darkGrey: '#888888',    // For potentially disabled text or icons
   
-    // Heatmap Colors (Adjusted for Dark Background)
-    heatmapLevel0: '#2d2d2d', // Darker grey than surface for 'none'
-    heatmapLevel1: '#0e4429', // Darker Green shades
-    heatmapLevel2: '#006d32',
-    heatmapLevel3: '#26a641',
-    heatmapLevel4: '#39d353', // Brightest Green
   },
   light: {
     primary: '#6200EE', // Deep purple for primary actions
@@ -63,6 +59,7 @@ const themes: Record<ThemeType, ColorPalette> = {
     text: '#212121',    // Near black for primary text
     textSecondary: '#757575', // Medium grey for secondary text
     error: '#B00020',    // Material Design light theme error color
+    special: '#DAA06D',     // Gold color for exceeding targets
   
     // Status/Specific Colors
     green: '#4CAF50',    
@@ -75,17 +72,31 @@ const themes: Record<ThemeType, ColorPalette> = {
     lightGrey: '#E0E0E0',   // Light grey for subtle backgrounds
     darkGrey: '#9E9E9E',    // Darker grey for disabled text or icons
   
-    // Heatmap Colors
-    heatmapLevel0: '#EBEDF0', // Light grey for 'none'
-    heatmapLevel1: '#9BE9A8', // Lightest green
-    heatmapLevel2: '#40C463', 
-    heatmapLevel3: '#30A14E',
-    heatmapLevel4: '#216E39', // Darkest green
+  },
+  browny: {
+      primary: "#e3caa2",         // ⬅️ Lighter buff – improved visibility on dark bg
+  accent: "#e9d8b4",          // Soft pale beige – hover/active
+  background: "#1e1a17",      // Deep dark brown – main app background
+  surface: "#2a2420",         // Slightly lifted card background
+  text: "#fefaf3",            // Creamy white – high contrast
+  textSecondary: "#c8bba4",   // Light muted beige – for secondary info
+
+  error: "#e57373",           // Soft warning red – readable and gentle
+  special: "#d4af37",         // Elegant gold – stars, rewards
+  green: "#27ae60",           // Habit success
+  red: "#e74c3c",             // Habit fail
+  blue: "#2980b9",            // Info or links
+
+  buff: "#e3caa2",            // Synced with primary
+  grey: "#88807a",            // Mid-gray – neutral icons, text
+  lightGrey: "#b0a89f",       // Soft beige-gray – borders
+  darkGrey: "#3e3a36",        // Shadowy beige-gray – inputs, muted surfaces
+
   }
 };
 
 // Default theme
-let currentTheme: ThemeType = 'dark';
+let currentTheme: ThemeType = 'browny';
 
 // Helper to get current theme colors
 const getColors = (): ColorPalette => {
@@ -104,9 +115,18 @@ export const getTheme = (): ThemeType => {
 
 // Fixed color palette for habits
 export const fixedColors = [
-  '#BB86FC', '#03DAC5', '#4CAF50', '#F44336',
-  '#2196F3', '#FF9800', '#9C27B0', '#00BCD4',
-  '#8BC34A', '#FF5722', '#3F51B5', '#FFC107',
+  "#27ae60", // Leaf Green - Health & Fitness
+  "#3498db", // Sky Blue - Calm & Focus
+  "#f1c40f", // Sunshine Yellow - Energy & Routine
+  "#2980b9", // Royal Blue - Learning & Study
+  "#9b59b6", // Soft Purple - Deep Work & Creativity
+  "#1abc9c", // Teal - Creative & Wellness
+  "#f39c12", // Peach - Gratitude & Reflection
+  "#e91e63", // Blush Pink - Self-Care
+  "#e67e22", // Warm Orange - Home & Productivity
+  "#e74c3c", // Red Coral - Social & Connection
+  "#95a5a6", // Cool Gray - Neutral/General
+  "#34495e", // Indigo - Review & Nighttime
 ].sort((a, b) => {
   // Sort colors by hue
   const hexToHsl = (hex: string): { h: number } => {

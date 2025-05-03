@@ -1,5 +1,5 @@
 // utils/dateUtils.ts
-import { format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns'; // Ensure format is imported
+import { isBefore, isAfter, format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns'; // Ensure format is imported
 import { Habit, LogEntry, HabitRepetitionType, RepetitionConfig } from '../types';
 
 export const getTodayDateString = (): string => {
@@ -32,8 +32,8 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     const today = currentDate.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
 
     // Check if the habit is within its start and end dates
-    if (habit.startDate && today < habit.startDate) return false;
-    if (habit.endDate && today > habit.endDate) return false;
+    if (habit.startDate && isBefore(today, habit.startDate)) return false;
+    if (habit.endDate && isAfter(today, habit.endDate) ) return false;
 
     // Handle daily habits
     if (habit.repetition.type === 'daily') {
@@ -43,8 +43,7 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     // Handle weekly habits
     if (habit.repetition.type === 'weekly') {
         const dayOfWeek = (currentDate.getDay() + 1 ) % 7; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-        if (habit.repetition.config.ndaysPerWeek !== undefined ) return true;
-        else
+        console.log(habit.repetition.config.daysOfWeek, dayOfWeek, habit.title)
         return habit.repetition.config.daysOfWeek?.includes(dayOfWeek) ?? false;
     }
     return false;

@@ -88,7 +88,6 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
         };
         dispatch({ type: 'LOG_HABIT', payload });
     };
-
     // --- Binary Button Handlers ---
     const handleSinglePress = () => {
         // updateLog function handles the future date check internally

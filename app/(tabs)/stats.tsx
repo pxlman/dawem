@@ -2,10 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
 import Colors from '../../constants/Colors';
-import { Habit, LogEntry, HabitRepetitionType } from '../../types';
+import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { isHabitDue } from '../../utils/dateUtils';
 import { addDays,subDays,isBefore } from 'date-fns';
+import { getSaturdayDateString } from '../../utils/dateUtils';
 
 export default function StatsScreen() {
     const { habits, logs } = useAppState();
@@ -108,40 +109,42 @@ export default function StatsScreen() {
     }, [habits]);
 
     // Get habit status for a specific date - updated to include due status and exceeded status
-    const getHabitStatus = (habit: Habit, date: Date) => {
+    const getHabitStatus = (habit: Habit, date: Date) : {status: HabitStatus, value: number} => {
         // First check if the habit is due on this date
+        const status : HabitStatus = 'empty';
         const isDue = isHabitDue(habit, date);
-        
+        if(!isDue) return {status:'notdue', value:0}
         const dateStr = date.toISOString().split('T')[0];
         const log = logs.find(l => l.habitId === habit.id && l.date === dateStr);
-        
-        if (!log) {
-            return { status: 'empty', value: 0, isDue };
-        }
-        
+        if(!isDue) return {status: 'empty', value:0}
         if (habit.measurement.type === 'binary') {
+            if (!log) {
+                return { status: 'empty', value: 0};
+            }
             // For binary habits: right = completed, wrong = missed
             if (log.status === 'right') {
-                return { status: 'completed', value: 0, isDue };
+                return { status: 'completed', value: 0};
             } else if (log.status === 'wrong') {
-                return { status: 'missed', value: 0, isDue };
+                return { status: 'missed', value: 0};
             } else if (log.status === 'circle') {
-                return { status: 'partial', value: 0, isDue };
+                return { status: 'partial', value: 0};
             }
-            return { status: 'empty', value: 0, isDue };
+            return { status: 'empty', value: 0};
         } else {
             // For counting habits
             const target = habit.measurement.targetValue || 0;
-            const value = log.value || 0;
+            const value = log?.value || 0;
             
             if (value > target && target > 0) {
-                return { status: 'exceeded', value, isDue }; // New status for exceeding target
+                return { status: 'exceeded', value }; 
             } else if (value === target && target > 0) {
-                return { status: 'completed', value, isDue };
+                return { status: 'completed', value };
             } else if (value > 0) {
-                return { status: 'partial', value, isDue };
+                return { status: 'partial', value };
             } else {
-                return { status: 'missed', value, isDue };
+                // When value is 0, check if it's due
+                // If not due, return 'empty' status so it shows the lock icon
+                return { status: !isDue ? 'empty' : 'missed', value };
             }
         }
     };
@@ -239,35 +242,36 @@ export default function StatsScreen() {
                                             cellStyle = styles.partialCell;
                                         } else if (status.status === 'missed') {
                                             cellStyle = styles.missedCell;
+                                        } else if (status.status === 'notdue') {
+                                            cellStyle = styles.emptyCell;
                                         }
                                         
                                         // Add not-due styling
-                                        const notDueStyle = !status.isDue ? styles.notDueCell : {};
-                                        
+                                        const notDueStyle = status.status === 'notdue' ? styles.notDueCell : {};
                                         return (
                                             <View 
                                                 key={`${habit.id}-${index}`} 
                                                 style={[
                                                     styles.dataCell, 
-                                                    cellStyle,
                                                     notDueStyle, // Apply not-due styling
+                                                    cellStyle,
                                                     date.getDay() === 5 && styles.startOfWeekCell, // Week start at saturday
                                                     isToday(date) && styles.todayCellIndicator
                                                 ]}
                                             >
                                                 {/* Show lock icon for non-due habits */}
-                                                {!status.isDue && status.status === 'empty' && (
+                                                { status.status === 'notdue' && (
                                                     <Ionicons 
                                                         name="lock-closed" 
                                                         size={8} 
-                                                        color={Colors.darkGrey} 
+                                                        color={Colors.buff} 
                                                     />
                                                 )}
                                                 
                                                 {habit.measurement.type === 'count' && status.value > 0 && (
                                                     <Text style={[
                                                         styles.countText,
-                                                        !status.isDue && styles.notDueText
+                                                        status.status === 'notdue' && styles.notDueText
                                                     ]}>
                                                         {status.value}
                                                     </Text>
@@ -300,7 +304,7 @@ export default function StatsScreen() {
                         <Text style={styles.legendText}>Partial</Text>
                     </View>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendColorBox, { backgroundColor: Colors.heatmapLevel0 }]} />
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.darkGrey }]} />
                         <Text style={styles.legendText}>No Data</Text>
                     </View>
                     <View style={styles.legendItem}>
@@ -704,7 +708,7 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.red,
     },
     emptyCell: {
-        backgroundColor: Colors.heatmapLevel0,
+        backgroundColor: Colors.darkGrey,
     },
     countText: {
         fontSize: 8, // Very small but still legible text
@@ -755,7 +759,7 @@ const styles = StyleSheet.create({
     notDueCell: {
         opacity: 0.35,  // Make the cell appear dimmed
         borderWidth: 0.5,
-        borderColor: Colors.grey,
+        borderColor: Colors.darkGrey,
     },
     
     notDueText: {

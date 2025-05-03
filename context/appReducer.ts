@@ -2,6 +2,7 @@
 import { AppState, AppAction, Habit, TimeModule, LogEntry } from '../types'; // Ensure correct path
 import { generateId } from '../utils/helpers'; // Ensure correct path
 import { getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
+import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 // Initial State with default global Time Modules
 export const initialState: AppState = {
@@ -44,7 +45,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                       type: payload.measurement.type,
                     //   unit: payload.measurement.unit,
                       targetValue: payload.measurement.targetValue // Include targetValue
-                 }
+                 },
+                 startDate: getSaturdayDateString(payload.startDate)
             };
             return { ...state, habits: [...state.habits, newHabit] };
         }

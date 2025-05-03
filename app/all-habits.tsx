@@ -85,6 +85,7 @@ const TimeModuleGroup = React.memo(({
     const [groupHabits, setGroupHabits] = useState(habits);
     const [isUpdating, setIsUpdating] = useState(false);
 
+    // check agaain???
     React.useEffect(() => {
         if (!isUpdating) {
             setGroupHabits(habits);
