@@ -25,7 +25,7 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({ goal, visible, onCl
   
   // Filter habits for one-to-many relationship
   // Show only habits that belong to this goal or don't have a goal assigned
-  const availableHabits = habits.filter(habit => {
+  const availableHabits = habits.filter((habit:Habit) => {
     // If this habit is already linked to this goal, include it
     if (goal?.habitsIds?.includes(habit.id)) return true;
     // Otherwise, only include habits not linked to any goal
@@ -45,9 +45,9 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({ goal, visible, onCl
   const handleSave = () => {
     // Update goal with selected habits
     dispatch({
-      type: 'UPDATE_GOAL_HABITS',
+      type: 'UPDATE_GOAL',
       payload: {
-        goalId: goal.id,
+        ...goal,
         habitsIds: selectedHabitIds
       }
     });
