@@ -386,7 +386,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
             const focusedGoalData = nodeLayouts.get(focusedNodeId)?.goalData;
             if (focusedGoalData) {
                 // Toggle to opposite of current state
-                const newEnabledState = !(focusedGoalData.enabled ?? true);
+                const newEnabledState = !(focusedGoalData.enabled);
                 
                 // Dispatch action to update the goal and its children
                 dispatch({

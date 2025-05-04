@@ -523,7 +523,10 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     advancedOptionsContainer: {
-        backgroundColor: Colors.lightGrey, // Use a lighter gray background
+        backgroundColor: Colors.background, // Use a lighter gray background
+        borderColor: Colors.text,
+        borderStyle: 'dashed',
+        borderWidth: 1,
         padding: 15,
         borderRadius: 8,
         marginBottom: 15,
