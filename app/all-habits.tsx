@@ -5,8 +5,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext';
 import Colors, { fixedColors } from '../constants/Colors';
-import { Habit, TimeModule } from '../types';
-import HabitEditModal from '../components/HabitEditModal';
+import { Habit, TimeModule } from '@/types/index';
+import HabitEditModal from '@/components/HabitEditModal';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 
 // --- Type for grouped data ---
@@ -198,13 +198,13 @@ export default function AllHabitsScreen() {
         const groups: Record<string, Habit[]> = {};
         
         // Initialize groups
-        timeModules.forEach(tm => {
+        timeModules.forEach((tm:TimeModule) => {
             groups[tm.id] = [];
         });
         groups['uncategorized'] = [];
         
         // Fill groups with habits
-        habits.forEach(habit => {
+        habits.forEach((habit:Habit) => {
             const targetGroupId = habit.timeModuleId && groups[habit.timeModuleId] ? 
                 habit.timeModuleId : 'uncategorized';
             
@@ -226,14 +226,14 @@ export default function AllHabitsScreen() {
         
         // Create final data structure for section list
         const result: TimeModuleGroupData[] = [];
-        const orderedIds = [...timeModules.map(tm => tm.id), 'uncategorized'];
+        const orderedIds = [...timeModules.map((tm:TimeModule) => tm.id), 'uncategorized'];
         
         orderedIds.forEach(id => {
             if (groups[id]?.length > 0) {
                 result.push({
                     id,
                     timeModule: id !== 'uncategorized' ? 
-                        timeModules.find(tm => tm.id === id) : undefined,
+                        timeModules.find((tm:TimeModule) => tm.id === id) : undefined,
                     habits: groups[id]
                 });
             }

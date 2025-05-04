@@ -2,14 +2,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-// --- Removed RNPickerSelect ---
-// import RNPickerSelect from 'react-native-picker-select';
-// --- Added DropDownPicker ---
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext'; // Adjust path if needed
 import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if needed
-import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig } from '../types'; // Adjust path if needed
+import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig } from '@/types/index'; // Adjust path if needed
 import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { format } from 'date-fns'; // Ensure format is imported
 
@@ -51,7 +48,7 @@ export default function AddHabitModalScreen() {
     const [timeModuleOpen, setTimeModuleOpen] = useState(false);
 
     // Picker Items
-    const timeModuleItems = useMemo(() => timeModules.map(tm => ({ label: tm.name, value: tm.id })), [timeModules]);
+    const timeModuleItems = useMemo(() => timeModules.map((tm:TimeModule) => ({ label: tm.name, value: tm.id })), [timeModules]);
 
     // Effect to populate form
     useEffect(() => {
