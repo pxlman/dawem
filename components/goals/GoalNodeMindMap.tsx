@@ -20,7 +20,6 @@ interface GoalNodeMindMapProps {
     // Callbacks for when SAVE or CANCEL happens *inside* the TextInput interaction
     onEditGoal: (goalId: string, newTitle: string, newColor: string) => void;
     onEditCancel: () => void;
-    // No onAddGoal or onRemoveGoal needed here anymore
 }
 
 const GoalNodeMindMap: React.FC<GoalNodeMindMapProps> = memo(({
@@ -79,7 +78,7 @@ const GoalNodeMindMap: React.FC<GoalNodeMindMapProps> = memo(({
                 top: y, 
                 width: NODE_WIDTH, 
                 backgroundColor: enabled ? color : Colors.darkGrey, // Darker gray for paused goals
-                borderColor: isFocused ? '#fff' : 'transparent',
+                borderColor: isFocused ? Colors.text : 'transparent',
                 opacity: enabled ? 1 : 0.85, // Slightly less transparent
             },
         ];

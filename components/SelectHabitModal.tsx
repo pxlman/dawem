@@ -8,7 +8,7 @@ import {
   Dimensions
 } from 'react-native';
 import { useAppDispatch, useAppState } from '@/context/AppStateContext';
-import { Goal, Habit } from '@/types';
+import { Goal, Habit } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
 
@@ -21,13 +21,13 @@ interface SelectHabitModalProps {
 const SelectHabitModal: React.FC<SelectHabitModalProps> = ({ goal, visible, onClose }) => {
   const { habits } = useAppState();
   const dispatch = useAppDispatch();
-  const [selectedHabitIds, setSelectedHabitIds] = useState<string[]>(goal.habitsIds || []);
+  const [selectedHabitIds, setSelectedHabitIds] = useState<string[]>(goal?.habitsIds?? []);
   
   // Filter habits for one-to-many relationship
   // Show only habits that belong to this goal or don't have a goal assigned
   const availableHabits = habits.filter(habit => {
     // If this habit is already linked to this goal, include it
-    if (goal.habitsIds?.includes(habit.id)) return true;
+    if (goal?.habitsIds?.includes(habit.id)) return true;
     // Otherwise, only include habits not linked to any goal
     return !habit.goalId;
   });

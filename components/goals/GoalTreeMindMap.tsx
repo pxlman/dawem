@@ -1,4 +1,3 @@
-// src/components/GoalTreeMindMap.tsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
     View,
@@ -14,27 +13,21 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withTiming, // Keep withTiming if you might use it elsewhere
+    withTiming,
     runOnJS,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 
 import GoalNodeMindMap, { NODE_WIDTH, NODE_BASE_HEIGHT, NODE_VERTICAL_SPACING, NODE_HORIZONTAL_SPACING, } from "./GoalNodeMindMap";
-import HabitNodeMindMap  from "./HabitNodeMindMap";
-import { Goal, NodeLayout, Habit } from "../../types/index";
+// Remove unused HabitNodeMindMap import
+import { Goal, NodeLayout } from "@/types/index";
 import { useAppDispatch, useAppState } from "@/context/AppStateContext";
 import Colors from "@/constants/Colors";
 import SelectHabitModal from "../SelectHabitModal";
-import HabitEditModal from "../HabitEditModal";
 
-// Define a new type to distinguish between goal and habit nodes
-type NodeType = 'goal' | 'habit';
-
-// Extend NodeLayout to include node type and conditionally require either goalData or habitData
-interface ExtendedNodeLayout extends Omit<NodeLayout, 'goalData'> {
-    nodeType: NodeType;
-    goalData?: Goal;
-    habitData?: Habit;
+// Simple node layout interface
+interface ExtendedNodeLayout extends NodeLayout {
+    goalData: Goal;
 }
 
 // Existing interface
@@ -44,18 +37,15 @@ interface GoalTreeMindMapProps {
     onRemoveGoal: (goalId: string) => void;
 }
 
-const HABIT_NODE_HEIGHT = NODE_BASE_HEIGHT * 0.8; // Slightly smaller than goal nodes
-const HABIT_NODE_WIDTH = NODE_WIDTH * 0.9;
-
 const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     onAddGoal,
     onEditGoal,
     onRemoveGoal,
 }) => {
-    const { goals, habits, timeModules } = useAppState();
+    const { goals } = useAppState();
     const dispatch = useAppDispatch();
 
-    // Update state type to use ExtendedNodeLayout
+    // Update state to use simplified ExtendedNodeLayout
     const [nodeLayouts, setNodeLayouts] = useState<Map<string, ExtendedNodeLayout>>(
         new Map()
     );
@@ -63,7 +53,6 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [showHabitModal, setShowHabitModal] = useState(false);
-    const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
     // --- Reanimated Shared Values ---
     const scale = useSharedValue(1);
@@ -74,7 +63,9 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     const savedTranslateY = useSharedValue(0);
 
     // --- Layout Calculation ---
-    // Modified calculateLayout function to include habits
+    // Remove getGoalType function as it's no longer needed
+
+    // Simplified calculateLayout function without type checking
     const calculateLayout = useCallback(
         (
             goalData: Goal[],
@@ -93,13 +84,14 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
             const childrenResults = goalData.map((goal) => {
                 const nodeWidth = NODE_WIDTH;
                 const nodeHeight = NODE_BASE_HEIGHT;
+                const hasSubgoals = goal.subgoals && goal.subgoals.length > 0;
                 
-                // Check if this goal has subgoals
-                if (goal.subgoals && goal.subgoals.length > 0) {
-                    // Process subgoals as usual
+                // Process goal based on whether it has subgoals or not
+                if (hasSubgoals) {
+                    // Process subgoals
                     const childrenY = startY + nodeHeight + NODE_VERTICAL_SPACING;
                     const subResult = calculateLayout(
-                        goal.subgoals,
+                        goal.subgoals!,
                         goal.id,
                         childrenY,
                         level + 1
@@ -111,80 +103,11 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                         nodeWidth, 
                         nodeHeight, 
                         requiredWidth, 
-                        subResult,
-                        hasHabits: false 
+                        subResult
                     };
                 } 
-                // Check if the goal has habits
-                else if (goal.habitsIds && goal.habitsIds.length > 0) {
-                    // Find the associated habits
-                    const goalHabits = habits.filter(h => goal.habitsIds?.includes(h.id));
-                    
-                    if (goalHabits.length === 0) {
-                        // No actual habits found, treat as a regular node
-                        return { 
-                            goal, 
-                            nodeWidth, 
-                            nodeHeight, 
-                            requiredWidth: nodeWidth, 
-                            subResult: { 
-                                layouts: new Map<string, ExtendedNodeLayout>(), 
-                                totalWidth: 0, 
-                                maxY: startY + nodeHeight 
-                            },
-                            hasHabits: false
-                        };
-                    }
-                    
-                    // Create layouts for habits
-                    const habitLayouts = new Map<string, ExtendedNodeLayout>();
-                    const habitY = startY + nodeHeight + NODE_VERTICAL_SPACING;
-                    
-                    // Calculate total width needed for all habits
-                    const habitsTotalWidth = goalHabits.length * HABIT_NODE_WIDTH + 
-                                            (goalHabits.length - 1) * NODE_HORIZONTAL_SPACING;
-                    
-                    // Position each habit
-                    let currentHabitX = -(habitsTotalWidth / 2) + (HABIT_NODE_WIDTH / 2);
-                    
-                    // When creating habit layout objects, pass the parent goal's enabled state
-                    goalHabits.forEach(habit => {
-                        const habitNodeId = `habit-${habit.id}`;
-                        habitLayouts.set(habitNodeId, {
-                            id: habitNodeId,
-                            x: currentHabitX,
-                            y: habitY,
-                            width: HABIT_NODE_WIDTH,
-                            height: HABIT_NODE_HEIGHT,
-                            parentId: goal.id,
-                            nodeType: 'habit',
-                            habitData: {
-                                ...habit,
-                                parentGoalEnabled: goal.enabled // Pass parent goal's enabled state
-                            }
-                        });
-                        
-                        currentHabitX += HABIT_NODE_WIDTH + NODE_HORIZONTAL_SPACING;
-                    });
-                    
-                    const requiredWidth = Math.max(nodeWidth, habitsTotalWidth);
-                    cumulativeMaxY = Math.max(cumulativeMaxY, habitY + HABIT_NODE_HEIGHT);
-                    
-                    return {
-                        goal,
-                        nodeWidth,
-                        nodeHeight,
-                        requiredWidth,
-                        subResult: {
-                            layouts: habitLayouts,
-                            totalWidth: habitsTotalWidth,
-                            maxY: habitY + HABIT_NODE_HEIGHT
-                        },
-                        hasHabits: true
-                    };
-                }
                 else {
-                    // No subgoals or habits
+                    // Empty goal (no subgoals)
                     return { 
                         goal, 
                         nodeWidth, 
@@ -194,13 +117,12 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                             layouts: new Map<string, ExtendedNodeLayout>(), 
                             totalWidth: 0, 
                             maxY: startY + nodeHeight 
-                        },
-                        hasHabits: false
+                        }
                     };
                 }
             });
 
-            // ... existing group width calculation ...
+            // Calculate group width
             groupRequiredWidth = childrenResults.reduce((acc, result, index) => {
                 return (
                     acc + result.requiredWidth + (index > 0 ? NODE_HORIZONTAL_SPACING : 0)
@@ -209,7 +131,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
 
             let currentX = 0;
             childrenResults.forEach(
-                ({ goal, nodeWidth, nodeHeight, requiredWidth, subResult, hasHabits }) => {
+                ({ goal, nodeWidth, nodeHeight, requiredWidth, subResult }) => {
                     const blockStartX = currentX;
                     const nodeX = blockStartX + requiredWidth / 2 - nodeWidth / 2;
 
@@ -222,26 +144,19 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                         height: nodeHeight,
                         parentId: parentId,
                         goalData: goal,
-                        nodeType: 'goal'
                     };
                     currentLevelLayouts.set(goal.id, layout);
 
-                    // Add child layouts (either subgoals or habits)
+                    // Add child layouts
                     const childGroupLayouts = subResult.layouts;
                     const childGroupWidth = subResult.totalWidth;
                     
                     // Center the child nodes beneath the parent
-                    const childGroupStartX = hasHabits 
-                        ? layout.x + nodeWidth / 2 
-                        : layout.x + nodeWidth / 2 - childGroupWidth / 2;
+                    const childGroupStartX = layout.x + nodeWidth / 2 - childGroupWidth / 2;
                     
                     childGroupLayouts.forEach((childLayout) => {
-                        // For habit nodes, position them relative to the parent
-                        if (childLayout.nodeType === 'habit') {
-                            childLayout.x += childGroupStartX;
-                        } else {
-                            childLayout.x += childGroupStartX;
-                        }
+                        // Adjust position relative to parent
+                        childLayout.x += childGroupStartX;
                         currentLevelLayouts.set(childLayout.id, childLayout);
                     });
 
@@ -255,10 +170,10 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                 maxY: cumulativeMaxY,
             };
         },
-        [habits] // Add habits as dependency
+        []
     );
 
-    // --- Effect to Recalculate Layout (MODIFIED: Preserves Zoom/Pan) ---
+    // --- Effect to Recalculate Layout ---
     useEffect(() => {
         // Handle empty goals case
         if (!goals || goals.length === 0) {
@@ -304,24 +219,12 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
             height: requiredHeight,
         }); // Update canvas size
 
-        // --- State Reset ---
-        // DO NOT reset scale, translateX, translateY here to preserve view position
-        /*
-        // scale.value = withTiming(1); // REMOVED
-        // translateX.value = withTiming(0); // REMOVED
-        // translateY.value = withTiming(0); // REMOVED
-        // savedScale.value = 1; // REMOVED
-        // savedTranslateX.value = 0; // REMOVED
-        // savedTranslateY.value = 0; // REMOVED
-        */
-
         // Reset interaction state only
         setFocusedNodeId(null);
         setEditingNodeId(null);
-    }, [goals, calculateLayout]); // Update dependencies
+    }, [goals, calculateLayout]);
 
     // --- handleNodeLayoutMeasured ---
-    // Remains unchanged
     const handleNodeLayoutMeasured = useCallback(
         (id: string, width: number, height: number) => {
             setNodeLayouts((prevLayouts) => {
@@ -338,7 +241,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     );
 
     // --- renderLines ---
-    // Modified renderLines to handle habit nodes
+    // Simplified renderLines with only goal nodes
     const renderLines = useMemo(() => {
         const lines: React.ReactNode[] = [];
         nodeLayouts.forEach((childLayout) => {
@@ -350,11 +253,8 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                     const x2 = childLayout.x + childLayout.width / 2;
                     const y2 = childLayout.y;
 
-                    // Use different styling for habit lines
-                    const isHabitLine = childLayout.nodeType === 'habit';
-                    const lineColor = isHabitLine ? Colors.primary : "#888";
-                    const lineStroke = isHabitLine ? "1" : "1.5";
-                    const lineDash = isHabitLine ? "4,2" : undefined;
+                    const lineColor = "#888";
+                    const lineStroke = "1.5";
 
                     const verticalDifference = Math.abs(y2 - y1);
                     const curveFactor = 0.4;
@@ -370,7 +270,6 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                             d={pathData}
                             stroke={lineColor}
                             strokeWidth={lineStroke}
-                            strokeDasharray={lineDash}
                             fill="none"
                         />
                     );
@@ -381,7 +280,6 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     }, [nodeLayouts]);
 
     // --- Callbacks for Focus & Edit State & Actions ---
-    // These remain unchanged from the previous version with the floating panel
     const handleNodeFocus = useCallback((id: string) => {
         setFocusedNodeId((currentId) => {
             if (currentId !== id) {
@@ -417,46 +315,27 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
         [onEditGoal, handleEditComplete]
     );
 
-    const handleAddSubgoalToFocused = useCallback(() => {
+    // Also ensure handleToggleGoalEnabled is defined
+    const handleToggleGoalEnabled = useCallback(() => {
         if (focusedNodeId) {
             const focusedGoalData = nodeLayouts.get(focusedNodeId)?.goalData;
-            if (!focusedGoalData) return;
-
-            // Check if the goal has subgoals
-            if (focusedGoalData.subgoals && focusedGoalData.subgoals.length > 0) {
-                // Goal already has subgoals - directly add another subgoal
-                onAddGoal(focusedNodeId);
-            }
-            // Check if the goal has habits
-            else if (focusedGoalData.habitsIds && focusedGoalData.habitsIds.length > 0) {
-                // Goal already has habits - show habit selection modal
-                setShowHabitModal(true);
-            }
-            // Goal has neither subgoals nor habits
-            else {
-                // Ask user what they want to do
-                Alert.alert(
-                    "Add to Goal",
-                    "What would you like to add to this goal?",
-                    [
-                        {
-                            text: "Subgoal",
-                            onPress: () => onAddGoal(focusedNodeId),
-                        },
-                        {
-                            text: "Habits",
-                            onPress: () => setShowHabitModal(true),
-                        },
-                        {
-                            text: "Cancel",
-                            style: "cancel"
-                        },
-                    ]
-                );
+            if (focusedGoalData) {
+                // Toggle to opposite of current state
+                const newEnabledState = !(focusedGoalData.enabled ?? true);
+                
+                // Dispatch action to update the goal and its children
+                dispatch({
+                    type: 'TOGGLE_GOAL_ENABLED',
+                    payload: {
+                        goalId: focusedNodeId,
+                        enabled: newEnabledState
+                    }
+                });
             }
         }
-    }, [focusedNodeId, onAddGoal, nodeLayouts]);
+    }, [focusedNodeId, nodeLayouts, dispatch]);
 
+    // Add the missing handler for removing focused goal
     const handleRemoveFocusedGoal = useCallback(() => {
         if (focusedNodeId) {
             const nodeToRemove = nodeLayouts.get(focusedNodeId)?.goalData;
@@ -472,7 +351,8 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                         style: "destructive",
                         onPress: () => {
                             onRemoveGoal(focusedNodeId);
-                            // State reset (focus/edit) now happens via useEffect when goals prop changes
+                            setFocusedNodeId(null);
+                            setEditingNodeId(null);
                         },
                     },
                 ]
@@ -480,72 +360,37 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
         }
     }, [focusedNodeId, onRemoveGoal, nodeLayouts]);
 
+    // Simplify handleAddSubgoalToFocused without node type checking
+    const handleAddSubgoalToFocused = useCallback(() => {
+        if (focusedNodeId) {
+            const focusedGoalData = nodeLayouts.get(focusedNodeId)?.goalData;
+            if (!focusedGoalData) return;
+            
+            // Simply add a subgoal - no type checking needed
+            onAddGoal(focusedNodeId);
+        }
+    }, [focusedNodeId, onAddGoal, nodeLayouts]);
+
     const handleHabitModalClose = useCallback(() => {
         setShowHabitModal(false);
     }, []);
 
-    // Handler for habit node click
-    const handleHabitPress = useCallback((habitId: string) => {
-        const habit = habits.find(h => h.id === habitId);
-        if (habit) {
-            setSelectedHabit(habit);
-        }
-    }, [habits]);
-
-    // Handler to close the habit edit modal
-    const handleCloseHabitEdit = useCallback(() => {
-        setSelectedHabit(null);
-    }, []);
-
-    // Add handler for toggling goal enabled state
-    const handleToggleGoalEnabled = useCallback(() => {
-        if (focusedNodeId && focusedGoalData) {
-            // Toggle to opposite of current state
-            const newEnabledState = !(focusedGoalData.enabled ?? true);
-            
-            // Dispatch action to update the goal and its children
-            dispatch({
-                type: 'TOGGLE_GOAL_ENABLED',
-                payload: {
-                    goalId: focusedNodeId,
-                    enabled: newEnabledState
-                }
-            });
-        }
-    }, [focusedNodeId, focusedGoalData, dispatch]);
-
-    // --- Render Nodes ---
-    // Modified renderNodes to handle both goal and habit nodes
+    // Simplified renderNodes to only handle goal nodes
     const renderNodes = useMemo(() => {
         const nodes: React.ReactNode[] = [];
         nodeLayouts.forEach((layout) => {
-            if (layout.nodeType === 'goal') {
-                nodes.push(
-                    <GoalNodeMindMap
-                        key={layout.id}
-                        nodeLayout={layout}
-                        isFocused={layout.id === focusedNodeId}
-                        isEditing={layout.id === editingNodeId}
-                        onLayoutMeasured={handleNodeLayoutMeasured}
-                        onFocus={handleNodeFocus}
-                        onEditGoal={handleGoalEdited}
-                        onEditCancel={handleEditComplete}
-                    />
-                );
-            } else if (layout.nodeType === 'habit' && layout.habitData) {
-                nodes.push(
-                    <HabitNodeMindMap
-                        key={layout.id}
-                        id={layout.id}
-                        x={layout.x}
-                        y={layout.y}
-                        width={layout.width}
-                        height={layout.height}
-                        habit={layout.habitData}
-                        onPress={handleHabitPress}
-                    />
-                );
-            }
+            nodes.push(
+                <GoalNodeMindMap
+                    key={layout.id}
+                    nodeLayout={layout}
+                    isFocused={layout.id === focusedNodeId}
+                    isEditing={layout.id === editingNodeId}
+                    onLayoutMeasured={handleNodeLayoutMeasured}
+                    onFocus={handleNodeFocus}
+                    onEditGoal={handleGoalEdited}
+                    onEditCancel={handleEditComplete}
+                />
+            );
         });
         return nodes;
     }, [
@@ -556,11 +401,9 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
         handleNodeFocus,
         handleGoalEdited,
         handleEditComplete,
-        handleHabitPress,
     ]);
 
     // --- Define Gestures ---
-    // Remain unchanged (Pinch, Pan, Tap combined)
     const pinchGesture = Gesture.Pinch()
         .onStart(() => {
             savedScale.value = scale.value;
@@ -594,7 +437,6 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     );
 
     // --- Animated Style ---
-    // Remains unchanged
     const animatedCanvasStyle = useAnimatedStyle(() => ({
         transform: [
             { translateX: translateX.value },
@@ -604,13 +446,12 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     }));
 
     // --- Determine Action Panel Button States ---
-    // Remains unchanged
+    // Update to remove habit-related checks
     const focusedGoalData = focusedNodeId
         ? nodeLayouts.get(focusedNodeId)?.goalData
         : null;
-    const canAddSubgoal =
-        !!focusedGoalData &&
-        (!focusedGoalData.habitsIds || focusedGoalData.habitsIds.length === 0);
+
+    const canAddSubgoal = !!focusedGoalData;
     const isCurrentlyEditing = editingNodeId === focusedNodeId;
     const isPaused = focusedGoalData && focusedGoalData.enabled === false;
 
@@ -646,17 +487,14 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                     <TouchableOpacity
                         style={styles.actionButton}
                         onPress={handleAddSubgoalToFocused}
-                        disabled={!canAddSubgoal}
-                        activeOpacity={canAddSubgoal ? 0.7 : 1.0}
+                        activeOpacity={0.7}
                     >
                         <Ionicons
                             name="add"
                             size={22}
-                            color={canAddSubgoal ? Colors.grey : Colors.darkGrey}
+                            color={Colors.grey}
                         />
-                        <Text
-                            style={[styles.actionText, !canAddSubgoal && styles.disabledText]}
-                        >
+                        <Text style={styles.actionText}>
                             Add
                         </Text>
                     </TouchableOpacity>
@@ -676,7 +514,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                         </Text>
                     </TouchableOpacity>
 
-                    {/* Add new pause/resume button */}
+                    {/* Pause/resume button */}
                     <TouchableOpacity
                         style={styles.actionButton}
                         onPress={handleToggleGoalEnabled}
@@ -705,7 +543,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                 </View>
             )}
 
-            {/* Render the habit modal as a direct child of the container */}
+            {/* Keep habit modal for linking habits to goals */}
             {showHabitModal && focusedNodeId && nodeLayouts.get(focusedNodeId) && (
                 <SelectHabitModal
                     goal={nodeLayouts.get(focusedNodeId)!.goalData}
@@ -714,44 +552,13 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                 />
             )}
 
-            {/* Habit edit modal */}
-            {selectedHabit && (
-                <HabitEditModal
-                    habit={selectedHabit}
-                    // timeModules={timeModules}
-                    // fixedColors={['#ff5757', '#ffbd59', '#4cd964', '#5ac8fa', '#5856d6', '#ff2d55']}
-                    currentDate={new Date()}
-                    onClose={handleCloseHabitEdit}
-                />
-            )}
+            {/* Remove habit edit modal */}
         </View>
     );
 };
 
-// Add styles for habit nodes
 const styles = StyleSheet.create({
-    // ... existing styles ...
-    habitNode: {
-        position: 'absolute',
-        height: HABIT_NODE_HEIGHT,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 6,
-        borderWidth: 1,
-        borderColor: Colors.accent,
-        // shadowColor: Colors.background,
-        // shadowOffset: { width: 0, height: 1 },
-        // shadowOpacity: 0.2,
-        // shadowRadius: 1,
-        elevation: 2,
-    },
-    habitNodeText: {
-        color: Colors.blue,
-        fontSize: 10,
-        fontWeight: '600',
-        textAlign: 'center',
-    },
+    // Remove habit-specific styles
     container: {
         flex: 1,
         position: "relative",
