@@ -108,6 +108,7 @@ export type AppAction =
     | { type: "ADD_GOAL"; payload: Omit<Goal, "id"> }
     | { type: "ADD_SUBGOAL"; payload: { parentGoalId: string, newGoal: Omit<Goal, "id"> } }
     | { type: "UPDATE_GOAL"; payload: Partial<Goal> & { id: string } }
+    | { type: "TOGGLE_GOAL_ENABLED"; payload: {goalId: string, enabled:boolean} }
     | { type: "DELETE_GOAL"; payload: { id: string } }
     | {type: 'UPDATE_GOAL_SUBGOALS'; payload: { goalId: string, subGoals: Goal[] }}
     | {type: 'UPDATE_GOAL_HABITS'; payload: { goalId: string, habitsIds: string[] }}

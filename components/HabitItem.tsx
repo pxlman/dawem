@@ -6,7 +6,7 @@ import { format, isAfter, startOfDay } from 'date-fns';
 import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if needed
 import { useAppDispatch, useAppState } from '../context/AppStateContext'; // Adjust path if needed
 import { isLogForDate, getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
-import { Habit, LogEntry, HabitLogStatus } from '../types'; // Adjust path if needed
+import { Habit, LogEntry, HabitLogStatus, TimeModule } from '@/types/index'; // Adjust path if needed
 import { Ionicons } from '@expo/vector-icons';
 
 interface HabitItemProps {
@@ -30,7 +30,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
 
     // For weekly counter habits, find the log entry for the Saturday of the viewed week
     // For other habits, find the log entry for the specific date being viewed
-    const todaysLog = logs.find(log => {
+    const todaysLog = logs.find((log:LogEntry) => {
         if (habit.repetition.type === 'weekly' && habit.measurement.type === 'count') {
             // For weekly counters, compare with Saturday's date
             return log.habitId === habit.id && log.date === getSaturdayDateString(currentDate);
@@ -247,7 +247,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
                 </View>
                 <Text style={styles.label}>Time Module</Text>
                 <View style={styles.timeModulePicker}>
-                    {timeModules.map((tm) => (
+                    {timeModules.map((tm:TimeModule) => (
                         <TouchableOpacity
                             key={tm.id}
                             style={[

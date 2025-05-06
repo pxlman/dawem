@@ -47,12 +47,12 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
     if (!goal || hasSubgoals) return [];
     
     // All habits that aren't already linked to another goal
-    return habits.filter(habit => {
+    return habits.filter((habit:Habit) => {
       // If it's already selected for this goal, show it
       if (selectedHabits.has(habit.id)) return true;
       
       // Check if the habit is linked to any other goal
-      const isLinkedToOtherGoal = goals.some(g => 
+      const isLinkedToOtherGoal = goals.some((g:Goal) => 
         g.id !== goal.id && 
         g.habitsIds && 
         g.habitsIds.includes(habit.id)

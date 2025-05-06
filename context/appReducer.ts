@@ -1,5 +1,5 @@
 // context/appReducer.ts
-import { AppState, AppAction, Habit, Goal, TimeModule, LogEntry } from '../types'; // Ensure correct path
+import { AppState, AppAction, Habit, Goal, TimeModule, LogEntry } from '@/types/index'; // Ensure correct path
 import { generateId } from '../utils/helpers'; // Ensure correct path
 import { getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
@@ -77,7 +77,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             if (!habitId || !date) { console.error("LOG_HABIT Error: Missing habitId or date."); return state; }
             
             // Find the habit being logged
-            const habit = state.habits.find(h => h.id === habitId);
+            const habit = state.habits.find((h:Habit) => h.id === habitId);
             
             // If it's a weekly counter habit, adjust the date to the Saturday of the current week
             let logDate = date;

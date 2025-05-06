@@ -72,12 +72,12 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
 
     // Helper function to get subgoals from the flat structure
     const getSubgoals = useCallback((goalId: string): Goal[] => {
-        const goal = goals.find(g => g.id === goalId);
+        const goal = goals.find((g:Goal) => g.id === goalId);
         if (!goal || !goal.subgoals || goal.subgoals.length === 0) {
             return [];
         }
         return goal.subgoals
-            .map(subgoalId => goals.find(g => g.id === subgoalId))
+            .map((subgoalId:string) => goals.find((g:Goal) => g.id === subgoalId))
             .filter(Boolean) as Goal[];
     }, [goals]);
 
@@ -99,7 +99,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
 
             // Get actual goal objects from their IDs
             const goalData = goalIds
-                .map(id => goals.find(g => g.id === id))
+                .map(id => goals.find((g:Goal) => g.id === id))
                 .filter(Boolean) as Goal[];
 
             const childrenResults = goalData.map((goal) => {
@@ -271,15 +271,15 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
 
         // --- Layout Calculation Logic ---
         const initialY = 50;
-        const rootGoals = goals.filter(goal => {
+        const rootGoals = goals.filter((goal:Goal) => {
             // A root goal is not referenced as a subgoal in any other goal
-            return !goals.some(g => 
+            return !goals.some((g:Goal) => 
                 g.subgoals && g.subgoals.includes(goal.id)
             );
         });
         
         // Get root goal IDs for the layout calculation
-        const rootGoalIds = rootGoals.map(g => g.id);
+        const rootGoalIds = rootGoals.map((g:Goal) => g.id);
         
         const { layouts, totalWidth, maxY } = calculateLayout(
             rootGoalIds,

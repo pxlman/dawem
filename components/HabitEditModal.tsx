@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Colors , {fixedColors} from '../constants/Colors';
-import { Habit, TimeModule } from '../types';
+import { Habit, TimeModule } from '@/types/index';
 import { useAppDispatch, useAppState } from '../context/AppStateContext';
 import { format } from 'date-fns'; // Ensure format is imported
 import DateTimePicker from '@react-native-community/datetimepicker'; // added
@@ -119,7 +119,7 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onC
                 </View>
                 <Text style={styles.label}>Time Module</Text>
                 <View style={styles.timeModulePicker}>
-                    {timeModules.map((tm) => (
+                    {timeModules.map((tm:TimeModule) => (
                         <TouchableOpacity
                             key={tm.id}
                             style={[

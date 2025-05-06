@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import HabitItem from './HabitItem'; // Adjust path
 import Colors from '../constants/Colors'; // Adjust path
-import { TimeModule, Habit } from '../types'; // Adjust path
+import { TimeModule, Habit } from '@/types/index'; // Adjust path
 
 interface TimeModuleGroupProps {
     timeModule?: TimeModule;
