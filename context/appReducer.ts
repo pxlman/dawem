@@ -55,7 +55,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const payload = action.payload;
             return {
                 ...state,
-                habits: state.habits.map(habit => {
+                habits: state.habits.map((habit: Habit) => {
                     if (habit.id === payload.id) {
                         return {
                             ...habit,
@@ -68,7 +68,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             };
         }
         case 'DELETE_HABIT': {
-             return { ...state, habits: state.habits.filter(habit => habit.id !== action.payload.id), };
+             return { ...state, habits: state.habits.filter((habit: Habit) => habit.id !== action.payload.id), };
            }
 
         // --- Logs ---
@@ -85,7 +85,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 logDate = getSaturdayDateString(date);
             }
 
-            const existingLogIndex = state.logs.findIndex(log => log.habitId === habitId && log.date === logDate);
+            const existingLogIndex = state.logs.findIndex((log: LogEntry) => log.habitId === habitId && log.date === logDate);
             let newLogs: LogEntry[];
             // Include only defined status/value in base update
             const logBase: Partial<LogEntry> & { habitId: string, date: string, timestamp: string } = {
@@ -96,10 +96,10 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
             if (existingLogIndex > -1) {
                 if (isClearing) { // If clearing, remove the log
-                    newLogs = state.logs.filter((_, index) => index !== existingLogIndex);
+                    newLogs = state.logs.filter((_, index: number) => index !== existingLogIndex);
                 } else { // Otherwise, update the existing log
                     const originalLogId = state.logs[existingLogIndex].id;
-                    newLogs = state.logs.map((log, index) => index === existingLogIndex ? { ...log, ...logBase, id: originalLogId } : log);
+                    newLogs = state.logs.map((log: LogEntry, index: number) => index === existingLogIndex ? { ...log, ...logBase, id: originalLogId } : log);
                 }
             } else if (!isClearing) { // Add new log only if not clearing
                 const newLogEntry: LogEntry = { ...logBase, id: generateId(), };
@@ -132,18 +132,18 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
          }
         case 'UPDATE_TIME_MODULE': {
              const { ...restPayload } = action.payload as Partial<TimeModule> & { id: string; };
-            return { ...state, timeModules: state.timeModules.map(tm => tm.id === action.payload.id ? { ...tm, ...restPayload } : tm ), };
+            return { ...state, timeModules: state.timeModules.map((tm:TimeModule) => tm.id === action.payload.id ? { ...tm, ...restPayload } : tm ), };
            }
         case 'DELETE_TIME_MODULE': {
             const timeModuleIdToDelete = action.payload.id;
             if (state.timeModules.length <= 1) { return state; }
-            const replacementModule = state.timeModules.find(tm => tm.id !== timeModuleIdToDelete);
+            const replacementModule = state.timeModules.find((tm:TimeModule) => tm.id !== timeModuleIdToDelete);
             const replacementModuleId = replacementModule?.id ?? '';
              if (!replacementModuleId) { return state; }
             return {
                 ...state,
-                timeModules: state.timeModules.filter(tm => tm.id !== timeModuleIdToDelete),
-                habits: state.habits.map(h => h.timeModuleId === timeModuleIdToDelete ? { ...h, timeModuleId: replacementModuleId } : h ),
+                timeModules: state.timeModules.filter((tm:TimeModule) => tm.id !== timeModuleIdToDelete),
+                habits: state.habits.map((h:Habit) => h.timeModuleId === timeModuleIdToDelete ? { ...h, timeModuleId: replacementModuleId } : h ),
             };
         }
         case 'REORDER_TIME_MODULES': {
@@ -167,73 +167,91 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
         case 'ADD_SUBGOAL': {
             const { parentGoalId, newGoal } = action.payload;
+            const subGoalId = generateId();
+            
+            // Create the new subgoal and add it to the goals array
             const subGoal: Goal = {
-                id: generateId(),
+                id: subGoalId,
                 ...newGoal
             };
+            
+            // Update the parent goal to reference the new subgoal by ID
+            const updatedGoals = state.goals.map((goal: Goal) => {
+                if (goal.id === parentGoalId) {
+                    // If the goal has habits, we can't add subgoals (constraint)
+                    if (goal.habitsIds && goal.habitsIds.length > 0) {
+                        console.warn(`Cannot add subgoal to goal ${parentGoalId} which has habits.`);
+                        return goal;
+                    }
+                    
+                    // Add the subgoal ID to the parent's subgoals array
+                    return {
+                        ...goal,
+                        subgoals: [...(goal.subgoals || []), subGoalId]
+                    };
+                }
+                return goal;
+            });
+            
             return {
                 ...state,
-                goals: addSubgoalRecursive(state.goals, parentGoalId, subGoal)
+                goals: [...updatedGoals, subGoal]
             };
         }
 
         case 'UPDATE_GOAL': {
             return {
                 ...state,
-                goals: updateGoalRecursive(state.goals, action.payload.id, goal => ({
-                    ...goal,
-                    ...action.payload
-                }))
+                goals: state.goals.map((goal: Goal) => 
+                    goal.id === action.payload.id 
+                        ? { ...goal, ...action.payload } 
+                        : goal
+                )
             };
         }
 
         case 'TOGGLE_GOAL_ENABLED': {
             const { goalId, enabled } = action.payload;
             
-            // Update goals recursively as before
-            const updatedGoals = updateGoalEnabledStateRecursive(state.goals, goalId, enabled);
+            // Collect all goal IDs that need to be updated (the goal and all its descendants)
+            const affectedGoalIds = new Set<string>();
+            
+            // Helper to collect a goal and all its descendant IDs
+            const collectGoalIds = (currentGoalId: string) => {
+                affectedGoalIds.add(currentGoalId);
+                
+                const goal = state.goals.find((g: Goal) => g.id === currentGoalId);
+                if (goal && goal.subgoals && goal.subgoals.length > 0) {
+                    goal.subgoals.forEach((subgoalId: string) => {
+                        collectGoalIds(subgoalId);
+                    });
+                }
+            };
+            
+            // Start collection from the target goal
+            collectGoalIds(goalId);
+            
+            // Update all affected goals
+            const updatedGoals = state.goals.map((goal: Goal) => 
+                affectedGoalIds.has(goal.id) 
+                    ? { ...goal, enabled } 
+                    : goal
+            );
             
             // Find all habits that need to be updated
             const affectedHabitIds = new Set<string>();
             
-            // Helper to collect habit IDs from a goal and all its subgoals
-            const collectHabitIds = (goals: Goal[], targetId: string): boolean => {
-                for (const goal of goals) {
-                    if (goal.id === targetId) {
-                        // This goal matches, collect its habit IDs
-                        if (goal.habitsIds) {
-                            goal.habitsIds.forEach(id => affectedHabitIds.add(id));
-                        }
-                        
-                        // Also collect from all subgoals regardless of their IDs
-                        // since all subgoals are affected
-                        if (goal.subgoals) {
-                            goal.subgoals.forEach(subgoal => {
-                                if (subgoal.habitsIds) {
-                                    subgoal.habitsIds.forEach(id => affectedHabitIds.add(id));
-                                }
-                                // And also from their subgoals
-                                if (subgoal.subgoals) {
-                                    collectHabitIds(subgoal.subgoals, subgoal.id);
-                                }
-                            });
-                        }
-                        
-                        return true;
-                    }
-                    // Check subgoals
-                    if (goal.subgoals && collectHabitIds(goal.subgoals, targetId)) {
-                        return true;
-                    }
+            // Collect habit IDs from all affected goals
+            updatedGoals.forEach((goal: Goal) => {
+                if (affectedGoalIds.has(goal.id) && goal.habitsIds) {
+                    goal.habitsIds.forEach((habitId: string) => {
+                        affectedHabitIds.add(habitId);
+                    });
                 }
-                return false;
-            };
-            
-            // Collect affected habit IDs
-            collectHabitIds(updatedGoals, goalId);
+            });
             
             // Update affected habits
-            const updatedHabits = state.habits.map(habit => 
+            const updatedHabits = state.habits.map((habit:Habit) => 
                 affectedHabitIds.has(habit.id) ? { ...habit, enabled } : habit
             );
             
@@ -245,34 +263,87 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         }
 
         case 'DELETE_GOAL': {
+            const goalIdToDelete: string = action.payload.id;
+            
+            // Find all goals that need to be deleted (the goal and all its descendants)
+            const goalsToDelete = new Set<string>();
+            
+            // Helper to collect a goal and all its descendant IDs
+            const collectGoalsToDelete = (currentGoalId: string): void => {
+                goalsToDelete.add(currentGoalId);
+                
+                const goal = state.goals.find((g: Goal) => g.id === currentGoalId);
+                if (goal && goal.subgoals && goal.subgoals.length > 0) {
+                    goal.subgoals.forEach((subgoalId: string) => {
+                        collectGoalsToDelete(subgoalId);
+                    });
+                }
+            };
+            
+            // Start collection from the target goal
+            collectGoalsToDelete(goalIdToDelete);
+            
+            // Remove deleted goals and update subgoal references
+            const updatedGoals = state.goals
+                .filter((goal: Goal) => !goalsToDelete.has(goal.id))
+                .map((goal: Goal) => {
+                    if (goal.subgoals && goal.subgoals.some((id: string) => goalsToDelete.has(id))) {
+                        // Filter out references to deleted goals
+                        const updatedSubgoals = goal.subgoals.filter((id: string) => !goalsToDelete.has(id));
+                        
+                        if (updatedSubgoals.length === 0) {
+                            // If no subgoals remain, remove the subgoals property
+                            const { subgoals, ...restOfGoal } = goal;
+                            return restOfGoal;
+                        }
+                        
+                        return { ...goal, subgoals: updatedSubgoals };
+                    }
+                    return goal;
+                });
+            
             return {
                 ...state,
-                goals: removeGoalRecursive(state.goals, action.payload.id)
+                goals: updatedGoals
             };
         }
 
         case 'LINK_HABIT_TO_GOAL': {
             const { goalId, habitId } = action.payload;
+            
+            // Find the goal to link to
+            const goalToUpdate = state.goals.find((g: Goal) => g.id === goalId);
+            
+            if (!goalToUpdate) {
+                console.warn(`Goal with ID ${goalId} not found.`);
+                return state;
+            }
+            
+            // Check constraint: Cannot link habit to a goal with subgoals
+            if (goalToUpdate.subgoals && goalToUpdate.subgoals.length > 0) {
+                console.warn(`Cannot link habit to goal ${goalId} which has subgoals.`);
+                return state;
+            }
+            
+            // Update the goal with the habit ID
+            const updatedGoals = state.goals.map((goal: Goal) => {
+                if (goal.id === goalId) {
+                    // Add habitId, ensuring uniqueness
+                    const updatedHabitsIds = Array.from(new Set([...(goal.habitsIds || []), habitId]));
+                    return { ...goal, habitsIds: updatedHabitsIds };
+                }
+                return goal;
+            });
+            
+            // Update the habit with the goal ID if needed
+            const updatedHabits = state.habits.map((habit:Habit) => 
+                habit.id === habitId ? { ...habit, goalId } : habit
+            );
+            
             return {
                 ...state,
-                goals: updateGoalRecursive(state.goals, goalId, (goal) => {
-                    // Constraint Check: Cannot link if subgoals exist
-                    if (goal.subgoals && goal.subgoals.length > 0) {
-                        console.warn(`Reducer: Cannot link habit to goal ${goalId} which already has subgoals.`);
-                        return goal; // Return unchanged goal
-                    }
-                    // Add habitId, ensuring uniqueness and creating array if needed
-                    const updatedHabitsIds = Array.from(new Set([...(goal.habitsIds ?? []), habitId]));
-                    // Remove subgoals key if it exists (enforce constraint)
-                    const { subgoals, ...restOfGoal } = goal;
-                    return {
-                        ...restOfGoal, // Keep other goal properties
-                        habitsIds: updatedHabitsIds, // Set the updated habits array
-                    };
-                }),
-                habits: state.habits.map(habit => 
-                    habit.id === habitId ? { ...habit, goalId } : habit
-                )
+                goals: updatedGoals,
+                habits: updatedHabits
             };
         }
 
@@ -289,9 +360,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 logs: Array.isArray(loadedState.logs) ? loadedState.logs : initialState.logs,
                 settings: (loadedState.settings && typeof loadedState.settings === 'object') ? loadedState.settings : initialState.settings,
             };
-             const validModuleIds = new Set(mergedState.timeModules.map(tm => tm.id));
+             const validModuleIds = new Set(mergedState.timeModules.map((tm:TimeModule) => tm.id));
              const firstValidModuleId = mergedState.timeModules[0]?.id ?? '';
-             mergedState.habits = mergedState.habits.map(h => ({...h, timeModuleId: validModuleIds.has(h.timeModuleId) ? h.timeModuleId : firstValidModuleId }));
+             mergedState.habits = mergedState.habits.map((h:Habit) => ({...h, timeModuleId: validModuleIds.has(h.timeModuleId) ? h.timeModuleId : firstValidModuleId }));
             return mergedState;
         }
         case 'RESET_STATE': {
@@ -316,7 +387,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const newEndDate = date.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
 
             // Update the habit's endDate
-            const updatedHabits = state.habits.map(habit =>
+            const updatedHabits = state.habits.map((habit:Habit) =>
                 habit.id === id ? { ...habit, endDate: newEndDate } : habit
             );
 
@@ -330,11 +401,11 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             
             // Create a map of habit IDs to their updated habits with sort orders
             const reorderedHabitsMap = new Map(
-                reorderedHabits.map(habit => [habit.id, habit])
+                reorderedHabits.map((habit:Habit) => [habit.id, habit])
             );
             
             // Update the habits array
-            const updatedHabits = state.habits.map(habit => {
+            const updatedHabits = state.habits.map((habit:Habit) => {
                 // Check if this habit belongs to the time module we're reordering
                 const isInTargetModule = 
                     habit.timeModuleId === timeModuleId || 
@@ -355,144 +426,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             };
         }
 
-        case 'IMPORT_HABITS': {
-            const { habits: importedHabits, timeModules: importedModules } = action.payload;
-            
-            // Get existing habit and module IDs to avoid duplicates
-            const existingHabitIds = new Set(state.habits.map(h => h.id));
-            const existingModuleIds = new Set(state.timeModules.map(m => m.id));
-            
-            // Filter out any imported items that already exist
-            const newHabits = importedHabits.filter(h => !existingHabitIds.has(h.id));
-            const newModules = importedModules.filter(m => !existingModuleIds.has(m.id));
-            
-            // Create maps of imported module IDs to ensure we have valid module references
-            const importedModuleIds = new Set(importedModules.map(m => m.id));
-            
-            // Default to the first existing module if imported module doesn't exist
-            const defaultModuleId = state.timeModules[0]?.id || '';
-            
-            // Add imported items to the state, ensuring each habit has a valid module ID
-            return {
-                ...state,
-                habits: [
-                    ...state.habits,
-                    ...newHabits.map(habit => ({
-                        ...habit,
-                        // If the habit's module doesn't exist in current or imported modules, use default
-                        timeModuleId: existingModuleIds.has(habit.timeModuleId) || 
-                                      importedModuleIds.has(habit.timeModuleId) ? 
-                                      habit.timeModuleId : defaultModuleId
-                    }))
-                ],
-                timeModules: [
-                    ...state.timeModules,
-                    ...newModules
-                ]
-            };
-        }
-
         default:
             // console.warn(`Unhandled action type: ${(action as any).type}`); // Optional
             return state;
     }
-};
-
-// Recursive helper functions need to be added here if not already present
-const updateGoalRecursive = (goals: Goal[], goalId: string, updateFn: (goal: Goal) => Goal): Goal[] => {
-    // ...existing implementation from goals.tsx...
-    return goals.map(goal => {
-        if (goal.id === goalId) {
-            return updateFn(goal); // Apply the update
-        }
-        if (goal.subgoals) {
-            const updatedSubgoals = updateGoalRecursive(goal.subgoals, goalId, updateFn);
-            if (updatedSubgoals !== goal.subgoals) { // Check for reference change
-                return { ...goal, subgoals: updatedSubgoals };
-            }
-        }
-        return goal; // No change
-    });
-};
-
-const removeGoalRecursive = (goals: Goal[], goalId: string): Goal[] => {
-    // ...existing implementation from goals.tsx...
-    // Filter out the goal at the current level
-    const filteredGoals = goals.filter(goal => goal.id !== goalId);
-
-    // If the length is the same, the goal wasn't at this level, so check subgoals
-    if (filteredGoals.length === goals.length) {
-        return goals.map(goal => {
-            if (goal.subgoals) {
-                const updatedSubgoals = removeGoalRecursive(goal.subgoals, goalId);
-                if (updatedSubgoals !== goal.subgoals) { // Check for reference change
-                     // Ensure subgoals isn't empty array if it was removed entirely
-                     if (updatedSubgoals.length === 0) {
-                         const { subgoals, ...rest } = goal; // Remove subgoals key
-                         return rest;
-                     }
-                    return { ...goal, subgoals: updatedSubgoals };
-                }
-            }
-            return goal;
-        });
-    }
-    // Goal was removed at this level
-    return filteredGoals;
-};
-
-const addSubgoalRecursive = (goals: Goal[], parentGoalId: string, newGoal: Goal): Goal[] => {
-    // ...existing implementation from goals.tsx...
-    return goals.map(goal => {
-        if (goal.id === parentGoalId) {
-             // Constraint check: Cannot add subgoal if habits exist
-             if (goal.habitsIds && goal.habitsIds.length > 0) {
-                 console.warn(`Attempted to add subgoal to goal ${parentGoalId} which has habits.`);
-                 return goal; // Return unchanged goal
-             }
-            const subgoals = [...(goal.subgoals ?? []), newGoal]; // Use nullish coalescing
-            // Remove habitsIds if we are adding subgoals (enforce constraint)
-            const { habitsIds, ...rest } = goal;
-            return { ...rest, subgoals };
-        }
-        // Recurse into subgoals if they exist
-        if (goal.subgoals) {
-            const updatedSubgoals = addSubgoalRecursive(goal.subgoals, parentGoalId, newGoal);
-             if (updatedSubgoals !== goal.subgoals) { // Check for reference change
-                return { ...goal, subgoals: updatedSubgoals };
-            }
-        }
-        return goal; // No change
-    });
-};
-
-const updateGoalEnabledStateRecursive = (goals: Goal[], goalId: string, enabled: boolean): Goal[] => {
-    return goals.map(goal => {
-        if (goal.id === goalId) {
-            // When we find the target goal, update it AND recursively update ALL its subgoals
-            // regardless of their IDs (this is what was missing)
-            return {
-                ...goal,
-                enabled,
-                // Apply the same enabled state to ALL subgoals without checking their IDs
-                subgoals: goal.subgoals ? goal.subgoals.map(subgoal => ({
-                    ...subgoal,
-                    enabled,
-                    // Recursively apply to any deeper subgoals
-                    subgoals: subgoal.subgoals ? 
-                        updateGoalEnabledStateRecursive(subgoal.subgoals, subgoal.id, enabled) : 
-                        subgoal.subgoals
-                })) : goal.subgoals
-            };
-        }
-        
-        // For non-matching goals, still check their subgoals
-        if (goal.subgoals) {
-            const updatedSubgoals = updateGoalEnabledStateRecursive(goal.subgoals, goalId, enabled);
-            if (updatedSubgoals !== goal.subgoals) {
-                return { ...goal, subgoals: updatedSubgoals };
-            }
-        }
-        return goal;
-    });
 };

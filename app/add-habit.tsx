@@ -14,10 +14,30 @@ const repetitionOptions = [ { label: 'Daily', value: 'daily' }, { label: 'Weekly
 
 export default function AddHabitModalScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ habitId?: string; currentDate?: string }>(); // Include currentDate in params
-    const { habitId, currentDate } = params; // Destructure currentDate
+    const params = useLocalSearchParams<{ habitId?: string; currentDate?: string; goalId?:string }>(); // Include currentDate in params
+    const { habitId, currentDate, goalId } = params; // Destructure currentDate
     const { habits, timeModules } = useAppState();
     const dispatch = useAppDispatch();
+
+    const habit = {
+      id: habitId?? null,
+      title: '',
+      color: Colors.primary,
+      repetition: {
+        type: 'daily',
+        config: {}
+      },
+      measurement: {
+        type: 'binary',
+      },
+      timeModuleId: '',
+      enabled: true,
+      startDate: currentDate,
+      endDate: null
+    } as Habit
+    if(habitId){
+
+    }
 
     // Ensure currentDate is a valid Date object or fallback to today
     const selectedDate = useMemo(() => {
@@ -96,6 +116,7 @@ export default function AddHabitModalScreen() {
         };
         // Assert non-null for dispatch payload after validation
         const habitData = {
+          id: habitId?? null,
           title: title.trim(),
           color,
           repetition: { type: repetitionType!, config },
@@ -106,10 +127,14 @@ export default function AddHabitModalScreen() {
           timeModuleId: selectedTimeModuleId!,
           startDate,
           endDate,
-          enabled:true
+          enabled:true,
+          goalId: goalId?? null
         };
-
-        dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
+        if(habitId !== null){
+          dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
+        } else {
+          dispatch({ type: 'UPDATE_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
+        }
 
         if (router.canGoBack()) router.back();
     };
@@ -128,7 +153,7 @@ export default function AddHabitModalScreen() {
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled={true} // Helps with dropdown inside scrollview
       >
-        <Stack.Screen options={{ title: "Add New Habit" }} />
+        <Stack.Screen options={{ title: (!habitId)? "Add New Habit": "Edit habit" }} />
 
         <Text style={styles.label}>Habit Title</Text>
         <TextInput

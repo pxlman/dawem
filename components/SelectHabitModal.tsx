@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -18,69 +18,87 @@ interface SelectHabitModalProps {
   onClose: () => void;
 }
 
-const SelectHabitModal: React.FC<SelectHabitModalProps> = ({ goal, visible, onClose }) => {
-  const { habits } = useAppState();
+const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
+  goal,
+  visible,
+  onClose,
+}) => {
+  const { habits, goals } = useAppState();
   const dispatch = useAppDispatch();
-  const [selectedHabitIds, setSelectedHabitIds] = useState<string[]>(goal?.habitsIds?? []);
+
+  const [selectedHabits, setSelectedHabits] = useState<Set<string>>(new Set());
   
-  // Filter habits for one-to-many relationship
-  // Show only habits that belong to this goal or don't have a goal assigned
-  const availableHabits = habits.filter((habit:Habit) => {
-    // If this habit is already linked to this goal, include it
-    if (goal?.habitsIds?.includes(habit.id)) return true;
-    // Otherwise, only include habits not linked to any goal
-    return !habit.goalId;
-  });
+  // Initialize with existing habits linked to the goal
+  useEffect(() => {
+    if (goal && goal.habitsIds) {
+      setSelectedHabits(new Set(goal.habitsIds));
+    } else {
+      setSelectedHabits(new Set());
+    }
+  }, [goal]);
+
+  // Check if a goal has subgoals by looking at its subgoals array
+  const hasSubgoals = useMemo(() => {
+    return goal && goal.subgoals && goal.subgoals.length > 0;
+  }, [goal]);
+
+  // Get available habits that can be linked
+  const availableHabits = useMemo(() => {
+    if (!goal || hasSubgoals) return [];
+    
+    // All habits that aren't already linked to another goal
+    return habits.filter(habit => {
+      // If it's already selected for this goal, show it
+      if (selectedHabits.has(habit.id)) return true;
+      
+      // Check if the habit is linked to any other goal
+      const isLinkedToOtherGoal = goals.some(g => 
+        g.id !== goal.id && 
+        g.habitsIds && 
+        g.habitsIds.includes(habit.id)
+      );
+      
+      return !isLinkedToOtherGoal;
+    });
+  }, [habits, goals, goal, selectedHabits, hasSubgoals]);
 
   const toggleHabitSelection = (habitId: string) => {
-    setSelectedHabitIds(prev => {
-      if (prev.includes(habitId)) {
-        return prev.filter(id => id !== habitId);
+    setSelectedHabits(prev => {
+      const newSelectedHabits = new Set(prev);
+      if (newSelectedHabits.has(habitId)) {
+        newSelectedHabits.delete(habitId);
       } else {
-        return [...prev, habitId];
+        newSelectedHabits.add(habitId);
       }
+      return newSelectedHabits;
     });
   };
 
   const handleSave = () => {
-    // Update goal with selected habits
+    if (!goal) return;
+    
+    // Update the goal with selected habits
     dispatch({
       type: 'UPDATE_GOAL',
       payload: {
-        ...goal,
-        habitsIds: selectedHabitIds
+        id: goal.id,
+        habitsIds: Array.from(selectedHabits)
       }
     });
     
-    // For one-to-many: Update each selected habit to point to this goal
-    selectedHabitIds.forEach(habitId => {
+    // Update each habit to link to this goal if needed
+    Array.from(selectedHabits).forEach(habitId => {
       dispatch({
-        type: 'UPDATE_HABIT',
-        payload: {
-          id: habitId,
-          goalId: goal.id
-        }
+        type: 'LINK_HABIT_TO_GOAL',
+        payload: { goalId: goal.id, habitId }
       });
-    });
-    
-    // For habits that were unselected (removed from this goal), clear their goalId
-    (goal.habitsIds || []).forEach(habitId => {
-      if (!selectedHabitIds.includes(habitId)) {
-        dispatch({
-          type: 'UPDATE_HABIT',
-          payload: {
-            id: habitId,
-            goalId: null
-          }
-        });
-      }
     });
     
     onClose();
   };
 
   const renderHabitItem = ({ item }: { item: Habit }) => {
-    const isSelected = selectedHabitIds.includes(item.id);
+    const isSelected = selectedHabits.has(item.id);
     
     return (
       <TouchableOpacity 

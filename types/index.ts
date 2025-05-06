@@ -1,5 +1,7 @@
 // types/index.ts
 
+import { useAppState } from "@/context/AppStateContext";
+
 export type HabitRepetitionType = "daily" | "weekly";
 export type HabitMeasurementType = "binary" | "count";
 export type HabitLogStatus = "right" | "wrong" | "circle";
@@ -12,9 +14,11 @@ export interface Goal {
     title: string;
     color: string;
     enabled: boolean;
-    subgoals?: Goal[];
+    // subgoals?: Goal[];
+    subgoals?: string[]; // sub goals ids (which should be in the same array goals)
     habitsIds?: string[]; // habits ids
 }
+
 export interface NodeLayout { // for the goal mind map
   id: string;
   x: number;
@@ -61,7 +65,7 @@ export interface Habit {
     startDate: string; // Start date of the habit
     endDate?: string | null; // End date of the habit (null means "forever")
     sortOrder?: number; // Track the order of habits within a time module
-    goalId?: string | null;
+    // goalId?: string | null;
 }
 
 export interface TimeModule {

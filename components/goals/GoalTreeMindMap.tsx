@@ -25,6 +25,8 @@ import { Goal, NodeLayout, Habit } from "@/types/index";
 import { useAppDispatch, useAppState } from "@/context/AppStateContext";
 import Colors from "@/constants/Colors";
 import SelectHabitModal from "../SelectHabitModal";
+import { router } from "expo-router";
+import { format } from "date-fns";
 
 // Simple node layout interface
 interface ExtendedNodeLayout extends NodeLayout {
@@ -68,10 +70,21 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     // --- Layout Calculation ---
     // Remove getGoalType function as it's no longer needed
 
-    // Simplified calculateLayout function that now includes habit nodes
+    // Helper function to get subgoals from the flat structure
+    const getSubgoals = useCallback((goalId: string): Goal[] => {
+        const goal = goals.find(g => g.id === goalId);
+        if (!goal || !goal.subgoals || goal.subgoals.length === 0) {
+            return [];
+        }
+        return goal.subgoals
+            .map(subgoalId => goals.find(g => g.id === subgoalId))
+            .filter(Boolean) as Goal[];
+    }, [goals]);
+
+    // Modified calculateLayout function for flat goals structure
     const calculateLayout = useCallback(
         (
-            goalData: Goal[],
+            goalIds: string[],
             parentId: string | null,
             startY: number,
             level: number
@@ -84,6 +97,11 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
             let cumulativeMaxY = startY + NODE_BASE_HEIGHT;
             let groupRequiredWidth = 0;
 
+            // Get actual goal objects from their IDs
+            const goalData = goalIds
+                .map(id => goals.find(g => g.id === id))
+                .filter(Boolean) as Goal[];
+
             const childrenResults = goalData.map((goal) => {
                 const nodeWidth = NODE_WIDTH;
                 const nodeHeight = NODE_BASE_HEIGHT;
@@ -92,10 +110,12 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                 
                 // Process goal based on its content (subgoals vs habits)
                 if (hasSubgoals) {
-                    // Process subgoals (same as before)
+                    // Process subgoals using IDs instead of direct objects
                     const childrenY = startY + nodeHeight + NODE_VERTICAL_SPACING;
+                    const subgoalIds = goal.subgoals!;
+                    
                     const subResult = calculateLayout(
-                        goal.subgoals!,
+                        subgoalIds,
                         goal.id,
                         childrenY,
                         level + 1
@@ -228,7 +248,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                 maxY: cumulativeMaxY,
             };
         },
-        [habits] // Add habits to dependency array
+        [goals, habits] // Add goals to dependency array
     );
 
     // --- Effect to Recalculate Layout ---
@@ -251,8 +271,18 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
 
         // --- Layout Calculation Logic ---
         const initialY = 50;
+        const rootGoals = goals.filter(goal => {
+            // A root goal is not referenced as a subgoal in any other goal
+            return !goals.some(g => 
+                g.subgoals && g.subgoals.includes(goal.id)
+            );
+        });
+        
+        // Get root goal IDs for the layout calculation
+        const rootGoalIds = rootGoals.map(g => g.id);
+        
         const { layouts, totalWidth, maxY } = calculateLayout(
-            goals,
+            rootGoalIds,
             null,
             initialY,
             0
