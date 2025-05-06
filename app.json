@@ -2,6 +2,7 @@
   "expo": {
     "name": "Dawem",
     "slug": "Dawem",
+    "description": "A special life tracker by an organized structure of Goals/Habits/Times",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon2.png",
@@ -12,11 +13,11 @@
       "bundleIdentifier": "com.pxlman.dawem"
     },
     "android": {
+      "package": "com.pxlman.dawem",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon2.png",
         "backgroundColor": "#c3c3c3"
-      },
-      "package": "com.pxlman.dawem"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -43,7 +44,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "d6c61d63-20cb-4087-94c6-b809e66552f4"
+        "projectId": "16fdd8e2-93e1-4d8b-acdf-de6fb283c75a"
       }
     }
   }
