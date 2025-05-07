@@ -5,52 +5,30 @@ import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
 import GoalTreeMindMap from '../../components/goals/GoalTreeMindMap';
-import { Goal } from '../../types';
-import Colors from '@/constants/Colors';
+import { Goal } from '@/types/index';
+import Colors, {fixedColors} from '@/constants/Colors';
 import { useAppDispatch, useAppState } from '@/context/AppStateContext';
 
 // Keep INITIAL_GOALS for testing
 const INITIAL_GOALS: Goal[] = [
-    {
-        id: uuidv4(),
-        title: 'Improve Fitness Plan for the Year End',
-        color: '#4CAF50', // Green
-        enabled:true,
-        subgoals: [
-            { id: uuidv4(), title: 'Run 3 times a week consistently', color: '#8BC34A', enabled: true },
-            {
-                id: uuidv4(), title: 'Go to the Gym Regularly', color: '#CDDC39',
-                subgoals: [
-                     { id: uuidv4(), title: 'Strength Training Focus', color: '#FFEB3B', enabled: true},
-                     { id: uuidv4(), title: 'Cardio Session Planning', color: '#FFC107', enabled: true}
-                ],
-                enabled: true
-            },
-             { id: uuidv4(), title: 'Improve Flexibility', color: '#00BCD4', subgoals: [
-                 { id: uuidv4(), title: 'Daily Stretching', color: '#009688', enabled: true},
-                 { id: uuidv4(), title: 'Yoga Class Once a Week', color: '#00796B', enabled: true}
-             ],
-             enabled: true
-            },
-        ],
-    },
-    {
-        id: uuidv4(),
-        title: 'Learn React Native & Expo',
-        color: '#2196F3', // Blue
-        habitsIds: ['habit_read_docs', 'habit_build_project'], // Example linked habits
-        enabled:true
-    },
-    {
-        id: uuidv4(),
-        title: 'Read More Books',
-        color: '#9C27B0', // Purple
-        enabled:true,
-        subgoals: [
-             { id: uuidv4(), title: 'Finish 1 Book/Month', color: '#7B1FA2', enabled:true},
-             { id: uuidv4(), title: 'Explore New Genres', color: '#673AB7', enabled: true}
-        ]
-    }
+  {
+    id: uuidv4(),
+    title: "Run 3 times a week consistently",
+    color: "#8BC34A",
+    enabled: true,
+  },
+  {
+    id: uuidv4(),
+    title: "Go to the Gym Regularly",
+    color: "#CDDC39",
+    enabled: true,
+  },
+  {
+    id: uuidv4(),
+    title: "Improve Flexibility",
+    color: "#00BCD4",
+    enabled: true,
+  },
 ];
 
 const GoalsScreen: React.FC = () => {
@@ -95,10 +73,8 @@ const GoalsScreen: React.FC = () => {
       (parentGoalId: string | null = null) => {
         const newGoal = {
           title: "New Goal - Edit Me!",
-          color: `#${Math.floor(Math.random() * 16777215)
-            .toString(16)
-            .padStart(6, "0")}`,
-            enabled: true
+          color: fixedColors[3],
+          enabled: true,
         };
 
         // Using app state
@@ -213,70 +189,5 @@ const styles = StyleSheet.create({
     },
 });
 
-// Helper functions remain the same
-const updateGoalRecursive = (goals: Goal[], goalId: string, updateFn: (goal: Goal) => Goal): Goal[] => {
-    return goals.map(goal => {
-        if (goal.id === goalId) {
-            return updateFn(goal); // Apply the update
-        }
-        if (goal.subgoals) {
-            const updatedSubgoals = updateGoalRecursive(goal.subgoals, goalId, updateFn);
-            if (updatedSubgoals !== goal.subgoals) { // Check for reference change
-                return { ...goal, subgoals: updatedSubgoals };
-            }
-        }
-        return goal; // No change
-    });
-};
-
-const removeGoalRecursive = (goals: Goal[], goalId: string): Goal[] => {
-    // Filter out the goal at the current level
-    const filteredGoals = goals.filter(goal => goal.id !== goalId);
-
-    // If the length is the same, the goal wasn't at this level, so check subgoals
-    if (filteredGoals.length === goals.length) {
-        return goals.map(goal => {
-            if (goal.subgoals) {
-                const updatedSubgoals = removeGoalRecursive(goal.subgoals, goalId);
-                if (updatedSubgoals !== goal.subgoals) { // Check for reference change
-                     // Ensure subgoals isn't empty array if it was removed entirely
-                     if (updatedSubgoals.length === 0) {
-                         const { subgoals, ...rest } = goal; // Remove subgoals key
-                         return rest;
-                     }
-                    return { ...goal, subgoals: updatedSubgoals };
-                }
-            }
-            return goal;
-        });
-    }
-    // Goal was removed at this level
-    return filteredGoals;
-};
-
-const addSubgoalRecursive = (goals: Goal[], parentGoalId: string, newGoal: Goal): Goal[] => {
-    return goals.map(goal => {
-        if (goal.id === parentGoalId) {
-             // Constraint check: Cannot add subgoal if habits exist
-             if (goal.habitsIds && goal.habitsIds.length > 0) {
-                 console.warn(`Attempted to add subgoal to goal ${parentGoalId} which has habits.`);
-                 Alert.alert("Operation Failed", "Cannot add a subgoal to a goal that has linked habits. Remove habits first.");
-                 return goal; // Return unchanged goal
-             }
-            const subgoals = [...(goal.subgoals ?? []), newGoal]; // Use nullish coalescing
-            // Remove habitsIds if we are adding subgoals (enforce constraint)
-            const { habitsIds, ...rest } = goal;
-            return { ...rest, subgoals };
-        }
-        // Recurse into subgoals if they exist
-        if (goal.subgoals) {
-            const updatedSubgoals = addSubgoalRecursive(goal.subgoals, parentGoalId, newGoal);
-             if (updatedSubgoals !== goal.subgoals) { // Check for reference change
-                return { ...goal, subgoals: updatedSubgoals };
-            }
-        }
-        return goal; // No change
-    });
-};
 
 export default GoalsScreen;

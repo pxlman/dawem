@@ -117,7 +117,6 @@ const GoalNodeMindMap: React.FC<GoalNodeMindMapProps> = memo(({
                             value={editedTitle}
                             onChangeText={setEditedTitle}
                             autoFocus
-                            multiline
                             onBlur={handleCancel} // Cancel if input loses focus
                             onSubmitEditing={handleSave} // Save on keyboard submit
                         />
