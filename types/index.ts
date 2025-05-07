@@ -1,6 +1,7 @@
 // types/index.ts
 
 import { useAppState } from "@/context/AppStateContext";
+import { Day } from "date-fns";
 
 export type HabitRepetitionType = "daily" | "weekly";
 export type HabitMeasurementType = "binary" | "count";
@@ -86,6 +87,7 @@ export interface LogEntry {
 
 export interface AppSettings {
     startTimeOfDay?: string; // New field for the start time of the day (e.g., "08:00")
+    startDayOfWeek: Day; // Sun=0
 }
 
 export interface AppState {

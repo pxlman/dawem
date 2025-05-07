@@ -1,6 +1,6 @@
 // utils/dateUtils.ts
-import { isBefore, isAfter, format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay } from 'date-fns'; // Ensure format is imported
-import { Habit, LogEntry, HabitRepetitionType, RepetitionConfig } from '../types';
+import { isBefore, isAfter, format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay, endOfWeek, startOfWeek, Day } from 'date-fns'; // Ensure format is imported
+import { Habit, HabitLogStatus, LogEntry, HabitRepetitionType, RepetitionConfig } from '@/types/index';
 
 export const getTodayDateString = (): string => {
   return format(new Date(), 'yyyy-MM-dd');
@@ -34,6 +34,10 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     
     const today = currentDate.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
 
+    if(habit.repetition.type === 'weekly' && habit.measurement.type === 'count'){
+        const weekend = getWeekBoundaries(currentDate).end.toISOString().split('T')[0];
+        if(isAfter(weekend, habit.startDate)) return true;
+    }
     // Check if the habit is within its start and end dates
     if (habit.startDate && isBefore(today, habit.startDate)) return false;
     if (habit.endDate && isAfter(today, habit.endDate) ) return false;
@@ -42,7 +46,6 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     if (habit.repetition.type === 'daily') {
         return true;
     }
-
     // Handle weekly habits
     if (habit.repetition.type === 'weekly') {
         const dayOfWeek = (currentDate.getDay() + 1 ) % 7; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
@@ -64,57 +67,43 @@ export const getLastNDates = (days: number): Date[] => {
     }
 };
 
-// Gets completion status for a specific habit on a specific date
-import { HabitLogStatus } from '../types'; // Import the status type
-
-// Define the possible heatmap statuses we'll use for coloring
-export type HeatmapStatus = HabitLogStatus | 'none'; // 'right', 'wrong', 'circle', 'none'
-
-// Updated function to return our specific HeatmapStatus type
-export const getCompletionStatusForDate = (
-    habitId: string,
-    date: Date,
-    logs: LogEntry[]
-): HeatmapStatus => { // Return the specific HeatmapStatus type
-    const dateString = format(date, 'yyyy-MM-dd');
-    const log = logs.find(l => l.habitId === habitId && l.date === dateString);
-
-    if (!log || !log.status) { // If no log or log has no status (e.g., count only, or old data)
-        // Consider count habits here? If log exists and value > 0, maybe return 'right'?
-        if (log && log.value !== undefined && log.value > 0) {
-            return 'right'; // Treat positive count as 'right' for heatmap coloring
-        }
-        return 'none'; // Default to 'none'
-    }
-
-    // Return the status directly if it's one we recognize
-    if (log.status === 'right' || log.status === 'wrong' || log.status === 'circle') {
-        return log.status;
-    }
-
-    // Fallback if status is somehow invalid
-    console.warn(`Unknown log status found: ${log.status} for habit ${habitId} on ${dateString}`);
-    return 'none';
+/**
+ * Returns the date string for the last day of the week containing the given date
+ * @param date The date to find the week's last day for
+ * @param startDayOfWeek The day to start the week (0 = Sunday, 1 = Monday, etc.)
+ * @returns ISO date string (YYYY-MM-DD) for the last day of the week
+ */
+export const getLastDayOfWeekString = (date: Date | string, startDayOfWeek: Day = 6): string => {
+    const dateObj = new Date(date);
+    const endOfWeekDate = endOfWeek(dateObj, { weekStartsOn: startDayOfWeek });
+    return format(endOfWeekDate, 'yyyy-MM-dd');
 };
 
 /**
- * Returns the date string of the Saturday for the week containing the given date
- * @param date The date to find the week's Saturday for
- * @returns ISO date string (YYYY-MM-DD) for the Saturday
+ * Returns the date range for a week containing the given date
+ * @param date Any date within the week
+ * @param startDayOfWeek The day to start the week (0 = Sunday, 1 = Monday, etc.)
+ * @returns Object with start and end dates of the week
  */
+export const getWeekBoundaries = (date: Date, startDayOfWeek: Day = 6): { start: Date, end: Date} => {
+    const weekStart = startOfWeek(date, { weekStartsOn: startDayOfWeek });
+    const weekEnd = endOfWeek(date, { weekStartsOn: startDayOfWeek });
+    return { start: weekStart, end: weekEnd };
+};
+
+/**
+ * Gets all dates in a week containing the given date
+ * @param date Any date within the week
+ * @param startDayOfWeek The day to start the week (0 = Sunday, 1 = Monday, etc.)
+ * @returns Array of Date objects for each day in the week
+ */
+export const getDatesInWeek = (date: Date): Date[] => {
+    const { start, end } = getWeekBoundaries(date);
+    return eachDayOfInterval({ start, end });
+};
+
+// Keep the existing function for backward compatibility
 export const getSaturdayDateString = (date: Date | string): string => {
-    const d = new Date(date);
-    const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    
-    // Calculate the date of Saturday for the current week
-    if (dayOfWeek === 0) {
-        // Sunday: go back 1 day to previous Saturday
-        d.setDate(d.getDate() - 1);
-    } else if (dayOfWeek !== 6) {
-        // Monday-Friday: go forward to next Saturday
-        d.setDate(d.getDate() - (dayOfWeek + 1));
-    }
-    // If dayOfWeek === 6, it's already Saturday, no adjustment needed
-    
-    return d.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
+    // Saturday is the last day when week starts on Sunday
+    return getLastDayOfWeekString(date);
 };

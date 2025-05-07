@@ -17,13 +17,15 @@ export const initialState: AppState = {
         { id: 'global_night', name: 'العشاء - النوم' },
     ],
     logs: [],
-    settings: {},
+    settings: {
+        startDayOfWeek: 6
+    },
     // dispatch: () => { },
 };
 
 export const appReducer = (state: AppState, action: AppAction): AppState => {
     // console.log(`Reducer Action: ${action.type}`); // Optional logging
-
+    console.log(action.type, action.payload)
     switch (action.type) {
         // --- Habits ---
         case 'ADD_HABIT': {
@@ -33,21 +35,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 console.error("ADD_HABIT Error: Invalid payload."); return state;
             }
             const newHabit: Habit = {
-                id: generateId(), createdAt: new Date().toISOString(),
-                // Spread payload ensures all top-level fields are included
+                id: generateId(), 
+                createdAt: new Date().toISOString(),
                 ...payload,
-                // Explicitly ensure nested objects are correctly formed if needed,
-                // though spread usually handles this if payload structure matches type
-                 repetition: {
-                     type: payload.repetition.type,
-                     config: payload.repetition.config ?? {} // Ensure config exists
-                 },
-                 measurement: {
-                      type: payload.measurement.type,
-                    //   unit: payload.measurement.unit,
-                      targetValue: payload.measurement.targetValue // Include targetValue
-                 },
-                 startDate: getSaturdayDateString(payload.startDate)
             };
             return { ...state, habits: [...state.habits, newHabit] };
         }
@@ -76,14 +66,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const { habitId, date, status, value } = action.payload;
             if (!habitId || !date) { console.error("LOG_HABIT Error: Missing habitId or date."); return state; }
             
-            // Find the habit being logged
-            const habit = state.habits.find((h:Habit) => h.id === habitId);
-            
-            // If it's a weekly counter habit, adjust the date to the Saturday of the current week
-            let logDate = date;
-            if (habit && habit.repetition.type === 'weekly' && habit.measurement.type === 'count') {
-                logDate = getSaturdayDateString(date);
-            }
+            // Use the exact date provided - no special handling for weekly counters anymore
+            const logDate = date;
 
             const existingLogIndex = state.logs.findIndex((log: LogEntry) => log.habitId === habitId && log.date === logDate);
             let newLogs: LogEntry[];

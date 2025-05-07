@@ -9,7 +9,7 @@ import { useAppDispatch, useAppState } from '../../context/AppStateContext';
 import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correct import
 import { isHabitDue } from '../../utils/dateUtils';
 import Colors, { fixedColors } from '../../constants/Colors'; // Import fixed colors
-import { Habit, TimeModule } from '../../types';
+import { Habit, TimeModule } from '@/types/index';
 import HabitEditModal from '../../components/HabitEditModal'; // Import the new modal component
 
 // --- Date Header Component (With animation for today button) ---
@@ -216,7 +216,7 @@ export default function HabitListScreen() {
 
     // Grouping Logic
     const groupedHabitsForDisplay: TimeModuleGroupData[] = useMemo(() => {
-        const dueHabits = habits.filter(habit => 
+        const dueHabits = habits.filter((habit:Habit) => 
             isHabitDue(habit, currentDate) // Only check if habit is due
         );
         const orderedTimeModules = [...timeModules]; // Ensure correct order
@@ -225,12 +225,12 @@ export default function HabitListScreen() {
             return acc;
         }, {});
         groups['uncategorized'] = { timeModule: undefined, habits: [] };
-        dueHabits.forEach(habit => {
+        dueHabits.forEach((habit:Habit) => {
             const targetGroupId = habit.timeModuleId && groups[habit.timeModuleId] ? habit.timeModuleId : 'uncategorized';
             if (groups[targetGroupId]) groups[targetGroupId].habits.push(habit);
             else groups['uncategorized'].habits.push(habit);
         });
-        const orderedGroupIds = [...timeModules.map(tm => tm.id), 'uncategorized'];
+        const orderedGroupIds = [...timeModules.map((tm:TimeModule) => tm.id), 'uncategorized'];
         return orderedGroupIds
             .map(id => groups[id])
             .filter(group => group && group.habits.length > 0); // Ensure group exists and is not empty

@@ -2,14 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
 import Colors from '../../constants/Colors';
-import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '../../types';
+import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { isHabitDue } from '../../utils/dateUtils';
 import { addDays,subDays,isBefore } from 'date-fns';
 import { getSaturdayDateString } from '../../utils/dateUtils';
+import { getWeeklyHabitTotal } from '@/utils/habitUtils';
+import { getTextColorForBackground } from '@/utils/colorUtils';
 
 export default function StatsScreen() {
-    const { habits, logs } = useAppState();
+    const { habits, logs, settings } = useAppState();
     
     // State for month navigation (0 = current month, -1 = previous month, etc.)
     const [monthOffset, setMonthOffset] = useState(0);
@@ -100,13 +102,13 @@ export default function StatsScreen() {
     // Split habits by repetition type and measurement type
     const { dailyHabits, weeklyBinaryHabits, weeklyCounterHabits } = useMemo(() => {
         return {
-            dailyHabits: habits.filter(h => 
+            dailyHabits: habits.filter((h:Habit) => 
                 h.repetition.type === 'daily' && h.enabled !== false),
-            weeklyBinaryHabits: habits.filter(h => 
+            weeklyBinaryHabits: habits.filter((h:Habit) => 
                 h.repetition.type === 'weekly' && 
                 h.measurement.type === 'binary' && 
                 h.enabled !== false),
-            weeklyCounterHabits: habits.filter(h => 
+            weeklyCounterHabits: habits.filter((h:Habit) => 
                 h.repetition.type === 'weekly' && 
                 h.measurement.type === 'count' && 
                 h.enabled !== false)
@@ -120,7 +122,7 @@ export default function StatsScreen() {
         const isDue = isHabitDue(habit, date);
         if(!isDue) return {status:'notdue', value:0}
         const dateStr = date.toISOString().split('T')[0];
-        const log = logs.find(l => l.habitId === habit.id && l.date === dateStr);
+        const log = logs.find((l:LogEntry) => l.habitId === habit.id && l.date === dateStr);
         if(!isDue) return {status: 'empty', value:0}
         if (habit.measurement.type === 'binary') {
             if (!log) {
@@ -155,17 +157,12 @@ export default function StatsScreen() {
     };
 
     // Get weekly counter habit status for a specific week (using Saturday's value)
-    const getWeeklyCounterStatus = (habit: Habit, weekStart: Date) => {
+    const getWeeklyCounterStatus = (habit: Habit, date: Date) => {
         // For weekly counter habits, use the Saturday date as the key date
-        const saturdayDate = new Date(weekStart);
-        const dateStr = saturdayDate.toISOString().split('T')[0];
-        const log = logs.find(l => l.habitId === habit.id && l.date === dateStr);
-        
-        const targetValue = habit.measurement.targetValue || 0;
-        const value = log?.value || 0;
-        
-        // Determine if the habit was due this week
-        const isDue = isHabitDue(habit, saturdayDate);
+        let value = getWeeklyHabitTotal(habit.id, date, logs, settings.startDayOfWeek);
+        let targetValue = habit.measurement.targetValue || 0;
+        const dateStr = date.toISOString().split('T')[0];
+        let isDue = isHabitDue(habit, date)
         
         if (value > targetValue && targetValue > 0) {
             return { status: 'exceeded', value, isDue, percentage: Math.round((value / targetValue) * 100) }; // Exceeded status
@@ -276,7 +273,8 @@ export default function StatsScreen() {
                                                 {habit.measurement.type === 'count' && status.value > 0 && (
                                                     <Text style={[
                                                         styles.countText,
-                                                        status.status === 'notdue' && styles.notDueText
+                                                        status.status === 'notdue' && styles.notDueText,
+                                                        (status.status === 'exceeded' && styles.exceededCountText),
                                                     ]}>
                                                         {status.value}
                                                     </Text>
@@ -406,7 +404,9 @@ export default function StatsScreen() {
                                                 {status.value > 0 && (
                                                     <Text style={[
                                                         styles.weekCountText,
-                                                        !status.isDue && styles.notDueText
+                                                        !status.isDue && styles.notDueText,
+                                                        // Use darker text for buff background
+                                                        status.status === 'exceeded' && styles.exceededCountText
                                                     ]}>
                                                         {status.value}/{habit.measurement.targetValue || 0} ({status.percentage}%)
                                                     </Text>
@@ -801,4 +801,8 @@ const styles = StyleSheet.create({
         color: 'white',
         textAlign: 'center',
     },
+    exceededCountText: {
+        color: '#000000', // Black text for buff background for better contrast
+    },
+    
 });

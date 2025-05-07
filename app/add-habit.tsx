@@ -20,7 +20,7 @@ export default function AddHabitModalScreen() {
     const dispatch = useAppDispatch();
 
     const habit = {
-      id: habitId?? null,
+      // id: habitId?? null,
       title: '',
       color: Colors.primary,
       repetition: {
@@ -36,7 +36,7 @@ export default function AddHabitModalScreen() {
       endDate: null
     } as Habit
     if(habitId){
-
+      habit.id = habitId
     }
 
     // Ensure currentDate is a valid Date object or fallback to today
@@ -116,7 +116,7 @@ export default function AddHabitModalScreen() {
         };
         // Assert non-null for dispatch payload after validation
         const habitData = {
-          id: habitId?? null,
+          // id: habitId?? null,
           title: title.trim(),
           color,
           repetition: { type: repetitionType!, config },
