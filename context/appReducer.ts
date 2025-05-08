@@ -2,6 +2,7 @@
 import { AppState, AppAction, Habit, Goal, TimeModule, LogEntry } from '@/types/index'; // Ensure correct path
 import { generateId } from '../utils/helpers'; // Ensure correct path
 import { AddHabitPayload } from '@/types/index';
+import { ThemeType } from '@/types/index';
 import { getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
@@ -19,7 +20,8 @@ export const initialState: AppState = {
     ],
     logs: [],
     settings: {
-        startDayOfWeek: 6
+        startDayOfWeek: 6,
+        theme: 'night'
     },
     // dispatch: () => { },
 };

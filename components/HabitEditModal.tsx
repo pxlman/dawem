@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Colors  , {fixedColors} from '../constants/Colors';
-import { Habit, TimeModule } from '@/types/index';
+import { Goal, Habit, TimeModule } from '@/types/index';
 import { useAppDispatch, useAppState } from '../context/AppStateContext';
 import { format } from 'date-fns'; // Ensure format is imported
 import DateTimePicker from '@react-native-community/datetimepicker'; // added
 import DropDownPicker from 'react-native-dropdown-picker'; // Import DropDownPicker
+import { getGoalOfHabit } from '@/utils/goalUtils';
 
 interface HabitEditModalProps {
     habit: Habit | null;
@@ -29,19 +30,19 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onC
     );
     // New state for goal
     const [goalOpen, setGoalOpen] = useState(false);
-    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(habit?.goalId || null);
+    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(getGoalOfHabit(habit?.id || '')?.id || null);
 
     // Filter goals to only include those without subgoals
     const goalItems = useMemo(() => {
       // Filter to include only goals without subgoals (leaf goals)
-      const leafGoals = (goals || []).filter(goal => {
+      const leafGoals = (goals || []).filter((goal:Goal) => {
         return !goal.subgoals || goal.subgoals.length === 0;
       });
       
       // Add a "None" option at the beginning
       return [
         { label: 'None', value: null },
-        ...leafGoals.map(goal => ({ label: goal.title, value: goal.id }))
+        ...leafGoals.map((goal:Goal) => ({ label: goal.title, value: goal.id }))
       ];
     }, [goals]);
 
@@ -309,6 +310,7 @@ const styles = StyleSheet.create({
     },
     timeModuleOptionSelected: {
         borderColor: Colors.primary,
+        borderWidth: 2,
         color: Colors.darkGrey,
     },
     timeModuleText: {

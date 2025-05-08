@@ -6,7 +6,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext'; // Adjust path if needed
 import Colors , { fixedColors } from '../constants/Colors'; // Adjust path if needed
-import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig } from '@/types/index'; // Adjust path if needed
+import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig, Goal } from '@/types/index'; // Adjust path if needed
 import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { format } from 'date-fns'; // Ensure format is imported
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -74,7 +74,7 @@ export default function AddHabitModalScreen() {
     const timeModuleItems = useMemo(() => timeModules.map((tm:TimeModule) => ({ label: tm.name, value: tm.id })), [timeModules]);
     const goalItems = useMemo(() => {
       // Filter to include only goals without subgoals (leaf goals)
-      const leafGoals = (goals || []).filter(goal => {
+      const leafGoals = (goals || []).filter((goal:Goal) => {
         // Filter out goals that have subgoals
         // This assumes goals have a property like 'subgoals' or 'hasSubgoals'
         return !goal.subgoals || goal.subgoals.length === 0;
@@ -83,7 +83,7 @@ export default function AddHabitModalScreen() {
       // Add a "None" option at the beginning
       return [
         { label: 'None', value: null },
-        ...leafGoals.map(goal => ({ label: goal.title, value: goal.id }))
+        ...leafGoals.map((goal:Goal) => ({ label: goal.title, value: goal.id }))
       ];
     }, [goals]);
 
@@ -554,6 +554,7 @@ const styles = StyleSheet.create({
     },
     weekDayButtonSelected: {
         borderColor: Colors.primary,
+        borderWidth: 3
     },
     weekDayText: {
         color: Colors.text,

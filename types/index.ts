@@ -2,7 +2,7 @@
 
 import { useAppState } from "@/context/AppStateContext";
 import { Day } from "date-fns";
-import { ThemeType } from "react-native-dropdown-picker";
+
 
 export type HabitRepetitionType = "daily" | "weekly";
 export type HabitMeasurementType = "binary" | "count";
@@ -10,6 +10,7 @@ export type HabitLogStatus = "right" | "wrong" | "circle";
 export type prayer = "الفجر" | "الشروق" | "الظهر" | "العصر" | "المغرب" | "العشاء";
 export type prayerId = "fajr" | "sunrise" | "dhuhr" | "asr" | "sunset" | "isha";
 export type HabitStatus = 'empty' | 'partial' | 'completed' | 'exceeded' | 'missed' | 'notdue';
+export type ThemeType = 'light' | 'dark' | 'browny' | 'fresh' | 'night';
 
 export interface Goal {
     id: string;

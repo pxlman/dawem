@@ -20,6 +20,12 @@ export function goalById(id: string):Goal|undefined{
     return goals.find((goal:Goal) => goal.id === id);
 }
 
+export function getGoalOfHabit(id:string):Goal|undefined{
+    const {goals} = useAppState();
+    const habit = habitById(id);
+    return goals.find((goal:Goal) => goal.habitsIds?.includes(habit.id));
+}
+
 export function habitsOfGoal(id:string):Habit[]{
     const {goals, habits} = useAppState();
     const goal = goalById(id);

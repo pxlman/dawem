@@ -1,7 +1,6 @@
 // constants/Colors.ts
+import {ThemeType} from '@/types/index'
 
-// Define theme types
-export type ThemeType = 'light' | 'dark' | 'browny' | 'fresh' | 'night';
 
 // Define color palette interface
 export interface ColorPalette {
