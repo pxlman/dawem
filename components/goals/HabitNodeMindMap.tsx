@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons,FontAwesome5 } from '@expo/vector-icons';
 import { Habit } from '../../types/index';
 import Colors from '@/constants/Colors';
+import { getTextColorForBackground } from '@/utils/colorUtils';
 
 // Constants for node sizing
 export const HABIT_NODE_HEIGHT = 30; // Smaller than goal nodes
@@ -79,6 +80,7 @@ const HabitNodeMindMap: React.FC<HabitNodeMindMapProps> = ({
           <Text 
             style={[
               styles.habitNodeText,
+              { color: getTextColorForBackground(habit.color || Colors.primary) },
               !isEnabled && styles.pausedHabitText
             ]}
             numberOfLines={1}
@@ -107,7 +109,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   habitNodeText: {
-    color: Colors.darkGrey,
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',

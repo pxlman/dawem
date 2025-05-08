@@ -17,7 +17,7 @@ export default function RootLayout() {
                     <StatusBar
                     animated={true}
                     backgroundColor={Colors.primary}
-                    style='light'
+                    style='dark'
                     hidden={false}
                     />
                     <Stack screenOptions={{ headerShown: false }}>

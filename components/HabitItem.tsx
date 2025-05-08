@@ -196,6 +196,55 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
         );
     };
 
+    // --- Helper function to format repetition info ---
+    const renderRepetitionInfo = () => {
+        if (!habit.repetition) return null;
+        
+        let repetitionText = '';
+        let iconName: keyof typeof Ionicons.glyphMap = 'calendar-outline';
+        
+        if (habit.repetition.type === 'daily') {
+            repetitionText = 'Daily';
+            iconName = 'calendar-outline';
+        } else if (habit.repetition.type === 'weekly') {
+            iconName = 'calendar-number-outline';
+            
+            if (habit.measurement.type === 'count') {
+                repetitionText = `Weekly counter (${habit.measurement.targetValue})`;
+            } else {
+                // Format selected days
+                const daysOfWeek = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                const selectedDays = habit.repetition.config.daysOfWeek || [];
+                
+                if (selectedDays.length === 7) {
+                    repetitionText = 'Every day';
+                } else {
+                    const dayMarkers = daysOfWeek.filter((day, index) => 
+                        selectedDays.includes(index) 
+                    ).join(' ');
+                    repetitionText = `${dayMarkers}`;
+                }
+            }
+        }
+        
+        return (
+            <View style={styles.repetitionInfo}>
+                <Ionicons 
+                    name={iconName} 
+                    size={12} 
+                    color={isFutureDate ? Colors.grey : Colors.textSecondary} 
+                    style={styles.repetitionIcon} 
+                />
+                <Text style={[
+                    styles.repetitionText, 
+                    isFutureDate ? styles.textDisabled : {}
+                ]}>
+                    {repetitionText}
+                </Text>
+            </View>
+        );
+    };
+
     // --- Edit Modal State and Handlers ---
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [editedName, setEditedName] = useState(habit.title);
@@ -278,6 +327,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
                 delayLongPress={300}
             >
                 <Text style={[styles.title, isFutureDate ? styles.textDisabled : {}]}>{habit.title}</Text>
+                {renderRepetitionInfo()}
             </TouchableOpacity>
             {habit.measurement.type === 'binary' ? renderCombinedBinaryButton() : renderCountControls()}
             {isEditModalVisible && renderEditModal()}
@@ -455,6 +505,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '100%', // Ensure buttons span the modal width
+    },
+    repetitionInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    repetitionIcon: {
+        marginRight: 4,
+    },
+    repetitionText: {
+        fontSize: 12,
+        color: Colors.textSecondary,
+        fontWeight: '400',
     },
 });
 

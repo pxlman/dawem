@@ -116,7 +116,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
     return (
         <View style={styles.datePickerContainer}>
             <TouchableOpacity onPress={handlePrevDay} style={styles.dateArrow} hitSlop={10}>
-                <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+                <Ionicons name="chevron-back" size={24} style={styles.dateArrowIcon} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleTodayPress}>
                 <Animated.Text 
@@ -137,7 +137,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
                 <Ionicons name='calendar-outline' style={styles.todayButtonIcon} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleNextDay} style={styles.dateArrow} hitSlop={10}>
-                <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
+                <Ionicons name="chevron-forward" size={24} style={styles.dateArrowIcon} />
             </TouchableOpacity>
         </View>
     );
@@ -337,7 +337,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1, 
         borderBottomColor: Colors.lightGrey,
     },
-    dateArrow: { padding: 8 },
+    dateArrow: { 
+        padding: 8,
+    },
+    dateArrowIcon: {
+        color:Colors.accent
+    },
     dateText: { 
         fontSize: 17, 
         fontWeight: '600', 
@@ -381,7 +386,7 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     todayButtonIcon: {
-        color: Colors.primary,
+        color: Colors.accent,
         fontWeight: 'thin',
         fontSize: 24
         // fontSize: 14,

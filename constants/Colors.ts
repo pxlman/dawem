@@ -72,7 +72,7 @@ const themes: Record<string, MainPalette> = {
   },
   night: {
     primary: "#ffffff",         // ⬅️ Lighter buff – improved visibility on dark bg
-    accent: "#64b5f6",          // Soft pale beige – hover/active
+    accent: "#B3EDFF",          // Soft pale beige – hover/active
     background: "#121212",      // Deep dark brown – main app background
     surface: "#1f1f1f",         // Slightly lifted card background
     text: "#ffffff",            // Creamy white – high contrast
@@ -96,7 +96,7 @@ const needed = {
 }
 
 // Default theme
-let currentTheme: ThemeType = 'night';
+let currentTheme: ThemeType = 'browny';
 
 // Helper to get current theme colors
 const getColors = (): ColorPalette => {

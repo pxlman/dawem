@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
         color: '#111',
         flexShrink: 1,
+        textAlign: 'center',
     },
     textInput: {
         fontSize: 14,

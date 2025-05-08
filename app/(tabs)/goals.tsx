@@ -73,7 +73,7 @@ const GoalsScreen: React.FC = () => {
       (parentGoalId: string | null = null) => {
         const newGoal = {
           title: "New Goal - Edit Me!",
-          color: fixedColors[3],
+          color: fixedColors[5],
           enabled: true,
         };
 
