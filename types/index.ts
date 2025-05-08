@@ -99,11 +99,28 @@ export interface AppState {
     // dispatch: (action: AppAction) => void;
 }
 
+// Payload type for ADD_HABIT action
+export interface AddHabitPayload {
+    title: string;
+    description?: string;
+    timeModuleId: string;
+    repetition: HabitRepetition;
+    measurement: HabitMeasurement;
+    enabled: boolean;
+    important?: boolean;
+    startDate: string;
+    endDate?: string;
+    color: string;
+    icon?: string;
+    goalId?: string; // Optional goal ID that won't be part of the habit object
+    // Add any other fields needed for creating a habit
+}
+
 // Actions remain the same, payload structure for ADD/UPDATE habit now includes the new fields
 export type AppAction =
     | { type: "LOAD_STATE"; payload: AppState }
     | { type: "RESET_STATE" }
-    | { type: "ADD_HABIT"; payload: Omit<Habit, "id" | "createdAt"> }
+    | { type: "ADD_HABIT"; payload: AddHabitPayload }
     | { type: "UPDATE_HABIT"; payload: Partial<Habit> & { id: string } }
     | { type: "DELETE_HABIT"; payload: { id: string } }
     // Goal-related actions

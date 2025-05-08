@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import Colors , {fixedColors} from '../constants/Colors';
 import { Habit, TimeModule } from '@/types/index';
 import { useAppDispatch, useAppState } from '../context/AppStateContext';
 import { format } from 'date-fns'; // Ensure format is imported
 import DateTimePicker from '@react-native-community/datetimepicker'; // added
+import DropDownPicker from 'react-native-dropdown-picker'; // Import DropDownPicker
 
 interface HabitEditModalProps {
     habit: Habit | null;
@@ -14,7 +15,7 @@ interface HabitEditModalProps {
 
 const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onClose }) => {
     const dispatch = useAppDispatch();
-    const {timeModules} = useAppState();
+    const {timeModules, goals} = useAppState(); // Also get goals from app state
     const [editedName, setEditedName] = useState(habit?.title || '');
     const [editedColor, setEditedColor] = useState(habit?.color || '');
     const [editedTimeModuleId, setEditedTimeModuleId] = useState(habit?.timeModuleId || '');
@@ -26,6 +27,23 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onC
             ? habit.measurement.targetValue?.toString()
             : ''
     );
+    // New state for goal
+    const [goalOpen, setGoalOpen] = useState(false);
+    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(habit?.goalId || null);
+
+    // Filter goals to only include those without subgoals
+    const goalItems = useMemo(() => {
+      // Filter to include only goals without subgoals (leaf goals)
+      const leafGoals = (goals || []).filter(goal => {
+        return !goal.subgoals || goal.subgoals.length === 0;
+      });
+      
+      // Add a "None" option at the beginning
+      return [
+        { label: 'None', value: null },
+        ...leafGoals.map(goal => ({ label: goal.title, value: goal.id }))
+      ];
+    }, [goals]);
 
     // New handler to clear the end date (set to endless)
     const handleClearEndDate = () => {
@@ -51,6 +69,13 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onC
                 }
             },
         });
+        dispatch({
+            type: 'LINK_HABIT_TO_GOAL',
+            payload: {
+                habitId: habit.id,
+                goalId: selectedGoalId
+            }
+        })
         onClose();
     };
 
@@ -132,6 +157,29 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onC
                         </TouchableOpacity>
                     ))}
                 </View>
+
+                {/* Goal Dropdown */}
+                <Text style={styles.label}>Link to Goal (Optional)</Text>
+                <DropDownPicker
+                    open={goalOpen}
+                    value={selectedGoalId}
+                    items={goalItems}
+                    setOpen={setGoalOpen}
+                    setValue={setSelectedGoalId}
+                    placeholder="Select goal or none..."
+                    style={styles.dropdownStyle}
+                    placeholderStyle={styles.dropdownPlaceholderStyle}
+                    dropDownContainerStyle={styles.dropdownContainerStyle}
+                    textStyle={styles.dropdownTextStyle}
+                    theme="DARK"
+                    mode="SIMPLE"
+                    listMode="SCROLLVIEW"
+                    zIndex={1000}
+                />
+                {goalItems.length <= 1 && (
+                    <Text style={styles.infoTextError}>No eligible goals available. Only goals without subgoals can have habits.</Text>
+                )}
+
                 {/* Conditionally render Target Value input if habit is counter */}
                 {habit && habit.measurement && habit.measurement.type === 'count' && (
                     <>
@@ -311,6 +359,30 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
         textAlign: 'center',
+    },
+    // Add dropdown styles
+    dropdownStyle: {
+        backgroundColor: Colors.surface,
+        borderColor: Colors.grey,
+        marginBottom: 15,
+    },
+    dropdownPlaceholderStyle: {
+        color: Colors.textSecondary,
+    },
+    dropdownContainerStyle: {
+        backgroundColor: Colors.surface,
+        borderColor: Colors.grey,
+    },
+    dropdownTextStyle: {
+        fontSize: 16, 
+        color: Colors.text,
+    },
+    infoTextError: {
+        fontSize: 13,
+        fontStyle: 'italic',
+        color: Colors.error,
+        marginTop: 5,
+        marginBottom: 15,
     },
 });
 

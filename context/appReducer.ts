@@ -1,6 +1,7 @@
 // context/appReducer.ts
 import { AppState, AppAction, Habit, Goal, TimeModule, LogEntry } from '@/types/index'; // Ensure correct path
 import { generateId } from '../utils/helpers'; // Ensure correct path
+import { AddHabitPayload } from '@/types/index';
 import { getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
@@ -25,21 +26,57 @@ export const initialState: AppState = {
 
 export const appReducer = (state: AppState, action: AppAction): AppState => {
     // console.log(`Reducer Action: ${action.type}`); // Optional logging
-    console.log(action.type, action.payload)
+    console.log(action.type, action)
     switch (action.type) {
         // --- Habits ---
         case 'ADD_HABIT': {
-            const payload = action.payload;
+            const payload = action.payload as AddHabitPayload;
             // Basic validation (could be more extensive)
             if (!payload || !payload.title || !payload.timeModuleId || !payload.repetition || !payload.measurement) {
                 console.error("ADD_HABIT Error: Invalid payload."); return state;
             }
+            const newHabitId = generateId();
+            
+            // Destructure goalId from payload to exclude it from the habit object
+            const { goalId, ...habitProps } = payload;
             const newHabit: Habit = {
-                id: generateId(), 
+                id: newHabitId, 
                 createdAt: new Date().toISOString(),
-                ...payload,
+                ...habitProps,
             };
-            return { ...state, habits: [...state.habits, newHabit] };
+            
+            let updatedGoals = state.goals;
+            
+            // If a goal ID is provided, link the habit to that goal
+            if (goalId) {
+                const goalToUpdate = state.goals.find(g => g.id === goalId);
+                
+                if (goalToUpdate) {
+                    // Check constraint: Cannot link habit to a goal with subgoals
+                    if (goalToUpdate.subgoals && goalToUpdate.subgoals.length > 0) {
+                        console.warn(`Cannot link habit to goal ${goalId} which has subgoals.`);
+                    } else {
+                        // Update the goals array
+                        updatedGoals = state.goals.map(goal => {
+                            if (goal.id === goalId) {
+                                // Add the new habit ID to this goal
+                                const updatedHabitsIds = Array.from(new Set([
+                                    ...(goal.habitsIds || []), 
+                                    newHabitId
+                                ]));
+                                return { ...goal, habitsIds: updatedHabitsIds };
+                            }
+                            return goal;
+                        });
+                    }
+                }
+            }
+            
+            return { 
+                ...state, 
+                habits: [...state.habits, newHabit],
+                goals: updatedGoals
+            };
         }
         case 'UPDATE_HABIT': {
             const payload = action.payload;
@@ -309,12 +346,18 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 return state;
             }
             
-            // Update the goal with the habit ID
+            // First, remove the habit from any other goals that might have it
             const updatedGoals = state.goals.map((goal: Goal) => {
                 if (goal.id === goalId) {
-                    // Add habitId, ensuring uniqueness
+                    // Add habitId to the target goal, ensuring uniqueness
                     const updatedHabitsIds = Array.from(new Set([...(goal.habitsIds || []), habitId]));
                     return { ...goal, habitsIds: updatedHabitsIds };
+                } else if (goal.habitsIds && goal.habitsIds.includes(habitId)) {
+                    // Remove the habit from any other goal
+                    return { 
+                        ...goal, 
+                        habitsIds: goal.habitsIds.filter(id => id !== habitId) 
+                    };
                 }
                 return goal;
             });

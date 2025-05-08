@@ -17,7 +17,7 @@ export default function AddHabitModalScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ habitId?: string; currentDate?: string; goalId?:string }>(); // Include currentDate in params
     const { habitId, currentDate, goalId } = params; // Destructure currentDate
-    const { habits, timeModules } = useAppState();
+    const { habits, timeModules, goals } = useAppState(); // Add goals to destructuring
     const dispatch = useAppDispatch();
 
     const habit = {
@@ -63,13 +63,29 @@ export default function AddHabitModalScreen() {
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(false); // State to toggle advanced options
-
+    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(goalId || null);
+    
     // Dropdown Open State
     const [repetitionOpen, setRepetitionOpen] = useState(false);
     const [timeModuleOpen, setTimeModuleOpen] = useState(false);
+    const [goalOpen, setGoalOpen] = useState(false);
 
     // Picker Items
     const timeModuleItems = useMemo(() => timeModules.map((tm:TimeModule) => ({ label: tm.name, value: tm.id })), [timeModules]);
+    const goalItems = useMemo(() => {
+      // Filter to include only goals without subgoals (leaf goals)
+      const leafGoals = (goals || []).filter(goal => {
+        // Filter out goals that have subgoals
+        // This assumes goals have a property like 'subgoals' or 'hasSubgoals'
+        return !goal.subgoals || goal.subgoals.length === 0;
+      });
+      
+      // Add a "None" option at the beginning
+      return [
+        { label: 'None', value: null },
+        ...leafGoals.map(goal => ({ label: goal.title, value: goal.id }))
+      ];
+    }, [goals]);
 
     // Effect to populate form
     useEffect(() => {
@@ -81,8 +97,20 @@ export default function AddHabitModalScreen() {
     }, [habitId, timeModules, selectedDate]); // Added timeModules dependency
 
     // Callbacks to close other dropdowns
-    const onRepetitionOpen = useCallback(() => setTimeModuleOpen(false), []);
-    const onTimeModuleOpen = useCallback(() => setRepetitionOpen(false), []);
+    const onRepetitionOpen = useCallback(() => {
+      setTimeModuleOpen(false);
+      setGoalOpen(false);
+    }, []);
+    
+    const onTimeModuleOpen = useCallback(() => {
+      setRepetitionOpen(false);
+      setGoalOpen(false);
+    }, []);
+    
+    const onGoalOpen = useCallback(() => {
+      setRepetitionOpen(false);
+      setTimeModuleOpen(false);
+    }, []);
 
     const toggleDaySelection = (index: number) => {
         setSelectedDays(prevSelectedDays =>
@@ -129,7 +157,7 @@ export default function AddHabitModalScreen() {
           startDate,
           endDate,
           enabled:true,
-          goalId: goalId?? null
+          goalId: selectedGoalId // Use selected goal ID from state
         };
         if(habitId !== null){
           dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
@@ -216,6 +244,32 @@ export default function AddHabitModalScreen() {
           />
           {timeModuleItems.length === 0 && (
             <Text style={styles.infoTextError}>No Time Modules defined...</Text>
+          )}
+
+          {/* Goal Dropdown */}
+          <Text style={styles.label}>Link to Goal (Optional)</Text>
+          <DropDownPicker
+            open={goalOpen}
+            value={selectedGoalId}
+            items={goalItems}
+            setOpen={setGoalOpen}
+            setValue={setSelectedGoalId}
+            onOpen={onGoalOpen}
+            placeholder="Select goal or none..."
+            style={styles.dropdownStyle}
+            placeholderStyle={styles.dropdownPlaceholderStyle}
+            dropDownContainerStyle={styles.dropdownContainerStyle}
+            textStyle={styles.dropdownTextStyle}
+            labelStyle={styles.dropdownLabelStyle}
+            listItemLabelStyle={styles.dropdownListItemLabelStyle}
+            theme="DARK"
+            mode="SIMPLE"
+            listMode="SCROLLVIEW"
+            zIndex={3500} // Between time module and repetition
+            zIndexInverse={1500}
+          />
+          {goalItems.length <= 1 && (
+            <Text style={styles.infoTextError}>No eligible goals available. Only goals without subgoals can have habits.</Text>
           )}
 
           {/* Render Pickers first for potential zIndex layering */}
