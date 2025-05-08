@@ -1,19 +1,25 @@
 // app/_layout.tsx
 import React from 'react';
 import { Stack } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Import GestureHandlerRootView
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from '../context/AppStateContext';
-import Colors from '../constants/Colors';
+import Colors from '@/constants/Colors';
 import { StyleSheet, Platform, StatusBar as MStatusBar } from 'react-native';
 
 export default function RootLayout() {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <AppProvider>
-                <SafeAreaProvider style={styles.safeArea}>
-                    <StatusBar style="light" backgroundColor={Colors.surface} />
+            <SafeAreaProvider>
+                <SafeAreaView style={styles.container}>
+                    <StatusBar
+                    animated={true}
+                    backgroundColor={Colors.primary}
+                    style='light'
+                    hidden={false}
+                    />
                     <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="(tabs)" />
                         <Stack.Screen
@@ -50,15 +56,16 @@ export default function RootLayout() {
                             }}
                         />
                     </Stack>
+                </SafeAreaView>
                 </SafeAreaProvider>
             </AppProvider>
         </GestureHandlerRootView>
     );
 }
 const styles = StyleSheet.create({
-    safeArea: {
+    container: {
         flex: 1,
         backgroundColor: Colors.background,
-        paddingTop: Platform.OS === 'android' ? MStatusBar.currentHeight : 0,
+        // paddingTop: Platform.OS === 'android' ? MStatusBar.currentHeight : 0,
     }
 })

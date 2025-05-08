@@ -149,14 +149,14 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: Colors.surface,
-         paddingTop: Platform.OS === 'android' ? Constants.statusBarHeight : 0, // Safer status bar handling
+        //  paddingTop: Platform.OS === 'android' ? Constants.statusBarHeight : 0, // Safer status bar handling
     },
      headerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 15,
-        paddingTop: 10, // Adjust as needed
+        // paddingTop: 10, // Adjust as needed
         paddingBottom: 5,
         borderBottomWidth: 1,
         borderBottomColor: '#eee',

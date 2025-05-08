@@ -17,7 +17,7 @@
       "package": "com.pxlman.dawem",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon2.png",
-        "backgroundColor": "#c3c3c3"
+        "backgroundColor": "#212121"
       }
     },
     "web": {
