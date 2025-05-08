@@ -6,12 +6,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Import
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from '../context/AppStateContext';
 import Colors from '../constants/Colors';
+import { StyleSheet, Platform, StatusBar as MStatusBar } from 'react-native';
 
 export default function RootLayout() {
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <AppProvider>
-                <SafeAreaProvider>
+                <SafeAreaProvider style={styles.safeArea}>
                     <StatusBar style="light" backgroundColor={Colors.surface} />
                     <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="(tabs)" />
@@ -54,3 +55,10 @@ export default function RootLayout() {
         </GestureHandlerRootView>
     );
 }
+const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: Colors.background,
+        paddingTop: Platform.OS === 'android' ? MStatusBar.currentHeight : 0,
+    }
+})

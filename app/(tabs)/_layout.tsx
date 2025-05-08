@@ -17,10 +17,10 @@ export default function TabLayout() {
                 },
                 // --- Update Default Header Colors ---
                 headerStyle: { backgroundColor: Colors.surface }, // Dark surface for headers
-                headerTintColor: Colors.text, // Light text color for headers
+                headerTintColor: Colors.primary,
                 // --- End Updates ---
-                headerTitleStyle: { fontWeight: 'bold' },
-                tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
+                headerTitleStyle: { fontWeight: 'bold', fontSize: 26 },
+                tabBarIcon: ({ focused, size }: { focused: boolean; size: number }) => {
                     let iconName: keyof typeof Ionicons.glyphMap;
                     if (route.name === 'index') iconName = focused ? 'checkbox' : 'checkbox-outline';
                     else if (route.name === 'stats') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
@@ -28,7 +28,7 @@ export default function TabLayout() {
                     // else if (route.name === 'settings') iconName = focused ? 'settings' : 'settings-outline';
                     else iconName = 'help-circle-outline';
                     // color is passed correctly based on tabBarActive/InactiveTintColor
-                    return <Ionicons name={iconName} size={size} color={color} />;
+                    return <Ionicons name={iconName} size={size} color={Colors.primary} />;
                 },
             })}
         >

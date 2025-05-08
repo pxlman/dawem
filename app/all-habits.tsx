@@ -289,7 +289,8 @@ export default function AllHabitsScreen() {
     const keyExtractor = useCallback((item: TimeModuleGroupData) => item.id, []);
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
+        {/* <SafeAreaView style={styles.container}> */}
             {groupedData.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.noHabitsText}>No habits found.</Text>
@@ -327,7 +328,8 @@ export default function AllHabitsScreen() {
                     onClose={closeEditModal}
                 />
             )}
-        </SafeAreaView>
+        {/* </SafeAreaView> */}
+        </View>
     );
 }
 

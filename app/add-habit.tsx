@@ -1,6 +1,6 @@
 // app/add-habit.tsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, ScrollView, Switch, TouchableOpacity, Alert, Platform, StatusBar } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if nee
 import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig } from '@/types/index'; // Adjust path if needed
 import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { format } from 'date-fns'; // Ensure format is imported
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const repetitionOptions = [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, ];
 
@@ -147,271 +148,288 @@ export default function AddHabitModalScreen() {
     };
 
     return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContentContainer} // Added paddingBottom
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled={true} // Helps with dropdown inside scrollview
-      >
-        <Stack.Screen options={{ title: (!habitId)? "Add New Habit": "Edit habit" }} />
-
-        <Text style={styles.label}>Habit Title</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="e.g., صلاة الوتر, قراءة جزء..."
-          placeholderTextColor={Colors.textSecondary}
-        />
-
-        <Text style={styles.label}>Color</Text>
-        <View style={styles.colorPickerContainer}>
-          {fixedColors.map((fixedColor) => (
-            <TouchableOpacity
-              key={fixedColor}
-              style={[
-                styles.colorOption,
-                { backgroundColor: fixedColor },
-                color === fixedColor && styles.colorOptionSelected,
-              ]}
-              onPress={() => setColor(fixedColor)}
-            />
-          ))}
-        </View>
-        {/* Time Module Dropdown */}
-        <Text style={styles.label}>Assign To Time Module</Text>
-        <DropDownPicker
-          open={timeModuleOpen}
-          value={selectedTimeModuleId}
-          items={timeModuleItems}
-          setOpen={setTimeModuleOpen}
-          setValue={setSelectedTimeModuleId}
-          onOpen={onTimeModuleOpen}
-          placeholder="Select time module..."
-          disabled={timeModuleItems.length === 0}
-          style={styles.dropdownStyle}
-          placeholderStyle={styles.dropdownPlaceholderStyle}
-          dropDownContainerStyle={styles.dropdownContainerStyle}
-          textStyle={styles.dropdownTextStyle}
-          labelStyle={styles.dropdownLabelStyle}
-          listItemLabelStyle={styles.dropdownListItemLabelStyle}
-          // arrowIconStyle={styles.dropdownArrowStyle}
-          // tickIconStyle={styles.dropdownTickStyle}
-          theme="DARK"
-          mode="SIMPLE"
-          listMode="SCROLLVIEW"
-          zIndex={4000} // Ensure dropdown is above other elements
-          zIndexInverse={1000}
-        />
-        {timeModuleItems.length === 0 && (
-          <Text style={styles.infoTextError}>No Time Modules defined...</Text>
-        )}
-
-        {/* Render Pickers first for potential zIndex layering */}
-        {/* Repetition Dropdown */}
-        <Text style={styles.label}>Repeats</Text>
-        <DropDownPicker
-          open={repetitionOpen}
-          value={repetitionType}
-          items={repetitionOptions}
-          setOpen={setRepetitionOpen}
-          setValue={setRepetitionType}
-          onOpen={onRepetitionOpen}
-          placeholder="Select repetition..."
-          style={styles.dropdownStyle}
-          placeholderStyle={styles.dropdownPlaceholderStyle}
-          dropDownContainerStyle={styles.dropdownContainerStyle}
-          textStyle={styles.dropdownTextStyle}
-          labelStyle={styles.dropdownLabelStyle}
-          listItemLabelStyle={styles.dropdownListItemLabelStyle}
-          // arrowIconStyle={styles.dropdownArrowStyle}
-          // tickIconStyle={styles.dropdownTickStyle}
-          theme="DARK"
-          mode="SIMPLE"
-          // *** Use SCROLLVIEW for inline attempt ***
-          listMode="SCROLLVIEW"
-          zIndex={3000} // Ensure dropdown is above other elements
-          zIndexInverse={1000}
-        />
-
-        {/* Other Form Fields */}
-
-        <Text style={styles.label}>Track By</Text>
-        <View style={styles.segmentedControlContainer}>
-          <TouchableOpacity
-            style={[
-              styles.segmentedControlOption,
-              measurementType === "binary" &&
-                styles.segmentedControlOptionActive,
-            ]}
-            onPress={() => setMeasurementType("binary")}
-          >
-            <Text
-              style={[
-                styles.segmentedControlText,
-                measurementType === "binary" &&
-                  styles.segmentedControlTextActive,
-              ]}
-            >
-              Completion (✓/✕)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.segmentedControlOption,
-              measurementType === "count" &&
-                styles.segmentedControlOptionActive,
-            ]}
-            onPress={() => setMeasurementType("count")}
-          >
-            <Text
-              style={[
-                styles.segmentedControlText,
-                measurementType === "count" &&
-                  styles.segmentedControlTextActive,
-              ]}
-            >
-              Counter
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {repetitionType === "daily" && measurementType === "count" && (
-          <>
-            <Text style={styles.label}>Target Value</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="number-pad"
-              defaultValue=''
-              onChangeText={(text) => setTargetValue(parseInt(text))}
-              placeholder="e.g., 3"
-              placeholderTextColor={Colors.textSecondary}
-            />
-          </>
-        )}
-        {repetitionType === "weekly" && (
-          <>
-            {measurementType === "count" && (
-              <>
-                <Text style={styles.label}>Target days per week</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="number-pad"
-                  defaultValue=''
-                  onChangeText={(text) => setTargetValue(parseInt(text))}
-                  placeholder="e.g., 3"
-                  placeholderTextColor={Colors.textSecondary}
-                />
-              </>
-            )}
-            {measurementType === "binary" && (
-              <>
-                <Text style={styles.label}>Days of the Week</Text>
-                <View style={styles.weekDaysContainer}>
-                  {["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"].map(
-                    (day, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={[
-                          styles.weekDayButton,
-                          selectedDays.includes(index) &&
-                            styles.weekDayButtonSelected,
-                        ]}
-                        onPress={() => toggleDaySelection(index)}
-                      >
-                        <Text style={styles.weekDayText}>{day}</Text>
-                      </TouchableOpacity>
-                    )
-                  )}
-                </View>
-              </>
-            )}
-          </>
-        )}
-
-        <TouchableOpacity
-          style={styles.toggleButton}
-          onPress={toggleAdvancedOptions}
+      
+      // <SafeAreaProvider>
+        // {/* <StatusBar barStyle="light-content" backgroundColor={Colors.background} /> */}
+        // <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.scrollContentContainer} // Added paddingBottom
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true} // Helps with dropdown inside scrollview
         >
-          <Text style={styles.advancedOptionsTitle}>Advanced Options</Text>
-          <Ionicons
-            name={showAdvancedOptions ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={Colors.textSecondary}
-            style={styles.toggleButtonIcon}
+          <Stack.Screen 
+            options={{ 
+              title: (!habitId)? "Add New Habit": "Edit habit",
+              headerShadowVisible: false,
+              contentStyle: { backgroundColor: Colors.background }
+            }} 
           />
-        </TouchableOpacity>
 
-        {showAdvancedOptions && (
-          <View style={styles.advancedOptionsContainer}>
-            <Text style={styles.label}>Start Date</Text>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => setShowStartDatePicker(true)}
-            >
-              <Text style={styles.datePickerText}>
-                {startDate
-                  ? format(new Date(startDate), "MMM d, yyyy")
-                  : "Select Start Date"}
-              </Text>
-            </TouchableOpacity>
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={startDate ? new Date(startDate) : new Date()}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowStartDatePicker(false);
-                  if (selectedDate)
-                    setStartDate(selectedDate.toISOString().split("T")[0]);
-                }}
-              />
-            )}
+          <Text style={styles.label}>Habit Title</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="e.g., صلاة الوتر, قراءة جزء..."
+            placeholderTextColor={Colors.textSecondary}
+          />
 
-            <Text style={styles.label}>End Date</Text>
-            <TouchableOpacity
-              style={styles.datePickerButton}
-              onPress={() => setShowEndDatePicker(true)}
-            >
-              <Text style={styles.datePickerText}>
-                {endDate ? format(new Date(endDate), "MMM d, yyyy") : "Forever"}
-              </Text>
-            </TouchableOpacity>
-            {showEndDatePicker && (
-              <DateTimePicker
-                value={endDate ? new Date(endDate) : new Date()}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowEndDatePicker(false);
-                  if (selectedDate)
-                    setEndDate(selectedDate.toISOString().split("T")[0]);
-                }}
-              />
-            )}
-            {endDate && (
+          <Text style={styles.label}>Color</Text>
+          <View style={styles.colorPickerContainer}>
+            {fixedColors.map((fixedColor) => (
               <TouchableOpacity
-                onPress={handleClearEndDate}
-                style={styles.clearButton}
+                key={fixedColor}
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: fixedColor },
+                  color === fixedColor && styles.colorOptionSelected,
+                ]}
+                onPress={() => setColor(fixedColor)}
+              />
+            ))}
+          </View>
+          {/* Time Module Dropdown */}
+          <Text style={styles.label}>Assign To Time Module</Text>
+          <DropDownPicker
+            open={timeModuleOpen}
+            value={selectedTimeModuleId}
+            items={timeModuleItems}
+            setOpen={setTimeModuleOpen}
+            setValue={setSelectedTimeModuleId}
+            onOpen={onTimeModuleOpen}
+            placeholder="Select time module..."
+            disabled={timeModuleItems.length === 0}
+            style={styles.dropdownStyle}
+            placeholderStyle={styles.dropdownPlaceholderStyle}
+            dropDownContainerStyle={styles.dropdownContainerStyle}
+            textStyle={styles.dropdownTextStyle}
+            labelStyle={styles.dropdownLabelStyle}
+            listItemLabelStyle={styles.dropdownListItemLabelStyle}
+            // arrowIconStyle={styles.dropdownArrowStyle}
+            // tickIconStyle={styles.dropdownTickStyle}
+            theme="DARK"
+            mode="SIMPLE"
+            listMode="SCROLLVIEW"
+            zIndex={4000} // Ensure dropdown is above other elements
+            zIndexInverse={1000}
+          />
+          {timeModuleItems.length === 0 && (
+            <Text style={styles.infoTextError}>No Time Modules defined...</Text>
+          )}
+
+          {/* Render Pickers first for potential zIndex layering */}
+          {/* Repetition Dropdown */}
+          <Text style={styles.label}>Repeats</Text>
+          <DropDownPicker
+            open={repetitionOpen}
+            value={repetitionType}
+            items={repetitionOptions}
+            setOpen={setRepetitionOpen}
+            setValue={setRepetitionType}
+            onOpen={onRepetitionOpen}
+            placeholder="Select repetition..."
+            style={styles.dropdownStyle}
+            placeholderStyle={styles.dropdownPlaceholderStyle}
+            dropDownContainerStyle={styles.dropdownContainerStyle}
+            textStyle={styles.dropdownTextStyle}
+            labelStyle={styles.dropdownLabelStyle}
+            listItemLabelStyle={styles.dropdownListItemLabelStyle}
+            // arrowIconStyle={styles.dropdownArrowStyle}
+            // tickIconStyle={styles.dropdownTickStyle}
+            theme="DARK"
+            mode="SIMPLE"
+            // *** Use SCROLLVIEW for inline attempt ***
+            listMode="SCROLLVIEW"
+            zIndex={3000} // Ensure dropdown is above other elements
+            zIndexInverse={1000}
+          />
+
+          {/* Other Form Fields */}
+
+          <Text style={styles.label}>Track By</Text>
+          <View style={styles.segmentedControlContainer}>
+            <TouchableOpacity
+              style={[
+                styles.segmentedControlOption,
+                measurementType === "binary" &&
+                  styles.segmentedControlOptionActive,
+              ]}
+              onPress={() => setMeasurementType("binary")}
+            >
+              <Text
+                style={[
+                  styles.segmentedControlText,
+                  measurementType === "binary" &&
+                    styles.segmentedControlTextActive,
+                ]}
               >
-                <Text style={styles.clearButtonText}>
-                  Clear End Date (Set to Forever)
+                Completion (✓/✕)
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.segmentedControlOption,
+                measurementType === "count" &&
+                  styles.segmentedControlOptionActive,
+              ]}
+              onPress={() => setMeasurementType("count")}
+            >
+              <Text
+                style={[
+                  styles.segmentedControlText,
+                  measurementType === "count" &&
+                    styles.segmentedControlTextActive,
+                ]}
+              >
+                Counter
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {repetitionType === "daily" && measurementType === "count" && (
+            <>
+              <Text style={styles.label}>Target Value</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                defaultValue=''
+                onChangeText={(text) => setTargetValue(parseInt(text))}
+                placeholder="e.g., 3"
+                placeholderTextColor={Colors.textSecondary}
+              />
+            </>
+          )}
+          {repetitionType === "weekly" && (
+            <>
+              {measurementType === "count" && (
+                <>
+                  <Text style={styles.label}>Target days per week</Text>
+                  <TextInput
+                    style={styles.input}
+                    keyboardType="number-pad"
+                    defaultValue=''
+                    onChangeText={(text) => setTargetValue(parseInt(text))}
+                    placeholder="e.g., 3"
+                    placeholderTextColor={Colors.textSecondary}
+                  />
+                </>
+              )}
+              {measurementType === "binary" && (
+                <>
+                  <Text style={styles.label}>Days of the Week</Text>
+                  <View style={styles.weekDaysContainer}>
+                    {["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"].map(
+                      (day, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={[
+                            styles.weekDayButton,
+                            selectedDays.includes(index) &&
+                              styles.weekDayButtonSelected,
+                          ]}
+                          onPress={() => toggleDaySelection(index)}
+                        >
+                          <Text style={styles.weekDayText}>{day}</Text>
+                        </TouchableOpacity>
+                      )
+                    )}
+                  </View>
+                </>
+              )}
+            </>
+          )}
+
+          <TouchableOpacity
+            style={styles.toggleButton}
+            onPress={toggleAdvancedOptions}
+          >
+            <Text style={styles.advancedOptionsTitle}>Advanced Options</Text>
+            <Ionicons
+              name={showAdvancedOptions ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={Colors.textSecondary}
+              style={styles.toggleButtonIcon}
+            />
+          </TouchableOpacity>
+
+          {showAdvancedOptions && (
+            <View style={styles.advancedOptionsContainer}>
+              <Text style={styles.label}>Start Date</Text>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setShowStartDatePicker(true)}
+              >
+                <Text style={styles.datePickerText}>
+                  {startDate
+                    ? format(new Date(startDate), "MMM d, yyyy")
+                    : "Select Start Date"}
                 </Text>
               </TouchableOpacity>
-            )}
-          </View>
-        )}
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={startDate ? new Date(startDate) : new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowStartDatePicker(false);
+                    if (selectedDate)
+                      setStartDate(selectedDate.toISOString().split("T")[0]);
+                  }}
+                />
+              )}
 
-        {/* Action Buttons */}
-        <TouchableOpacity style={styles.addHabitButton} onPress={handleSave}>
-          <Text style={styles.addHabitButtonText}>{"Add Habit"}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+              <Text style={styles.label}>End Date</Text>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setShowEndDatePicker(true)}
+              >
+                <Text style={styles.datePickerText}>
+                  {endDate ? format(new Date(endDate), "MMM d, yyyy") : "Forever"}
+                </Text>
+              </TouchableOpacity>
+              {showEndDatePicker && (
+                <DateTimePicker
+                  value={endDate ? new Date(endDate) : new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selectedDate) => {
+                    setShowEndDatePicker(false);
+                    if (selectedDate)
+                      setEndDate(selectedDate.toISOString().split("T")[0]);
+                  }}
+                />
+              )}
+              {endDate && (
+                <TouchableOpacity
+                  onPress={handleClearEndDate}
+                  style={styles.clearButton}
+                >
+                  <Text style={styles.clearButtonText}>
+                    Clear End Date (Set to Forever)
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <TouchableOpacity style={styles.addHabitButton} onPress={handleSave}>
+            <Text style={styles.addHabitButtonText}>{"Add Habit"}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      // {/* </SafeAreaView>
+      // </SafeAreaProvider> */}
     );
 }
 
 // --- Styles ---
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: Colors.background,
+        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    },
     container: { flex: 1, backgroundColor: Colors.background },
     scrollContentContainer: { // Style the content container
         padding: 20,
@@ -578,10 +596,10 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary,
         paddingVertical: 12,
         paddingHorizontal: 20,
-        borderRadius: 25,
+        borderRadius: 10,
         alignItems: 'center',
         marginTop: 20,
-        shadowColor: '#000',
+        shadowColor: Colors.surface,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 3,
@@ -609,7 +627,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     segmentedControlOptionActive: {
-        backgroundColor: Colors.primary,
+        backgroundColor: Colors.accent,
     },
     segmentedControlText: {
         fontSize: 15,

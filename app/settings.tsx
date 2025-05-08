@@ -5,7 +5,7 @@ import DraggableFlatList from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext';
 import Colors from '../constants/Colors';
-import { TimeModule } from '../types';
+import { TimeModule } from '@/types/index';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -47,7 +47,7 @@ export default function SettingsScreen() {
     const handleAddTimeModule = () => {
         const trimmedName = newTimeModuleName.trim();
         if (!trimmedName) return Alert.alert("Error", "Time Module name cannot be empty.");
-        if (timeModules.some(tm => tm.name.toLowerCase() === trimmedName.toLowerCase())) {
+        if (timeModules.some((tm:TimeModule) => tm.name.toLowerCase() === trimmedName.toLowerCase())) {
             return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
         }
         // Add without a default start time
@@ -116,7 +116,7 @@ export default function SettingsScreen() {
         if (!trimmedName) {
             return Alert.alert("Error", "Time Module name cannot be empty.");
         }
-        if (timeModules.some(tm => tm.id !== id && tm.name.toLowerCase() === trimmedName.toLowerCase())) {
+        if (timeModules.some((tm:TimeModule) => tm.id !== id && tm.name.toLowerCase() === trimmedName.toLowerCase())) {
             return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
         }
         dispatch({ type: 'UPDATE_TIME_MODULE', payload: { id, name: trimmedName } });
@@ -151,7 +151,7 @@ export default function SettingsScreen() {
 
     // Simplified to handle only start time
     const handleEditModuleTime = (moduleId: string) => {
-        const module = timeModules.find(m => m.id === moduleId);
+        const module = timeModules.find((m:TimeModule) => m.id === moduleId);
         if (!module) return;
         
         const timeStr = module.startTime || '00:00';
@@ -323,7 +323,7 @@ export default function SettingsScreen() {
                 {timeModules.length > 1 && (
                     <>
                         <TouchableOpacity onPress={() => handleRenameTimeModule(item.id, item.name)} hitSlop={15}>
-                            <Ionicons name="create-outline" size={22} color={Colors.primary} />
+                            <Ionicons name="create-outline" size={22} color={Colors.accent} />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => handleDeleteTimeModule(item.id, item.name)} hitSlop={15}>
                             <Ionicons name="trash-outline" size={22} color={Colors.error} />
@@ -337,7 +337,7 @@ export default function SettingsScreen() {
     return (
         <>
             <FlatList
-                data={[{ key: 'startTime' }, { key: 'timeModules' }, { key: 'importExport' }, { key: 'dataManagement' }]}
+                data={[{ key: 'timeModules' },{ key: 'startTime' }, { key: 'importExport' }, { key: 'dataManagement' }]}
                 renderItem={({ item }) => {
                     if (item.key === 'startTime') {
                         return (
@@ -399,7 +399,7 @@ export default function SettingsScreen() {
                                         onPress={handleImportHabits}
                                         style={[styles.actionButton, styles.secondaryButton]}
                                     >
-                                        <Ionicons name="arrow-down-circle-outline" size={22} color={Colors.text} />
+                                        <Ionicons name="arrow-down-circle-outline" size={22} color={Colors.background} />
                                         <Text style={styles.secondaryButtonText}>Import Habits</Text>
                                     </TouchableOpacity>
 
@@ -407,7 +407,7 @@ export default function SettingsScreen() {
                                         onPress={handleExportHabits}
                                         style={[styles.actionButton, styles.secondaryButton]}
                                     >
-                                        <Ionicons name="arrow-up-circle-outline" size={22} color={Colors.text} />
+                                        <Ionicons name="arrow-up-circle-outline" size={22} color={Colors.background} />
                                         <Text style={styles.secondaryButtonText}>Export Habits</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
     infoText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginTop: 10 },
     activeListItem: { backgroundColor: Colors.lightGrey },
     timePickerButton: {
-        backgroundColor: Colors.primary, // Use primary color for better visibility
+        backgroundColor: Colors.accent, // Use primary color for better visibility
         padding: 12, // Slightly larger padding for better touch area
         borderRadius: 8,
         alignItems: 'center',
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     resetButtonText: {
-        color: Colors.surface, // Ensure good contrast with the button background
+        color: Colors.text, // Ensure good contrast with the button background
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     timeButton: {
-        backgroundColor: Colors.lightGrey,
+        backgroundColor: Colors.accent,
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 5,
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
     },
     timeButtonText: {
         fontSize: 12,
-        color: Colors.text,
+        color: Colors.background,
     },
     timeRangeSeparator: {
         marginHorizontal: 5,
@@ -694,9 +694,10 @@ const styles = StyleSheet.create({
         marginTop: 5,
         paddingVertical: 4,
         paddingHorizontal: 0,
+        backgroundColor: Colors.surface
     },
     addTimeText: {
-        color: Colors.primary,
+        color: Colors.accent,
         fontSize: 14,
     },
     // Updated styles for import/export section
@@ -705,7 +706,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     exportButton: {
-        backgroundColor: Colors.primary,
+        backgroundColor: Colors.accent,
         padding: 12,
         borderRadius: 8,
         alignItems: 'center',
@@ -721,7 +722,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     secondaryButton: {
-        backgroundColor: Colors.grey, 
+        backgroundColor: Colors.accent, 
         marginTop: 10,
     },
     actionButtonText: {
@@ -731,7 +732,7 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     secondaryButtonText: {
-        color: Colors.text,
+        color: Colors.background,
         fontSize: 16,
         fontWeight: 'bold',
         marginLeft: 8,

@@ -177,7 +177,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
                     onPress={handleDecrement}
                     disabled={isFutureDate}
                 >
-                    <Ionicons name="remove-circle-outline" size={24} color={isFutureDate ? Colors.grey : Colors.primary} />
+                    <Ionicons name="remove-circle-outline" size={24} color={isFutureDate ? Colors.grey : Colors.accent} />
                 </TouchableOpacity>
                 <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}]}>
                     {habit.repetition.type === 'weekly' && habit.measurement.type === 'count' 
@@ -190,7 +190,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
                     onPress={handleIncrement}
                     disabled={isFutureDate}
                 >
-                    <Ionicons name="add-circle-outline" size={24} color={isFutureDate ? Colors.grey : Colors.primary} />
+                    <Ionicons name="add-circle-outline" size={24} color={isFutureDate ? Colors.grey : Colors.accent} />
                 </TouchableOpacity>
             </View>
         );
@@ -262,7 +262,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
                 </View>
                 <View style={styles.modalActions}>
                     <Button title="Save" onPress={handleSaveEdit} color={Colors.primary} />
-                    <Button title="Cancel" onPress={() => setIsEditModalVisible(false)} color={Colors.error} />
+                    <Button title="Cancel" onPress={() => setIsEditModalVisible(false)} color={Colors.darkGrey} />
                 </View>
             </View>
         </View>
@@ -271,7 +271,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
     // --- Main Return ---
     return (
         // Apply disabled styling to the container as well
-        <View style={[styles.container, { borderLeftColor: habit.color || Colors.primary }, isFutureDate ? styles.containerDisabled : {}]}>
+        <View style={[styles.container, { borderLeftColor: habit.color || Colors.accent }, isFutureDate ? styles.containerDisabled : {}]}>
             <TouchableOpacity
                 style={styles.touchableArea}
                 onLongPress={onEdit} // Trigger the edit modal
@@ -326,16 +326,16 @@ const styles = StyleSheet.create({
     button_base: {
         padding: 8, borderRadius: 25, minWidth: 40, minHeight: 40,
         justifyContent: 'center', alignItems: 'center', borderWidth: 1.5,
-        borderColor: Colors.grey,
+        borderColor: Colors.accent,
     },
     button_none: {
-        backgroundColor: Colors.surface, borderColor: Colors.lightGrey,
+        backgroundColor: Colors.surface, borderColor: Colors.accent,
     },
     button_right: {
         backgroundColor: Colors.green, borderColor: Colors.green,
     },
     button_wrong: {
-        backgroundColor: Colors.red, borderColor: Colors.red,
+        backgroundColor: Colors.red, borderColor: Colors.error,
     },
     button_circle: {
         backgroundColor: Colors.blue, borderColor: Colors.blue,

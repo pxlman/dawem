@@ -266,7 +266,7 @@ export default function StatsScreen() {
                                                     <Ionicons 
                                                         name="lock-closed" 
                                                         size={8} 
-                                                        color={Colors.buff} 
+                                                        color={Colors.grey} 
                                                     />
                                                 )}
                                                 
