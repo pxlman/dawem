@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
-import Colors from '../../constants/Colors';
+import Colors  from '../../constants/Colors';
 import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { isHabitDue } from '../../utils/dateUtils';

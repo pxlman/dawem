@@ -2,6 +2,7 @@
 
 import { useAppState } from "@/context/AppStateContext";
 import { Day } from "date-fns";
+import { ThemeType } from "react-native-dropdown-picker";
 
 export type HabitRepetitionType = "daily" | "weekly";
 export type HabitMeasurementType = "binary" | "count";
@@ -88,6 +89,7 @@ export interface LogEntry {
 export interface AppSettings {
     startTimeOfDay?: string; // New field for the start time of the day (e.g., "08:00")
     startDayOfWeek: Day; // Sun=0
+    theme: ThemeType;
 }
 
 export interface AppState {

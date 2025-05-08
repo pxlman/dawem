@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Import GestureHandlerRootView
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from '../context/AppStateContext';
-import Colors from '@/constants/Colors';
+import Colors  from '@/constants/Colors';
 import { StyleSheet, Platform, StatusBar as MStatusBar } from 'react-native';
 
 export default function RootLayout() {

@@ -5,7 +5,7 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext'; // Adjust path if needed
-import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if needed
+import Colors , { fixedColors } from '../constants/Colors'; // Adjust path if needed
 import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig } from '@/types/index'; // Adjust path if needed
 import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { format } from 'date-fns'; // Ensure format is imported

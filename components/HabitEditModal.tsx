@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import Colors , {fixedColors} from '../constants/Colors';
+import Colors  , {fixedColors} from '../constants/Colors';
 import { Habit, TimeModule } from '@/types/index';
 import { useAppDispatch, useAppState } from '../context/AppStateContext';
 import { format } from 'date-fns'; // Ensure format is imported

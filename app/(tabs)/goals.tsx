@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import GoalTreeMindMap from '../../components/goals/GoalTreeMindMap';
 import { Goal } from '@/types/index';
-import Colors, {fixedColors} from '@/constants/Colors';
+import Colors , {fixedColors} from '@/constants/Colors';
 import { useAppDispatch, useAppState } from '@/context/AppStateContext';
 
 // Keep INITIAL_GOALS for testing

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext';
-import Colors, { fixedColors } from '../constants/Colors';
+import Colors , { fixedColors } from '../constants/Colors';
 import { Habit, TimeModule } from '@/types/index';
 import HabitEditModal from '@/components/HabitEditModal';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';

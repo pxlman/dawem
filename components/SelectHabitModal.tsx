@@ -10,7 +10,7 @@ import {
 import { useAppDispatch, useAppState } from '@/context/AppStateContext';
 import { Goal, Habit } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
-import Colors from '@/constants/Colors';
+import Colors  from '@/constants/Colors';
 
 interface SelectHabitModalProps {
   goal: Goal;

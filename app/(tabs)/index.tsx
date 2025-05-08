@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppState } from '../../context/AppStateContext';
 import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correct import
 import { isHabitDue } from '../../utils/dateUtils';
-import Colors, { fixedColors } from '../../constants/Colors'; // Import fixed colors
+import Colors , { fixedColors } from '../../constants/Colors'; // Import fixed colors
 import { Habit, TimeModule } from '@/types/index';
 import HabitEditModal from '../../components/HabitEditModal'; // Import the new modal component
 

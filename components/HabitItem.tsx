@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Vibration, Platform, Button } from 'react-native';
 // Import date-fns functions for date comparison
 import { format, isAfter, startOfDay } from 'date-fns';
-import Colors, { fixedColors } from '../constants/Colors'; // Adjust path if needed
+import Colors , { fixedColors } from '../constants/Colors'; // Adjust path if needed
 import { useAppDispatch, useAppState } from '../context/AppStateContext'; // Adjust path if needed
 import { isLogForDate } from '../utils/dateUtils'; // Import the shared function
 import { getWeeklyHabitTotal } from '../utils/habitUtils'; // Import the weekly total calculation function
