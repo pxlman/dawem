@@ -10,7 +10,6 @@ import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correc
 import { isHabitDue } from '../../utils/dateUtils';
 import Colors , { fixedColors } from '../../constants/Colors'; // Import fixed colors
 import { Habit, TimeModule } from '@/types/index';
-import HabitEditModal from '../../components/HabitEditModal'; // Import the new modal component
 
 // --- Date Header Component (With animation for today button) ---
 interface DateHeaderProps { 
@@ -198,20 +197,6 @@ export default function HabitListScreen() {
         });
     }, [navigation]);
 
-    // State for managing the edit modal
-    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-    const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
-
-    const openEditModal = (habit: Habit) => {
-        setHabitToEdit(habit);
-        // setIsEditModalVisible(true);
-    };
-
-    const closeEditModal = () => {
-        setHabitToEdit(null);
-        setIsEditModalVisible(false);
-    };
-
     // --- Popup Menu State (lifted from HabitItem) ---
     const [menuVisible, setMenuVisible] = useState(false);
     const [menuHabit, setMenuHabit] = useState<Habit | null>(null);
@@ -232,7 +217,6 @@ export default function HabitListScreen() {
     const handleMenuEdit = () => {
         if (menuHabit) {
             hideHabitMenu(); // Hide menu first for better UX
-            // setTimeout(() => openEditModal(menuHabit), 10); // Open modal after menu closes
             router.push({
                 pathname:'/add-edit-habit',
                 params: {habitId:menuHabit.id}
@@ -342,9 +326,7 @@ export default function HabitListScreen() {
                             timeModule={timeModule}
                             habits={habits}
                             currentDate={currentDate}
-                            onEditHabit={openEditModal} // Pass the edit handler
                             onShowMenu={showHabitMenu} // <-- pass down
-                            // onDeleteHabit={handleDeleteFromToday} // Pass the delete handler
                         />
                     ))
                  )}
@@ -375,15 +357,6 @@ export default function HabitListScreen() {
              <TouchableOpacity style={styles.addButton} onPress={openAddHabitScreen}>
                  <Text style={styles.addButtonText}>+</Text>
              </TouchableOpacity>
-
-            {/* Render the edit modal */}
-            {isEditModalVisible && habitToEdit && (
-                <HabitEditModal
-                    habit={habitToEdit}
-                    currentDate={currentDate}
-                    onClose={closeEditModal}
-                />
-            )}
         </View>
     );
 }

@@ -9,11 +9,11 @@ interface TimeModuleGroupProps {
     timeModule?: TimeModule;
     habits: Habit[];
     currentDate: Date;
-    onEditHabit: (habit: Habit) => void;
-    onShowMenu: (habit: Habit, position: { x: number; y: number }) => void; // <-- update
+    // Removed onEditHabit prop
+    onShowMenu: (habit: Habit, position: { x: number; y: number }) => void;
 }
 
-const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, currentDate, onEditHabit, onShowMenu }) => {
+const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, currentDate, onShowMenu }) => {
   if (!habits || habits.length === 0) {
     return null;
   }
@@ -30,8 +30,8 @@ const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, c
           key={habit.id}
           habit={habit}
           currentDate={currentDate}
-          onEdit={() => onEditHabit(habit)}
-          onShowMenu={(position) => onShowMenu(habit, position)} // <-- pass position
+          // Removed onEdit prop
+          onShowMenu={(position) => onShowMenu(habit, position)}
         />
       ))}
     </View>

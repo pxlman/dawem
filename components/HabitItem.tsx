@@ -1,34 +1,32 @@
-// components/HabitItem.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Vibration, Platform, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform } from 'react-native';
 // Import date-fns functions for date comparison
 import { format, isAfter, startOfDay } from 'date-fns';
-import Colors , { fixedColors } from '../constants/Colors'; // Adjust path if needed
-import { useAppDispatch, useAppState } from '../context/AppStateContext'; // Adjust path if needed
-import { isLogForDate } from '../utils/dateUtils'; // Import the shared function
-import { getWeeklyHabitTotal } from '../utils/habitUtils'; // Import the weekly total calculation function
-import { Habit, LogEntry, HabitLogStatus, TimeModule } from '@/types/index'; // Adjust path if needed
+import Colors from '../constants/Colors';
+import { useAppDispatch, useAppState } from '../context/AppStateContext';
+import { isLogForDate } from '../utils/dateUtils';
+import { getWeeklyHabitTotal } from '../utils/habitUtils';
+import { Habit, LogEntry, HabitLogStatus } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 
 interface HabitItemProps {
     habit: Habit;
-    currentDate: Date; // Expecting a Date object
-    onEdit: () => void; // Add the edit handler prop
-    onShowMenu: (position: { x: number; y: number }) => void; // <-- update
+    currentDate: Date;
+    onShowMenu: (position: { x: number; y: number }) => void;
 }
 
-const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onShowMenu }) => {
+const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu }) => {
     const dispatch = useAppDispatch();
-    const { logs, timeModules, settings } = useAppState();
+    const { logs, settings } = useAppState(); // Removed timeModules as it's not used
     const dateString = format(currentDate, 'yyyy-MM-dd');
     
-    // Get the configured start day of week from settings (default to Friday if not set)
+    // Get the configured start day of week from settings
     const startDayOfWeek = settings?.startDayOfWeek || 6;
     
-    // Determine if the viewed date is in the future (compare start of day)
+    // Determine if the viewed date is in the future
     const isFutureDate = isAfter(startOfDay(currentDate), startOfDay(new Date()));
 
-    // For weekly counter habits, find the log entry for the specific date being viewed
+    // Find the log entry for the specific date being viewed
     const todaysLog = logs.find((log:LogEntry) => {
         return log.habitId === habit.id && isLogForDate(log, currentDate);
     });
@@ -41,7 +39,6 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onSho
     
     useEffect(() => {
         if (habit.repetition.type === 'weekly' && habit.measurement.type === 'count') {
-            // Pass logs and startDayOfWeek to the utility function
             setWeeklyTotal(getWeeklyHabitTotal(habit.id, currentDate, logs, startDayOfWeek));
         }
     }, [logs, currentDate, habit.id, habit.repetition.type, habit.measurement.type, startDayOfWeek]);
@@ -52,7 +49,6 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onSho
         if (['right', 'wrong', 'circle'].includes(todaysLog.status as HabitLogStatus)) {
             return todaysLog.status as HabitLogStatus;
         }
-        // Also consider count logs for initial binary state display if needed
         if (todaysLog.value !== undefined && todaysLog.value > 0 && habit.measurement.type === 'binary') return 'right';
         return 'none';
     };
@@ -62,9 +58,9 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onSho
     useEffect(() => {
         setCountValue(todaysLog?.value?? 0);
         setCurrentButtonStatus(getInitialStatus());
-    }, [todaysLog]); // Dependency is the log entry itself
+    }, [todaysLog]);
 
-    // Helper function to dispatch log updates - now simplified, no special handling for weekly counters
+    // Helper function to dispatch log updates
     const updateLog = (newStatus?: HabitLogStatus, newValue?: number) => {
         if (isFutureDate) {
             return; // Prevent logging for future dates
@@ -73,12 +69,9 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onSho
             return;
         }
         
-        // Always use the actual date - no special handling for weekly counter habits
-        const logDate = dateString;
-        
         const payload: { habitId: string; date: string; status?: HabitLogStatus; value?: number } = {
             habitId: habit.id, 
-            date: logDate,
+            date: dateString,
             ...(newStatus !== undefined && { status: newStatus }),
             ...(newValue !== undefined && { value: newValue }),
         };
@@ -101,25 +94,25 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onSho
     };
 
     const handleLongPress = () => {
-         if (isFutureDate) { return; } // Prevent menu for future dates
-         Vibration.vibrate(50);
-         Alert.alert(
-             `Log: ${habit.title}`,
-             `Choose status for ${format(currentDate, 'MMM d')}:`,
-             [
-                 { text: 'Did (✓)', onPress: () => { setCurrentButtonStatus('right'); updateLog('right'); } },
-                 { text: 'Didn\'t (✕)', onPress: () => { setCurrentButtonStatus('wrong'); updateLog('wrong'); } },
-                 { text: 'Late (O)', onPress: () => { setCurrentButtonStatus('circle'); updateLog('circle'); } },
-                 { text: 'Clear Log', style: 'destructive', onPress: () => {
-                      setCurrentButtonStatus('none');
-                      // TODO: Implement DELETE_LOG action or specific handling in LOG_HABIT for undefined status
-                      console.warn("Clear log needs proper implementation in reducer.");
-                      updateLog(undefined); // Attempt to clear by sending undefined status
+        if (isFutureDate) { return; } // Prevent menu for future dates
+        Vibration.vibrate(50);
+        Alert.alert(
+            `Log: ${habit.title}`,
+            `Choose status for ${format(currentDate, 'MMM d')}:`,
+            [
+                { text: 'Did (✓)', onPress: () => { setCurrentButtonStatus('right'); updateLog('right'); } },
+                { text: 'Didn\'t (✕)', onPress: () => { setCurrentButtonStatus('wrong'); updateLog('wrong'); } },
+                { text: 'Late (O)', onPress: () => { setCurrentButtonStatus('circle'); updateLog('circle'); } },
+                { text: 'Clear Log', style: 'destructive', onPress: () => {
+                    setCurrentButtonStatus('none');
+                    // TODO: Implement DELETE_LOG action or specific handling in LOG_HABIT for undefined status
+                    console.warn("Clear log needs proper implementation in reducer.");
+                    updateLog(undefined); // Attempt to clear by sending undefined status
                     }},
-                 { text: 'Cancel', style: 'cancel' },
-             ],
-             { cancelable: true }
-         );
+                { text: 'Cancel', style: 'cancel' },
+            ],
+            { cancelable: true }
+        );
     };
 
     // --- Render Functions ---
@@ -246,25 +239,6 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onSho
         );
     };
 
-    // --- Edit Modal State and Handlers ---
-    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-    const [editedName, setEditedName] = useState(habit.title);
-    const [editedColor, setEditedColor] = useState(habit.color);
-    const [editedTimeModuleId, setEditedTimeModuleId] = useState(habit.timeModuleId);
-
-    const handleSaveEdit = () => {
-        dispatch({
-            type: 'UPDATE_HABIT',
-            payload: {
-                id: habit.id,
-                title: editedName.trim(),
-                color: editedColor,
-                timeModuleId: editedTimeModuleId,
-            },
-        });
-        setIsEditModalVisible(false);
-    };
-
     // Ref for measuring position
     const containerRef = React.useRef<View>(null);
 
@@ -281,14 +255,13 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onSho
 
     // --- Main Return ---
     return (
-        // Apply disabled styling to the container as well
         <View
             ref={containerRef}
             style={[styles.container, { borderLeftColor: habit.color || Colors.accent }, isFutureDate ? styles.containerDisabled : {}]}
         >
             <TouchableOpacity
                 style={styles.touchableArea}
-                onLongPress={handleLongPressMenu} // Trigger the edit modal
+                onLongPress={handleLongPressMenu}
                 delayLongPress={300}
             >
                 <Text style={[styles.title, isFutureDate ? styles.textDisabled : {}]}>{habit.title}</Text>
@@ -307,14 +280,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         elevation: 1.5, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.18, shadowRadius: 1.0,
-        zIndex: 1, // Ensure habit items are below the modal
+        zIndex: 1,
     },
-    containerDisabled: { // Style for future date habit item container
-        opacity: 0.6, // Dim the item slightly
+    containerDisabled: {
+        opacity: 0.6,
     },
     touchableArea: {
-        flex: 1, // Allow the touchable area to expand
-        marginRight: 10, // Add space before the buttons
+        flex: 1,
+        marginRight: 10,
     },
     title: {
         fontSize: 16, fontWeight: '500', color: Colors.text
@@ -360,116 +333,15 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: Colors.grey, borderRadius: 5,
         paddingHorizontal: 10, paddingVertical: 6, minWidth: 50,
         textAlign: 'center', marginRight: 5, fontSize: 15,
-        color: Colors.text, // Ensure text color for dark mode
-        backgroundColor: Colors.surface, // Ensure background for dark mode
+        color: Colors.text,
+        backgroundColor: Colors.surface,
     },
-    inputDisabled: { // Style for disabled text input
-         backgroundColor: Colors.lightGrey, // Use a dark theme appropriate grey
+    inputDisabled: {
+         backgroundColor: Colors.lightGrey,
          color: Colors.darkGrey,
          borderColor: Colors.darkGrey,
     },
-    // Optional log button styles (if used)
-    // logButton: { backgroundColor: Colors.primary, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 15 },
-    // logButtonText: { color: Colors.surface, fontWeight: 'bold', fontSize: 13, },
-
-    // --- Modal Styles ---
-    modalOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim background
-        zIndex: 1000, // Ensure the modal is above all other components
-    },
-    modalBackground: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim background
-    },
-    modalContent: {
-        backgroundColor: Colors.surface,
-        padding: 20,
-        borderRadius: 8,
-        width: '90%',
-        maxWidth: 400, // Limit modal width for larger screens
-        zIndex: 1001, // Ensure the content is above the background
-        elevation: 11, // For Android
-        alignItems: 'center', // Center content horizontally
-    },
-    modalHeader: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.text,
-        marginBottom: 15,
-        textAlign: 'center', // Center header text
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginBottom: 8,
-        color: Colors.textSecondary,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: Colors.grey,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 16,
-        marginBottom: 12,
-        backgroundColor: Colors.background,
-        color: Colors.text,
-        width: '100%', // Ensure input spans the modal width
-    },
-    colorPickerContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center', // Center color options
-        marginBottom: 15,
-    },
-    colorOption: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        margin: 5,
-        borderWidth: 2,
-        borderColor: 'transparent',
-    },
-    colorOptionSelected: {
-        borderColor: Colors.primary,
-    },
-    timeModulePicker: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginBottom: 15,
-        justifyContent: 'center', // Center time module options
-    },
-    timeModuleOption: {
-        padding: 10,
-        borderWidth: 1,
-        borderColor: Colors.grey,
-        borderRadius: 8,
-        marginRight: 10,
-        marginBottom: 10,
-    },
-    timeModuleOptionSelected: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-    },
-    timeModuleText: {
-        color: Colors.text,
-    },
-    modalActions: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%', // Ensure buttons span the modal width
-    },
+    
     repetitionInfo: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -483,37 +355,7 @@ const styles = StyleSheet.create({
         color: Colors.textSecondary,
         fontWeight: '400',
     },
-    menuOverlay: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1002,
-    },
-    menuBackground: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.2)',
-    },
-    menuContent: {
-        backgroundColor: Colors.surface,
-        borderRadius: 10,
-        paddingVertical: 10,
-        paddingHorizontal: 25,
-        minWidth: 160,
-        alignItems: 'center',
-        elevation: 12,
-        zIndex: 1003,
-    },
-    menuItem: {
-        paddingVertical: 12,
-        width: '100%',
-        alignItems: 'center',
-    },
-    menuItemText: {
-        fontSize: 16,
-        color: Colors.text,
-    },
+    // Removed all modal-related styles
 });
 
 export default HabitItem;
