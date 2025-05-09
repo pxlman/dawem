@@ -23,7 +23,7 @@ export default function RootLayout() {
                     <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="(tabs)" />
                         <Stack.Screen
-                            name="add-habit"
+                            name="add-edit-habit"
                             options={{
                                 presentation: 'modal',
                                 title: 'Add/Edit Habit',

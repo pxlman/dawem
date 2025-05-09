@@ -65,8 +65,7 @@ const HabitItemRenderer = React.memo(({
     return prevProps.item.id === nextProps.item.id && 
            prevProps.isActive === nextProps.isActive &&
            prevProps.item.title === nextProps.item.title &&
-           prevProps.item.color === nextProps.item.color &&
-           prevProps.item.sortOrder === nextProps.item.sortOrder;
+           prevProps.item.color === nextProps.item.color;
 });
 
 // Component for time module group with draggable habits
@@ -112,30 +111,25 @@ const TimeModuleGroup = React.memo(({
         // Set updating flag to prevent immediate state update from parent
         setIsUpdating(true);
         
-        // Batch updates to avoid multiple renders
-        const updatedData = data.map((habit, index) => ({
-            ...habit,
-            sortOrder: index
-        }));
-        
-        // Update the local state first for a smooth UI experience
-        setGroupHabits(updatedData);
+        // Update the local state with the new order
+        setGroupHabits(data);
         
         // Defer the dispatch to after animations complete
         InteractionManager.runAfterInteractions(() => {
-            // Update state in a single dispatch
+            // Simply dispatch the reordered habits for this time module
             dispatch({
                 type: 'REORDER_HABITS_IN_MODULE',
                 payload: {
                     timeModuleId: timeModule?.id || 'uncategorized',
-                    habits: updatedData
+                    habits: data
                 }
             });
+            data.forEach(d => {console.log(d.title)})
             
             // Reset updating flag after dispatch
             setTimeout(() => setIsUpdating(false), 100);
         });
-    }, [dispatch, timeModule?.id]);
+    }, [dispatch, timeModule?.id]); // Removed allHabits from dependencies
 
     return (
         <View style={styles.timeModuleGroup}>
@@ -174,8 +168,7 @@ const TimeModuleGroup = React.memo(({
     
     // Check if any habit's relevant properties have changed
     for (let i = 0; i < prevProps.habits.length; i++) {
-        if (prevProps.habits[i].id !== nextProps.habits[i].id ||
-            prevProps.habits[i].sortOrder !== nextProps.habits[i].sortOrder) {
+        if (prevProps.habits[i].id !== nextProps.habits[i].id) {
             return false;
         }
     }
@@ -199,30 +192,9 @@ export default function AllHabitsScreen() {
         
         // Initialize groups
         timeModules.forEach((tm:TimeModule) => {
-            groups[tm.id] = [];
+            groups[tm.id] = habits.filter((habit:Habit) => habit.timeModuleId === tm.id);
         });
-        groups['uncategorized'] = [];
-        
-        // Fill groups with habits
-        habits.forEach((habit:Habit) => {
-            const targetGroupId = habit.timeModuleId && groups[habit.timeModuleId] ? 
-                habit.timeModuleId : 'uncategorized';
-            
-            if (!groups[targetGroupId]) groups[targetGroupId] = [];
-            groups[targetGroupId].push(habit);
-        });
-        
-        // Sort habits within each group
-        Object.keys(groups).forEach(key => {
-            if (groups[key] && groups[key].length > 0) {
-                groups[key].sort((a, b) => {
-                    if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
-                        return a.sortOrder - b.sortOrder;
-                    }
-                    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-                });
-            }
-        });
+        groups['uncategorized'] = habits.filter((h:Habit) => !h.timeModuleId || h.timeModuleId === null);
         
         // Create final data structure for section list
         const result: TimeModuleGroupData[] = [];
@@ -313,7 +285,7 @@ export default function AllHabitsScreen() {
             <TouchableOpacity 
                 style={styles.addButton} 
                 onPress={() => router.push({
-                    pathname: '/add-habit',
+                    pathname: '/add-edit-habit',
                     params: { currentDate: new Date().toISOString().split('T')[0] }
                 })}
             >

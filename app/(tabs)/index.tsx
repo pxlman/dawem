@@ -234,7 +234,7 @@ export default function HabitListScreen() {
             hideHabitMenu(); // Hide menu first for better UX
             // setTimeout(() => openEditModal(menuHabit), 10); // Open modal after menu closes
             router.push({
-                pathname:'/add-habit',
+                pathname:'/add-edit-habit',
                 params: {habitId:menuHabit.id}
             })
         }
@@ -289,7 +289,7 @@ export default function HabitListScreen() {
 
     const openAddHabitScreen = () => {
         router.push({
-            pathname: '/add-habit',
+            pathname: '/add-edit-habit',
             params: { currentDate: format(currentDate, 'yyyy-MM-dd') }, // Pass the selected date as a valid string
         });
     };

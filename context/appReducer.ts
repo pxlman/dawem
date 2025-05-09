@@ -413,35 +413,47 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 habits: updatedHabits,
             };
         }
+        // src/context/appReducer.ts
+// ... other imports and cases ...
+
+// src/context/appReducer.ts
+// ... other imports and cases ...
+
         case 'REORDER_HABITS_IN_MODULE': {
-            const { timeModuleId, habits: reorderedHabits } = action.payload;
-            
-            // Create a map of habit IDs to their updated habits with sort orders
-            const reorderedHabitsMap = new Map(
-                reorderedHabits.map((habit:Habit) => [habit.id, habit])
-            );
-            
-            // Update the habits array
-            const updatedHabits = state.habits.map((habit:Habit) => {
-                // Check if this habit belongs to the time module we're reordering
-                const isInTargetModule = 
-                    habit.timeModuleId === timeModuleId || 
-                    (timeModuleId === 'uncategorized' && !habit.timeModuleId);
-                    
-                if (isInTargetModule && reorderedHabitsMap.has(habit.id)) {
-                    return {
-                        ...habit,
-                        ...reorderedHabitsMap.get(habit.id)
-                    };
-                }
-                return habit;
+            const { timeModuleId, habits: orderedModuleHabitsInPayload } = action.payload;
+
+            // 1. Prepare the newly ordered habits for the target module.
+            // Ensure they have the correct timeModuleId and merge with original data if necessary.
+            const finalOrderedModuleHabits = orderedModuleHabitsInPayload.map((payloadHabit: Habit) => {
+                const originalHabit = state.habits.find(h => h.id === payloadHabit.id);
+                return {
+                    ...originalHabit, // Keep existing properties not in payload
+                    ...payloadHabit,  // Apply payload updates (order comes from array sequence)
+                    timeModuleId: timeModuleId, // Ensure correct module ID
+                };
             });
-            
+
+            // 2. Filter out ALL habits that originally belonged to the target module from the main list.
+            const habitsNotInTargetModule = state.habits.filter(habit => {
+                const isInTargetModule =
+                    habit.timeModuleId === timeModuleId ||
+                    (timeModuleId === 'uncategorized' && !habit.timeModuleId);
+                return !isInTargetModule;
+            });
+
+            // 3. Concatenate the habits not in the target module with the newly ordered habits for that module.
+            // This effectively places the reordered module habits at the end of the "other" habits.
+            // If you want to preserve the module's original "block" position, the first more complex solution is needed.
+            const updatedHabits = [...habitsNotInTargetModule, ...finalOrderedModuleHabits];
+
+            // console.log("Final Updated Habits:", updatedHabits.map(h => `${h.title} (${h.timeModuleId || 'uncat'})`));
+
             return {
                 ...state,
                 habits: updatedHabits,
             };
         }
+// ... other cases ...
 
         default:
             // console.warn(`Unhandled action type: ${(action as any).type}`); // Optional
