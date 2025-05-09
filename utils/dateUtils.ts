@@ -2,15 +2,22 @@
 import { isBefore, isAfter, format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay, endOfWeek, startOfWeek, Day } from 'date-fns'; // Ensure format is imported
 import { Habit, HabitLogStatus, LogEntry, HabitRepetitionType, RepetitionConfig } from '@/types/index';
 
+export const getTodayDate = (): Date => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now;
+}
+
 export const getTodayDateString = (): string => {
-  return format(new Date(), 'yyyy-MM-dd');
+    const now = getTodayDate();
+    return format(now, 'yyyy-MM-dd');
 };
 
-export const getDayOfWeek = (date: Date = new Date()): number => {
+export const getDayOfWeek = (date: Date = getTodayDate()): number => {
   return getDay(date); // Sunday - 0, ..., Saturday - 6
 };
 
-export const getDayOfMonth = (date: Date = new Date()): number => {
+export const getDayOfMonth = (date: Date = getTodayDate()): number => {
   return getDate(date); // 1-31
 };
 
@@ -32,10 +39,10 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     // First check if the habit is enabled, if not, return false immediately
     if (habit.enabled === false) return false;
     
-    const today = currentDate.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
+    const today = format(currentDate, 'yyyy-MM-dd'); // Format as 'yyyy-MM-dd'
 
     if(habit.repetition.type === 'weekly' && habit.measurement.type === 'count'){
-        const weekend = getWeekBoundaries(currentDate).end.toISOString().split('T')[0];
+        const weekend = format(getWeekBoundaries(currentDate).end, 'yyyy-MM-dd');
         if(isAfter(weekend, habit.startDate)) return true;
     }
     // Check if the habit is within its start and end dates
@@ -57,7 +64,7 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
 // --- Helper for Heatmap ---
 // Gets an array of Dates for the last N days, including today
 export const getLastNDates = (days: number): Date[] => {
-    const endDate = endOfDay(new Date()); // Ensure we include all of today
+    const endDate = endOfDay(getTodayDate()); // Ensure we include all of today
     const startDate = startOfDay(subDays(endDate, days - 1)); // Go back N-1 days to get N total days
     try {
         return eachDayOfInterval({ start: startDate, end: endDate }).reverse(); // Reverse to show most recent first if needed, or keep chronological

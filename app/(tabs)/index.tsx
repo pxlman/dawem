@@ -156,18 +156,18 @@ export default function HabitListScreen() {
     // Get default date based on current time
     const getDefaultDate = () => {
         const now = new Date();
+        // now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
         // Assuming startTimeOfDay is 4:00 AM (04:00)
         // You can replace this with a value from your app settings if available
         const startTimeOfDay = settings.startTimeOfDay;
-        const startHour = parseInt(startTimeOfDay?.split(':')[0]?? '0');
+        const startHour = (parseInt(startTimeOfDay?.split(':')[0]?? '0'));
         const startMinute = parseInt(startTimeOfDay?.split(':')[1]?? '0');
         // If current time is before the start time of day, return yesterday
         if (currentHour < startHour || (currentHour === startHour && currentMinute < startMinute)) {
             return subDays(now, 1);
         }
-        
         // Otherwise return today
         return now;
     };
