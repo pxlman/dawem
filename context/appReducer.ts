@@ -26,6 +26,39 @@ export const initialState: AppState = {
     // dispatch: () => { },
 };
 
+// Helper function to link a habit to a goal (returns updated goals array)
+function linkHabitToGoal(goals: Goal[], habitId: string, goalId: string): Goal[] {
+    // Find the goal to link to
+    const goalToUpdate = goals.find((g: Goal) => g.id === goalId);
+
+    if (!goalToUpdate) {
+        console.warn(`Goal with ID ${goalId} not found.`);
+        return goals;
+    }
+
+    // Check constraint: Cannot link habit to a goal with subgoals
+    if (goalToUpdate.subgoals && goalToUpdate.subgoals.length > 0) {
+        console.warn(`Cannot link habit to goal ${goalId} which has subgoals.`);
+        return goals;
+    }
+
+    // Remove the habit from any other goals that might have it, and add to the target goal
+    return goals.map((goal: Goal) => {
+        if (goal.id === goalId) {
+            // Add habitId to the target goal, ensuring uniqueness
+            const updatedHabitsIds = Array.from(new Set([...(goal.habitsIds || []), habitId]));
+            return { ...goal, habitsIds: updatedHabitsIds };
+        } else if (goal.habitsIds && goal.habitsIds.includes(habitId)) {
+            // Remove the habit from any other goal
+            return { 
+                ...goal, 
+                habitsIds: goal.habitsIds.filter(id => id !== habitId) 
+            };
+        }
+        return goal;
+    });
+}
+
 export const appReducer = (state: AppState, action: AppAction): AppState => {
     // console.log(`Reducer Action: ${action.type}`); // Optional logging
     console.log(action.type, action)
@@ -49,29 +82,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             
             let updatedGoals = state.goals;
             
-            // If a goal ID is provided, link the habit to that goal
+            // If a goal ID is provided, link the habit to that goal using the helper
             if (goalId) {
-                const goalToUpdate = state.goals.find(g => g.id === goalId);
-                
-                if (goalToUpdate) {
-                    // Check constraint: Cannot link habit to a goal with subgoals
-                    if (goalToUpdate.subgoals && goalToUpdate.subgoals.length > 0) {
-                        console.warn(`Cannot link habit to goal ${goalId} which has subgoals.`);
-                    } else {
-                        // Update the goals array
-                        updatedGoals = state.goals.map(goal => {
-                            if (goal.id === goalId) {
-                                // Add the new habit ID to this goal
-                                const updatedHabitsIds = Array.from(new Set([
-                                    ...(goal.habitsIds || []), 
-                                    newHabitId
-                                ]));
-                                return { ...goal, habitsIds: updatedHabitsIds };
-                            }
-                            return goal;
-                        });
-                    }
-                }
+                updatedGoals = linkHabitToGoal(state.goals, newHabitId, goalId);
             }
             
             return { 
@@ -81,7 +94,12 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             };
         }
         case 'UPDATE_HABIT': {
-            const payload = action.payload;
+            const payload = action.payload as AddHabitPayload;
+            let updatedGoals = state.goals;
+            // If updating goalId, use the helper to update goals
+            if (payload.goalId) {
+                updatedGoals = linkHabitToGoal(state.goals, payload.id || '', payload.goalId);
+            }
             return {
                 ...state,
                 habits: state.habits.map((habit: Habit) => {
@@ -94,6 +112,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     }
                     return habit;
                 }),
+                goals: updatedGoals
             };
         }
         case 'DELETE_HABIT': {
@@ -333,42 +352,11 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
         case 'LINK_HABIT_TO_GOAL': {
             const { goalId, habitId } = action.payload;
-            
-            // Find the goal to link to
-            const goalToUpdate = state.goals.find((g: Goal) => g.id === goalId);
-            
-            if (!goalToUpdate) {
-                console.warn(`Goal with ID ${goalId} not found.`);
-                return state;
-            }
-            
-            // Check constraint: Cannot link habit to a goal with subgoals
-            if (goalToUpdate.subgoals && goalToUpdate.subgoals.length > 0) {
-                console.warn(`Cannot link habit to goal ${goalId} which has subgoals.`);
-                return state;
-            }
-            
-            // First, remove the habit from any other goals that might have it
-            const updatedGoals = state.goals.map((goal: Goal) => {
-                if (goal.id === goalId) {
-                    // Add habitId to the target goal, ensuring uniqueness
-                    const updatedHabitsIds = Array.from(new Set([...(goal.habitsIds || []), habitId]));
-                    return { ...goal, habitsIds: updatedHabitsIds };
-                } else if (goal.habitsIds && goal.habitsIds.includes(habitId)) {
-                    // Remove the habit from any other goal
-                    return { 
-                        ...goal, 
-                        habitsIds: goal.habitsIds.filter(id => id !== habitId) 
-                    };
-                }
-                return goal;
-            });
-            
+            const updatedGoals = linkHabitToGoal(state.goals, habitId, goalId);
             // Update the habit with the goal ID if needed
             const updatedHabits = state.habits.map((habit:Habit) => 
                 habit.id === habitId ? { ...habit, goalId } : habit
             );
-            
             return {
                 ...state,
                 goals: updatedGoals,

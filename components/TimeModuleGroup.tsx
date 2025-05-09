@@ -9,10 +9,11 @@ interface TimeModuleGroupProps {
     timeModule?: TimeModule;
     habits: Habit[];
     currentDate: Date;
-    onEditHabit: (habit: Habit) => void; // Add the edit handler prop
+    onEditHabit: (habit: Habit) => void;
+    onShowMenu: (habit: Habit, position: { x: number; y: number }) => void; // <-- update
 }
 
-const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, currentDate, onEditHabit }) => {
+const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, currentDate, onEditHabit, onShowMenu }) => {
   if (!habits || habits.length === 0) {
     return null;
   }
@@ -25,7 +26,13 @@ const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, c
       </Text>
       {/* Render HabitItems */}
       {habits.map(habit => (
-        <HabitItem key={habit.id} habit={habit} currentDate={currentDate} onEdit={() => onEditHabit(habit)} />
+        <HabitItem
+          key={habit.id}
+          habit={habit}
+          currentDate={currentDate}
+          onEdit={() => onEditHabit(habit)}
+          onShowMenu={(position) => onShowMenu(habit, position)} // <-- pass position
+        />
       ))}
     </View>
   );

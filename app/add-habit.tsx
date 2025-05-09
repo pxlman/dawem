@@ -10,36 +10,37 @@ import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, Repetitio
 import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { format } from 'date-fns'; // Ensure format is imported
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { habitById, getGoalOfHabit } from '@/utils/goalUtils';
 
 const repetitionOptions = [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, ];
 
 export default function AddHabitModalScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams<{ habitId?: string; currentDate?: string; goalId?:string }>(); // Include currentDate in params
-    const { habitId, currentDate, goalId } = params; // Destructure currentDate
+    const { habitId, currentDate, goalId } = useLocalSearchParams<{ habitId?: string; currentDate?: string; goalId?:string }>(); // Include currentDate in params
     const { habits, timeModules, goals } = useAppState(); // Add goals to destructuring
     const dispatch = useAppDispatch();
-
-    const habit = {
-      // id: habitId?? null,
-      title: '',
-      color: Colors.primary,
-      repetition: {
-        type: 'daily',
-        config: {}
-      },
-      measurement: {
-        type: 'binary',
-      },
-      timeModuleId: '',
-      enabled: true,
-      startDate: currentDate,
-      endDate: null
-    } as Habit
-    if(habitId){
-      habit.id = habitId
-    }
-
+      let chabit = {
+        // id: habitId?? null,
+        title: "",
+        color: Colors.primary,
+        repetition: {
+          type: "daily",
+          config: {
+            
+          },
+        },
+        measurement: {
+          type: "binary",
+          targetValue:0
+        },
+        timeModuleId: "",
+        enabled: true,
+        startDate: currentDate,
+        endDate: null,
+      } as Habit;
+      if (habitId) {
+        chabit = habitById(habitId);
+      }
     // Ensure currentDate is a valid Date object or fallback to today
     const selectedDate = useMemo(() => {
         try {
@@ -49,22 +50,15 @@ export default function AddHabitModalScreen() {
         }
     }, [currentDate]);
 
-    // Form State - Allow null for values set by DropDownPicker
-    const [title, setTitle] = useState<string>('');
-    const [color, setColor] = useState<string>(Colors.primary);
-    const [repetitionType, setRepetitionType] = useState<HabitRepetitionType | null>('daily');
-    const [measurementType, setMeasurementType] = useState<HabitMeasurementType>('binary');
-    const [targetValue, setTargetValue] = useState<number>(0);
-    const [selectedTimeModuleId, setSelectedTimeModuleId] = useState<string | null>(null);
-    const [selectedDays, setSelectedDays] = useState<number[]>([]);
-    const [ndaysPerWeek, setnDaysPerWeek] = useState<number | null>(null);
-    const [startDate, setStartDate] = useState<string | null>(format(selectedDate, 'yyyy-MM-dd')); // Default to selected date
-    const [endDate, setEndDate] = useState<string | null>(null);
+    // Form State - Use a single useState for habit
+    const [habit, setHabit] = useState<Habit>(chabit);
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(false); // State to toggle advanced options
-    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(goalId || null);
-    
+    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(
+        goalId || (habitId ? getGoalOfHabit(habitId)?.id?? null  : null)
+    );
+
     // Dropdown Open State
     const [repetitionOpen, setRepetitionOpen] = useState(false);
     const [timeModuleOpen, setTimeModuleOpen] = useState(false);
@@ -89,12 +83,13 @@ export default function AddHabitModalScreen() {
 
     // Effect to populate form
     useEffect(() => {
-            setTitle(''); setColor(Colors.primary); setRepetitionType('daily');
-            setMeasurementType('binary'); setTargetValue(0);
-            setSelectedTimeModuleId(timeModules[0]?.id || null); // Default or null
-            setStartDate(format(selectedDate, 'yyyy-MM-dd')); // Default to selected date
-            setEndDate(null);
-    }, [habitId, timeModules, selectedDate]); // Added timeModules dependency
+        setHabit({
+            ...chabit,
+            timeModuleId: timeModules[0]?.id || "",
+            startDate: format(selectedDate, 'yyyy-MM-dd'),
+            endDate: null,
+        });
+    }, [habitId, timeModules, selectedDate]);
 
     // Callbacks to close other dropdowns
     const onRepetitionOpen = useCallback(() => {
@@ -113,62 +108,61 @@ export default function AddHabitModalScreen() {
     }, []);
 
     const toggleDaySelection = (index: number) => {
-        setSelectedDays(prevSelectedDays =>
-            prevSelectedDays.includes(index)
-                ? prevSelectedDays.filter(day => day !== index)
-                : [...prevSelectedDays, index]
-        );
+        setHabit(prev => ({
+            ...prev,
+            repetition: {
+                ...prev.repetition,
+                config: {
+                    ...prev.repetition.config,
+                    daysOfWeek: prev.repetition.config.daysOfWeek?.includes(index)
+                        ? prev.repetition.config.daysOfWeek.filter(day => day !== index)
+                        : [...(prev.repetition.config.daysOfWeek || []), index]
+                }
+            }
+        }));
     };
 
     // Handlers
     const handleSave = () => {
         // Add null checks
-        if (!title.trim()) return Alert.alert('Input Error', 'Habit title is required.');
-        if (!repetitionType) return Alert.alert('Input Error', 'Please select a repetition type.');
-        if (!selectedTimeModuleId) return Alert.alert('Input Error', 'Please select a Time Module.');
-        if (!/^#([0-9A-F]{3}){1,2}$/i.test(color)) return Alert.alert('Input Error', 'Invalid hex color (e.g., #BB86FC).');
-        
+        if (!habit.title.trim()) return Alert.alert('Input Error', 'Habit title is required.');
+        if (!habit.repetition.type) return Alert.alert('Input Error', 'Please select a repetition type.');
+        if (!habit.timeModuleId) return Alert.alert('Input Error', 'Please select a Time Module.');
+        if (!/^#([0-9A-F]{3}){1,2}$/i.test(habit.color)) return Alert.alert('Input Error', 'Invalid hex color (e.g., #BB86FC).');
+
         // Validate that at least one day is selected for weekly binary habits
-        if (repetitionType === 'weekly' && measurementType === 'binary' && selectedDays.length === 0) {
+        if (habit.repetition.type === 'weekly' && habit.measurement.type === 'binary' && (!habit.repetition.config.daysOfWeek || habit.repetition.config.daysOfWeek.length === 0)) {
             return Alert.alert('Input Error', 'Please select at least one day of the week.');
         }
-        
-        if(measurementType === 'binary') {
-          setnDaysPerWeek(null);
-        }else {
-          setSelectedDays([]);
+
+        let config: RepetitionConfig = {
+            daysOfWeek: habit.repetition.config.daysOfWeek ?? [],
+            ndaysPerWeek: habit.repetition.config.ndaysPerWeek ?? undefined,
+        };
+
+        // Adjust config for measurement type
+        if (habit.measurement.type === 'binary') {
+            config.ndaysPerWeek = undefined;
+        } else {
+            config.daysOfWeek = [];
         }
 
-        const config: RepetitionConfig = {
-          daysOfWeek: selectedDays ?? [],
-          ndaysPerWeek: ndaysPerWeek ?? undefined,
-        };
-        // Assert non-null for dispatch payload after validation
         const habitData = {
-          // id: habitId?? null,
-          title: title.trim(),
-          color,
-          repetition: { type: repetitionType!, config },
-          measurement: {
-            type: measurementType,
-            targetValue: targetValue?? 1,
-          },
-          timeModuleId: selectedTimeModuleId!,
-          startDate,
-          endDate,
-          enabled:true,
-          goalId: selectedGoalId // Use selected goal ID from state
+            ...habit,
+            goalId: selectedGoalId,
         };
-        if(habitId !== null){
-          dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
+
+        if (!habitId) {
+            dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
         } else {
-          dispatch({ type: 'UPDATE_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
+            dispatch({ type: 'UPDATE_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
         }
 
         if (router.canGoBack()) router.back();
     };
+
     const handleClearEndDate = () => {
-        setEndDate(null); // Set endDate to null to represent "forever"
+        setHabit(prev => ({ ...prev, endDate: null }));
     };
 
     const toggleAdvancedOptions = () => {
@@ -197,8 +191,8 @@ export default function AddHabitModalScreen() {
           <Text style={styles.label}>Habit Title</Text>
           <TextInput
             style={styles.input}
-            value={title}
-            onChangeText={setTitle}
+            value={habit.title}
+            onChangeText={text => setHabit(prev => ({ ...prev, title: text.trim() }))}
             placeholder="e.g., صلاة الوتر, قراءة جزء..."
             placeholderTextColor={Colors.textSecondary}
           />
@@ -211,9 +205,9 @@ export default function AddHabitModalScreen() {
                 style={[
                   styles.colorOption,
                   { backgroundColor: fixedColor },
-                  color === fixedColor && styles.colorOptionSelected,
+                  habit.color === fixedColor && styles.colorOptionSelected,
                 ]}
-                onPress={() => setColor(fixedColor)}
+                onPress={() => setHabit(prev => ({ ...prev, color: fixedColor }))}
               />
             ))}
           </View>
@@ -221,10 +215,10 @@ export default function AddHabitModalScreen() {
           <Text style={styles.label}>Assign To Time Module</Text>
           <DropDownPicker
             open={timeModuleOpen}
-            value={selectedTimeModuleId}
+            value={habit.timeModuleId}
             items={timeModuleItems}
             setOpen={setTimeModuleOpen}
-            setValue={setSelectedTimeModuleId}
+            setValue={val => setHabit(prev => ({ ...prev, timeModuleId: val('')||'' }))}
             onOpen={onTimeModuleOpen}
             placeholder="Select time module..."
             disabled={timeModuleItems.length === 0}
@@ -277,10 +271,13 @@ export default function AddHabitModalScreen() {
           <Text style={styles.label}>Repeats</Text>
           <DropDownPicker
             open={repetitionOpen}
-            value={repetitionType}
+            value={habit.repetition.type}
             items={repetitionOptions}
             setOpen={setRepetitionOpen}
-            setValue={setRepetitionType}
+            setValue={val => setHabit(prev => ({
+                ...prev,
+                repetition: { ...prev.repetition, type: val(prev) }
+            }))}
             onOpen={onRepetitionOpen}
             placeholder="Select repetition..."
             style={styles.dropdownStyle}
@@ -306,15 +303,18 @@ export default function AddHabitModalScreen() {
             <TouchableOpacity
               style={[
                 styles.segmentedControlOption,
-                measurementType === "binary" &&
+                habit.measurement.type === "binary" &&
                   styles.segmentedControlOptionActive,
               ]}
-              onPress={() => setMeasurementType("binary")}
+              onPress={() => setHabit(prev => ({
+                  ...prev,
+                  measurement: { ...prev.measurement, type: "binary" }
+              }))}
             >
               <Text
                 style={[
                   styles.segmentedControlText,
-                  measurementType === "binary" &&
+                  habit.measurement.type === "binary" &&
                     styles.segmentedControlTextActive,
                 ]}
               >
@@ -324,15 +324,18 @@ export default function AddHabitModalScreen() {
             <TouchableOpacity
               style={[
                 styles.segmentedControlOption,
-                measurementType === "count" &&
+                habit.measurement.type === "count" &&
                   styles.segmentedControlOptionActive,
               ]}
-              onPress={() => setMeasurementType("count")}
+              onPress={() => setHabit(prev => ({
+                  ...prev,
+                  measurement: { ...prev.measurement, type: "count" }
+              }))}
             >
               <Text
                 style={[
                   styles.segmentedControlText,
-                  measurementType === "count" &&
+                  habit.measurement.type === "count" &&
                     styles.segmentedControlTextActive,
                 ]}
               >
@@ -341,35 +344,50 @@ export default function AddHabitModalScreen() {
             </TouchableOpacity>
           </View>
 
-          {repetitionType === "daily" && measurementType === "count" && (
+          {habit.repetition.type === "daily" && habit.measurement.type === "count" && (
             <>
               <Text style={styles.label}>Target Value</Text>
               <TextInput
                 style={styles.input}
                 keyboardType="number-pad"
-                defaultValue=''
-                onChangeText={(text) => setTargetValue(parseInt(text))}
+                value={habit.measurement.targetValue?.toString() || ''}
+                onChangeText={text => setHabit(prev => ({
+                    ...prev,
+                    measurement: {
+                        ...prev.measurement,
+                        targetValue: parseInt(text) || 0
+                    }
+                }))}
                 placeholder="e.g., 3"
                 placeholderTextColor={Colors.textSecondary}
               />
             </>
           )}
-          {repetitionType === "weekly" && (
+          {habit.repetition.type === "weekly" && (
             <>
-              {measurementType === "count" && (
+              {habit.measurement.type === "count" && (
                 <>
                   <Text style={styles.label}>Target days per week</Text>
                   <TextInput
                     style={styles.input}
                     keyboardType="number-pad"
-                    defaultValue=''
-                    onChangeText={(text) => setTargetValue(parseInt(text))}
+                    value={habit.repetition.config.ndaysPerWeek?.toString() || ''}
+                    onChangeText={text => setHabit(prev => ({
+                        ...prev,
+                        repetition: {
+                            ...prev.repetition,
+                            config: {
+                                ...prev.repetition.config,
+                                ndaysPerWeek: parseInt(text) || 0
+                            }
+                        }
+                    }))}
                     placeholder="e.g., 3"
                     placeholderTextColor={Colors.textSecondary}
                   />
                 </>
               )}
-              {measurementType === "binary" && (
+              {habit.measurement.type === "binary" && (
                 <>
                   <Text style={styles.label}>Days of the Week</Text>
                   <View style={styles.weekDaysContainer}>
@@ -379,7 +397,7 @@ export default function AddHabitModalScreen() {
                           key={index}
                           style={[
                             styles.weekDayButton,
-                            selectedDays.includes(index) &&
+                            habit.repetition.config.daysOfWeek?.includes(index) &&
                               styles.weekDayButtonSelected,
                           ]}
                           onPress={() => toggleDaySelection(index)}
@@ -415,20 +433,23 @@ export default function AddHabitModalScreen() {
                 onPress={() => setShowStartDatePicker(true)}
               >
                 <Text style={styles.datePickerText}>
-                  {startDate
-                    ? format(new Date(startDate), "MMM d, yyyy")
+                  {habit.startDate
+                    ? format(new Date(habit.startDate), "MMM d, yyyy")
                     : "Select Start Date"}
                 </Text>
               </TouchableOpacity>
               {showStartDatePicker && (
                 <DateTimePicker
-                  value={startDate ? new Date(startDate) : new Date()}
+                  value={habit.startDate ? new Date(habit.startDate) : new Date()}
                   mode="date"
                   display="default"
                   onChange={(event, selectedDate) => {
-                    setShowStartDatePicker(false);
-                    if (selectedDate)
-                      setStartDate(selectedDate.toISOString().split("T")[0]);
+                      setShowStartDatePicker(false);
+                      if (selectedDate)
+                          setHabit(prev => ({
+                              ...prev,
+                              startDate: selectedDate.toISOString().split("T")[0]
+                          }));
                   }}
                 />
               )}
@@ -439,22 +460,25 @@ export default function AddHabitModalScreen() {
                 onPress={() => setShowEndDatePicker(true)}
               >
                 <Text style={styles.datePickerText}>
-                  {endDate ? format(new Date(endDate), "MMM d, yyyy") : "Forever"}
+                  {habit.endDate ? format(new Date(habit.endDate), "MMM d, yyyy") : "Forever"}
                 </Text>
               </TouchableOpacity>
               {showEndDatePicker && (
                 <DateTimePicker
-                  value={endDate ? new Date(endDate) : new Date()}
+                  value={habit.endDate ? new Date(habit.endDate) : new Date()}
                   mode="date"
                   display="default"
                   onChange={(event, selectedDate) => {
-                    setShowEndDatePicker(false);
-                    if (selectedDate)
-                      setEndDate(selectedDate.toISOString().split("T")[0]);
+                      setShowEndDatePicker(false);
+                      if (selectedDate)
+                          setHabit(prev => ({
+                              ...prev,
+                              endDate: selectedDate.toISOString().split("T")[0]
+                          }));
                   }}
                 />
               )}
-              {endDate && (
+              {habit.endDate && (
                 <TouchableOpacity
                   onPress={handleClearEndDate}
                   style={styles.clearButton}
@@ -469,7 +493,7 @@ export default function AddHabitModalScreen() {
 
           {/* Action Buttons */}
           <TouchableOpacity style={styles.addHabitButton} onPress={handleSave}>
-            <Text style={styles.addHabitButtonText}>{"Add Habit"}</Text>
+            <Text style={styles.addHabitButtonText}>{(!habitId)? "Add Habit": "Save"}</Text>
           </TouchableOpacity>
         </ScrollView>
       // {/* </SafeAreaView>

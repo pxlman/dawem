@@ -67,7 +67,7 @@ export interface Habit {
     // archived?: boolean;
     startDate: string; // Start date of the habit
     endDate?: string | null; // End date of the habit (null means "forever")
-    sortOrder?: number; // Track the order of habits within a time module
+    // sortOrder?: number; // Track the order of habits within a time module
     // goalId?: string | null;
 }
 
@@ -104,6 +104,7 @@ export interface AppState {
 
 // Payload type for ADD_HABIT action
 export interface AddHabitPayload {
+    id?: string;
     title: string;
     description?: string;
     timeModuleId: string;

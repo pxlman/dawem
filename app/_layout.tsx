@@ -16,8 +16,8 @@ export default function RootLayout() {
                 <SafeAreaView style={styles.container}>
                     <StatusBar
                     animated={true}
-                    backgroundColor={Colors.primary}
-                    style='dark'
+                    backgroundColor={Colors.background}
+                    style='light'
                     hidden={false}
                     />
                     <Stack screenOptions={{ headerShown: false }}>

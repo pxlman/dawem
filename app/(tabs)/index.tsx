@@ -159,13 +159,11 @@ export default function HabitListScreen() {
         const now = new Date();
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
-        
         // Assuming startTimeOfDay is 4:00 AM (04:00)
         // You can replace this with a value from your app settings if available
         const startTimeOfDay = settings.startTimeOfDay;
         const startHour = parseInt(startTimeOfDay?.split(':')[0]?? '0');
         const startMinute = parseInt(startTimeOfDay?.split(':')[1]?? '0');
-        
         // If current time is before the start time of day, return yesterday
         if (currentHour < startHour || (currentHour === startHour && currentMinute < startMinute)) {
             return subDays(now, 1);
@@ -206,7 +204,7 @@ export default function HabitListScreen() {
 
     const openEditModal = (habit: Habit) => {
         setHabitToEdit(habit);
-        setIsEditModalVisible(true);
+        // setIsEditModalVisible(true);
     };
 
     const closeEditModal = () => {
@@ -214,11 +212,57 @@ export default function HabitListScreen() {
         setIsEditModalVisible(false);
     };
 
+    // --- Popup Menu State (lifted from HabitItem) ---
+    const [menuVisible, setMenuVisible] = useState(false);
+    const [menuHabit, setMenuHabit] = useState<Habit | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    // Accept position from HabitItem
+    const showHabitMenu = (habit: Habit, position: { x: number; y: number }) => {
+        setMenuHabit(habit);
+        setMenuPosition(position);
+        setMenuVisible(true);
+    };
+
+    const hideHabitMenu = () => {
+        setMenuVisible(false);
+        setMenuHabit(null);
+    };
+
+    const handleMenuEdit = () => {
+        if (menuHabit) {
+            hideHabitMenu(); // Hide menu first for better UX
+            // setTimeout(() => openEditModal(menuHabit), 10); // Open modal after menu closes
+            router.push({
+                pathname:'/add-habit',
+                params: {habitId:menuHabit.id}
+            })
+        }
+    };
+
+    const handleMenuDelete = () => {
+        if (!menuHabit) return;
+        Alert.alert(
+            'Delete Habit',
+            `Are you sure you want to delete "${menuHabit.title}"?`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => {
+                    dispatch({ type: 'DELETE_HABIT', payload: { id: menuHabit.id } });
+                    hideHabitMenu();
+                }},
+            ]
+        );
+    };
+
     // Grouping Logic
     const groupedHabitsForDisplay: TimeModuleGroupData[] = useMemo(() => {
         const dueHabits = habits.filter((habit:Habit) => 
             isHabitDue(habit, currentDate) // Only check if habit is due
         );
+        // habits.forEach((h:Habit) => {
+        //     console.log(h.title, currentDate, isHabitDue(h, currentDate))
+        // });
         const orderedTimeModules = [...timeModules]; // Ensure correct order
         const groups = orderedTimeModules.reduce<GroupedHabits>((acc, tm) => {
             acc[tm.id] = { timeModule: tm, habits: [] };
@@ -262,6 +306,7 @@ export default function HabitListScreen() {
 
     // Add function to go to today's date
     const goToToday = () => {
+        // console.log(getDefaultDate())
         setCurrentDate(getDefaultDate());
     };
 
@@ -298,25 +343,47 @@ export default function HabitListScreen() {
                             habits={habits}
                             currentDate={currentDate}
                             onEditHabit={openEditModal} // Pass the edit handler
+                            onShowMenu={showHabitMenu} // <-- pass down
                             // onDeleteHabit={handleDeleteFromToday} // Pass the delete handler
                         />
                     ))
                  )}
                 {/* Remove extra padding View, handle with scrollContent padding */}
              </ScrollView>
+             {/* Popup Menu Overlay (absolute at habit location) */}
+             {menuVisible && menuHabit && (
+                <View style={styles.menuOverlay} pointerEvents="box-none">
+                    <TouchableOpacity style={styles.menuBackground} activeOpacity={1} onPress={hideHabitMenu} />
+                    <View style={[
+                        styles.menuContent,
+                        { position: 'absolute', top: menuPosition.y, left: menuPosition.x }
+                    ]}>
+                        <TouchableOpacity style={styles.menuItem} onPress={handleMenuEdit}>
+                            <Text style={styles.menuItemText}>Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.menuItem} onPress={handleMenuDelete}>
+                            {/* <Ionicons name='pencil-outline' color={Colors.text} size={18}/> */}
+                            <Text style={[styles.menuItemText, { color: Colors.red }]}>Delete</Text>
+                        </TouchableOpacity>
+                        {/* <TouchableOpacity style={styles.menuItem} onPress={hideHabitMenu}>
+                            <Text style={styles.menuItemText}>Cancel</Text>
+                        </TouchableOpacity> */}
+                    </View>
+                </View>
+            )}
              {/* Floating Action Button */}
              <TouchableOpacity style={styles.addButton} onPress={openAddHabitScreen}>
                  <Text style={styles.addButtonText}>+</Text>
              </TouchableOpacity>
 
-             {/* Render the edit modal */}
-             {isEditModalVisible && (
-                 <HabitEditModal
-                     habit={habitToEdit}
-                     currentDate={currentDate} // Pass the selected date
-                     onClose={closeEditModal}
-                 />
-             )}
+            {/* Render the edit modal */}
+            {isEditModalVisible && habitToEdit && (
+                <HabitEditModal
+                    habit={habitToEdit}
+                    currentDate={currentDate}
+                    onClose={closeEditModal}
+                />
+            )}
         </View>
     );
 }
@@ -396,5 +463,35 @@ const styles = StyleSheet.create({
     },
     viewAllText: {
         // Remove this style or keep it for future reference
+    },
+    menuOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 1002,
+    },
+    menuBackground: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+    },
+    menuContent: {
+        backgroundColor: Colors.surface,
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 25,
+        minWidth: 160,
+        alignItems: 'center',
+        elevation: 12,
+        zIndex: 1003,
+        // position, top, left set dynamically
+    },
+    menuItem: {
+        paddingVertical: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+    menuItemText: {
+        fontSize: 16,
+        color: Colors.text,
     },
 });

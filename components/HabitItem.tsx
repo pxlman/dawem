@@ -14,9 +14,10 @@ interface HabitItemProps {
     habit: Habit;
     currentDate: Date; // Expecting a Date object
     onEdit: () => void; // Add the edit handler prop
+    onShowMenu: (position: { x: number; y: number }) => void; // <-- update
 }
 
-const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => {
+const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit, onShowMenu }) => {
     const dispatch = useAppDispatch();
     const { logs, timeModules, settings } = useAppState();
     const dateString = format(currentDate, 'yyyy-MM-dd');
@@ -264,73 +265,36 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onEdit }) => 
         setIsEditModalVisible(false);
     };
 
-    const renderEditModal = () => (
-        <View style={styles.modalOverlay}>
-            <TouchableOpacity
-                style={styles.modalBackground}
-                activeOpacity={1}
-                onPress={() => setIsEditModalVisible(false)} // Dismiss modal on outside press
-            />
-            <View style={styles.modalContent}>
-                <Text style={styles.modalHeader}>Edit Habit</Text>
-                <TextInput
-                    style={styles.input}
-                    value={editedName}
-                    onChangeText={setEditedName}
-                    placeholder="Habit Name"
-                    placeholderTextColor={Colors.textSecondary}
-                />
-                <Text style={styles.label}>Color</Text>
-                <View style={styles.colorPickerContainer}>
-                    {fixedColors.map((color) => (
-                        <TouchableOpacity
-                            key={color}
-                            style={[
-                                styles.colorOption,
-                                { backgroundColor: color },
-                                editedColor === color && styles.colorOptionSelected,
-                            ]}
-                            onPress={() => setEditedColor(color)}
-                        />
-                    ))}
-                </View>
-                <Text style={styles.label}>Time Module</Text>
-                <View style={styles.timeModulePicker}>
-                    {timeModules.map((tm:TimeModule) => (
-                        <TouchableOpacity
-                            key={tm.id}
-                            style={[
-                                styles.timeModuleOption,
-                                editedTimeModuleId === tm.id && styles.timeModuleOptionSelected,
-                            ]}
-                            onPress={() => setEditedTimeModuleId(tm.id)}
-                        >
-                            <Text style={styles.timeModuleText}>{tm.name}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-                <View style={styles.modalActions}>
-                    <Button title="Save" onPress={handleSaveEdit} color={Colors.primary} />
-                    <Button title="Cancel" onPress={() => setIsEditModalVisible(false)} color={Colors.darkGrey} />
-                </View>
-            </View>
-        </View>
-    );
+    // Ref for measuring position
+    const containerRef = React.useRef<View>(null);
+
+    // --- Popup Menu Handler ---
+    const handleLongPressMenu = () => {
+        if (isFutureDate) return;
+        if (containerRef.current) {
+            containerRef.current.measureInWindow((x, y, width, height) => {
+                // Offset y a bit for menu below the item
+                onShowMenu({ x:x + 30, y: y -100 });
+            });
+        }
+    };
 
     // --- Main Return ---
     return (
         // Apply disabled styling to the container as well
-        <View style={[styles.container, { borderLeftColor: habit.color || Colors.accent }, isFutureDate ? styles.containerDisabled : {}]}>
+        <View
+            ref={containerRef}
+            style={[styles.container, { borderLeftColor: habit.color || Colors.accent }, isFutureDate ? styles.containerDisabled : {}]}
+        >
             <TouchableOpacity
                 style={styles.touchableArea}
-                onLongPress={onEdit} // Trigger the edit modal
+                onLongPress={handleLongPressMenu} // Trigger the edit modal
                 delayLongPress={300}
             >
                 <Text style={[styles.title, isFutureDate ? styles.textDisabled : {}]}>{habit.title}</Text>
                 {renderRepetitionInfo()}
             </TouchableOpacity>
             {habit.measurement.type === 'binary' ? renderCombinedBinaryButton() : renderCountControls()}
-            {isEditModalVisible && renderEditModal()}
         </View>
     );
 };
@@ -518,6 +482,37 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: Colors.textSecondary,
         fontWeight: '400',
+    },
+    menuOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1002,
+    },
+    menuBackground: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+    },
+    menuContent: {
+        backgroundColor: Colors.surface,
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 25,
+        minWidth: 160,
+        alignItems: 'center',
+        elevation: 12,
+        zIndex: 1003,
+    },
+    menuItem: {
+        paddingVertical: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+    menuItemText: {
+        fontSize: 16,
+        color: Colors.text,
     },
 });
 
