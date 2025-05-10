@@ -35,7 +35,7 @@ export default function AddHabitModalScreen() {
           type: "binary",
           targetValue:0
         },
-        timeModuleId: "",
+        timeModuleId: timeModules[0].id,
         enabled: true,
         startDate: currentDate,
         endDate: null,
@@ -87,7 +87,7 @@ export default function AddHabitModalScreen() {
     useEffect(() => {
         setHabit({
             ...chabit,
-            timeModuleId: timeModules[0]?.id || "",
+            timeModuleId: chabit.timeModuleId ||  timeModules[0]?.id,
             startDate: format(selectedDate, 'yyyy-MM-dd'),
             endDate: null,
         });
