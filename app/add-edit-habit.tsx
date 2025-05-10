@@ -194,7 +194,7 @@ export default function AddHabitModalScreen() {
           <TextInput
             style={styles.input}
             value={habit.title}
-            onChangeText={text => setHabit(prev => ({ ...prev, title: text.trim() }))}
+            onChangeText={text => setHabit(prev => ({ ...prev, title: text }))}
             placeholder="e.g., صلاة الوتر, قراءة جزء..."
             placeholderTextColor={Colors.textSecondary}
           />
