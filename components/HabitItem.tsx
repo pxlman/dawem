@@ -18,8 +18,8 @@ interface HabitItemProps {
 
 const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu }) => {
     const dispatch = useAppDispatch();
-    const { logs, settings, theme } = useAppState(); // Removed timeModules as it's not used
-    Colors = getColors(theme)
+    const { logs, settings} = useAppState(); // Removed timeModules as it's not used
+    Colors = getColors(settings.theme)
     const dateString = format(currentDate, 'yyyy-MM-dd');
     
     // Get the configured start day of week from settings
