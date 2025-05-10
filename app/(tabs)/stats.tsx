@@ -1,82 +1,132 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
-import {getColors}  from '../../constants/Colors';
+import { getColors } from '../../constants/Colors';
 import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { isHabitDue } from '../../utils/dateUtils';
-import { addDays,subDays,isBefore } from 'date-fns';
+import { addDays, subDays, isBefore, startOfWeek, endOfWeek, format, addWeeks, subWeeks, 
+    startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { getSaturdayDateString } from '../../utils/dateUtils';
 import { getWeeklyHabitTotal } from '@/utils/habitUtils';
 import { getTextColorForBackground } from '@/utils/colorUtils';
+import { useNavigation } from 'expo-router';
 let Colors = getColors()
 
 export default function StatsScreen() {
+    const navigation = useNavigation();
     const { habits, logs, settings } = useAppState();
-     getColors(settings.theme)
+    getColors(settings.theme)
     
-    // State for month navigation (0 = current month, -1 = previous month, etc.)
-    const [monthOffset, setMonthOffset] = useState(0);
+    // State for view mode (weekly or monthly)
+    const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
     
-    // Get current date and month bounds
+    // State for navigation offset (0 = current, -1 = previous, etc.)
+    const [timeOffset, setTimeOffset] = useState(0);
+    
+    // Add header buttons using useLayoutEffect
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity 
+                        onPress={toggleViewMode}
+                        style={{ marginRight: 16 }}
+                    >
+                        <Ionicons 
+                            name={viewMode === 'weekly' ? "calendar" : "calendar-outline"} 
+                            size={24} 
+                            color={Colors.primary} 
+                        />
+                    </TouchableOpacity>
+                </View>
+            ),
+        });
+    }, [navigation, viewMode]);
+
+    // Toggle view mode handler
+    const toggleViewMode = () => {
+        setViewMode(prev => prev === 'weekly' ? 'monthly' : 'weekly');
+        setTimeOffset(0); // Reset to current period when switching views
+    };
+    
+    // Get current date
     const currentDate = useMemo(() => new Date(), []);
     
-    // Calculate the first and last day of the displayed month
-    const displayedMonth = useMemo(() => {
+    // Calculate the first and last day of the displayed period (week or month)
+    const displayedPeriod = useMemo(() => {
         const date = new Date();
-        date.setMonth(date.getMonth() + monthOffset);
-        date.setDate(1); // First day of month
         
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        
-        return {
-            firstDay,
-            lastDay,
-            monthName: firstDay.toLocaleDateString('en-US', { month: 'long' }),
-            year: firstDay.getFullYear()
-        };
-    }, [monthOffset]);
+        if (viewMode === 'weekly') {
+            // Weekly view logic
+            const startDay = settings.startDayOfWeek === 'sunday' ? 0 : 6; // 6 is Saturday
+            
+            // Add the week offset
+            date.setDate(date.getDate() + (timeOffset * 7));
+            
+            // Get start and end of week
+            const firstDay = startOfWeek(date, { weekStartsOn: startDay as 0 | 1 | 2 | 3 | 4 | 5 | 6 });
+            const lastDay = endOfWeek(date, { weekStartsOn: startDay as 0 | 1 | 2 | 3 | 4 | 5 | 6 });
+            
+            return {
+                firstDay,
+                lastDay,
+                displayText: `${format(firstDay, 'MMM d')} - ${format(lastDay, 'MMM d')}`,
+                year: firstDay.getFullYear()
+            };
+        } else {
+            // Monthly view logic
+            date.setMonth(date.getMonth() + timeOffset);
+            
+            // Get start and end of month
+            const firstDay = startOfMonth(date);
+            const lastDay = endOfMonth(date);
+            
+            return {
+                firstDay,
+                lastDay,
+                displayText: format(firstDay, 'MMMM yyyy'),
+                year: firstDay.getFullYear()
+            };
+        }
+    }, [timeOffset, viewMode, settings.startDayOfWeek]);
     
-    // Generate dates for the selected month in reverse order (most recent first)
+    // Generate dates for the selected period in reverse order (most recent first)
     const dates = useMemo(() => {
         const result = [];
-        const { firstDay, lastDay } = displayedMonth;
+        const { firstDay, lastDay } = displayedPeriod;
         
         let endDate;
-        if (monthOffset === 0) {
-            // Current month: Use today as the end date
+        if (timeOffset === 0) {
+            // Current period: Use today as the end date
             endDate = new Date();
         } else {
-            // Past month: Use the last day of the month
+            // Past period: Use the last day of the period
             endDate = new Date(lastDay);
         }
         
-        // Start from end date (today or month end) and go backwards to first day of month
+        // Make sure we don't go beyond the last day of the period
+        if (endDate > lastDay) {
+            endDate = new Date(lastDay);
+        }
+        
+        // Start from end date and go backwards to first day of period
         const currentDate = new Date(endDate);
         
-        // Make sure we're still in the same month
-        while (currentDate.getMonth() === firstDay.getMonth()) {
+        // Continue until we reach before the first day of the period
+        while (currentDate >= firstDay) {
             result.push(new Date(currentDate)); // Add a copy of the date
             currentDate.setDate(currentDate.getDate() - 1); // Go back one day
         }
         
         return result;
-    }, [displayedMonth, monthOffset]);
+    }, [displayedPeriod, timeOffset]);
 
-    // Month navigation handlers
-    const goToPreviousMonth = () => setMonthOffset(prev => prev - 1);
-    const goToNextMonth = () => setMonthOffset(prev => Math.min(0, prev + 1)); // Prevent going beyond current month
-    const goToCurrentMonth = () => setMonthOffset(0);
-
-    // Format date as MM/DD
-    const formatDate = (date: Date): string => {
-        return `${date.getMonth() + 1}/${date.getDate()}`;
-    };
-
+    // Navigation handlers
+    const goToPrevious = () => setTimeOffset(prev => prev - 1);
+    const goToNext = () => setTimeOffset(prev => Math.min(0, prev + 1)); // Prevent going beyond current period
+    const goToCurrent = () => setTimeOffset(0);
+    
     // Check if date is today
     const isToday = (date: Date): boolean => {
         const today = new Date();
@@ -91,12 +141,12 @@ export default function StatsScreen() {
         
         if (dates.length === 0) return weeks;
         
-        // Group dates into weeks (Saturday to Friday)
-        for (const date of dates) {
-            if (date.getDay() === 6){
-                weeks.push({startDate: date, endDate: addDays(date,7)})
-            }
-        }
+        // For weekly counter habit view, we'll use the current week
+        const weekStartDay = dates[dates.length - 1]; // First day in the list (in reverse order)
+        weeks.push({
+            startDate: weekStartDay,
+            endDate: addDays(weekStartDay, 7)
+        });
         
         return weeks;
     }, [dates]);
@@ -460,44 +510,40 @@ export default function StatsScreen() {
 
     // Determine if we should show "Days Remaining" text for current month
     const showDaysRemainingText = useMemo(() => {
-        return monthOffset === 0 && dates.length > 0;
-    }, [monthOffset, dates]);
+        return timeOffset === 0 && dates.length > 0;
+    }, [timeOffset, dates]);
 
     // Update text to show appropriate day range
     const headerText = useMemo(() => {
-        if (monthOffset === 0) {
-            // If current month, show "Current to 1st"
-            return "Current to 1st";
-        } else if (dates.length > 0) {
-            // For past months, show range
-            const firstDate = dates[dates.length - 1].getDate();
-            const lastDate = dates[0].getDate();
-            return `${lastDate} to ${firstDate}`;
+        if (timeOffset === 0) {
+            return viewMode === 'weekly' ? "Current to week start" : "Current to month start";
         }
         return "";
-    }, [dates, monthOffset]);
+    }, [dates, timeOffset, viewMode]);
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.scrollContentContainer}>
-            {/* Month navigation in the header */}
+            {/* Period navigation in the header */}
             <View style={styles.pageHeader}>
                 <TouchableOpacity 
-                    onPress={goToPreviousMonth} 
+                    onPress={goToPrevious} 
                     style={styles.navButtonHeader}
                 >
                     <Ionicons name="chevron-back" size={24} color={Colors.primary} />
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
-                    onPress={goToCurrentMonth}
+                    onPress={goToCurrent}
                     style={styles.monthDisplayHeader}
                 >
                     <Text style={styles.monthTextHeader}>
-                        {displayedMonth.monthName} {displayedMonth.year}
+                        {displayedPeriod.displayText}
                     </Text>
-                    {monthOffset !== 0 && (
+                    {timeOffset !== 0 && (
                         <Text style={styles.returnToCurrentText}>
-                            (Go to current month)
+                            {viewMode === 'weekly' 
+                                ? "(Go to current week)" 
+                                : "(Go to current month)"}
                         </Text>
                     )}
                     {headerText && (
@@ -508,17 +554,17 @@ export default function StatsScreen() {
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
-                    onPress={goToNextMonth} 
+                    onPress={goToNext} 
                     style={[
                         styles.navButtonHeader,
-                        monthOffset === 0 && styles.disabledButton
+                        timeOffset === 0 && styles.disabledButton
                     ]}
-                    disabled={monthOffset === 0}
+                    disabled={timeOffset === 0}
                 >
                     <Ionicons 
                         name="chevron-forward" 
                         size={24} 
-                        color={monthOffset === 0 ? Colors.darkGrey : Colors.primary} 
+                        color={timeOffset === 0 ? Colors.darkGrey : Colors.primary} 
                     />
                 </TouchableOpacity>
             </View>
@@ -806,5 +852,4 @@ const styles = StyleSheet.create({
     exceededCountText: {
         color: '#000000', // Black text for buff background for better contrast
     },
-    
 });
