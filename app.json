@@ -17,7 +17,7 @@
       "package": "com.pxlman.dawem",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon2.png",
-        "backgroundColor": "#222"
+        "backgroundColor": "#111"
       }
     },
     "web": {
@@ -31,7 +31,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash1-white.png",
-          "imageWidth": 200,
+          "imageWidth": 400,
           "resizeMode": "contain",
           "backgroundColor": "#111111"
         }
