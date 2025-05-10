@@ -1,5 +1,5 @@
 // utils/dateUtils.ts
-import { isBefore, isAfter, format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay, endOfWeek, startOfWeek, Day } from 'date-fns'; // Ensure format is imported
+import { isBefore, isAfter, format, getDay, getDate, isSameDay, subDays, eachDayOfInterval, startOfDay, endOfDay, endOfWeek, startOfWeek, Day, isToday } from 'date-fns'; // Ensure format is imported
 import { Habit, HabitLogStatus, LogEntry, HabitRepetitionType, RepetitionConfig } from '@/types/index';
 
 export const getTodayDate = (): Date => {
@@ -46,8 +46,10 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
         if(isAfter(weekend, habit.startDate)) return true;
     }
     // Check if the habit is within its start and end dates
-    if (habit.startDate && isBefore(today, habit.startDate)) return false;
+    // if (habit.startDate && isBefore(today, habit.startDate)) return false;
     if (habit.endDate && isAfter(today, habit.endDate) ) return false;
+    if (!isBefore(currentDate, new Date())
+        && !isToday(currentDate)) return false;
 
     // Handle daily habits
     if (habit.repetition.type === 'daily') {

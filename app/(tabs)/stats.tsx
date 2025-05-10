@@ -59,7 +59,7 @@ export default function StatsScreen() {
         
         if (viewMode === 'weekly') {
             // Weekly view logic
-            const startDay = settings.startDayOfWeek === 'sunday' ? 0 : 6; // 6 is Saturday
+            const startDay = settings.startDayOfWeek || 6; // 6 is Saturday
             
             // Add the week offset
             date.setDate(date.getDate() + (timeOffset * 7));
@@ -97,13 +97,13 @@ export default function StatsScreen() {
         const { firstDay, lastDay } = displayedPeriod;
         
         let endDate;
-        if (timeOffset === 0) {
-            // Current period: Use today as the end date
-            endDate = new Date();
-        } else {
+        // if (timeOffset === 0) {
+        //     // Current period: Use today as the end date
+        //     endDate = new Date();
+        // } else {
             // Past period: Use the last day of the period
             endDate = new Date(lastDay);
-        }
+        // }
         
         // Make sure we don't go beyond the last day of the period
         if (endDate > lastDay) {
@@ -384,7 +384,7 @@ export default function StatsScreen() {
                     <View style={styles.fixedColumn}>
                         {/* Header cell */}
                         <View style={[styles.habitNameCell, styles.headerNameCell]}>
-                            <Text style={styles.headerText}>Habit</Text>
+                            <Text style={styles.headerText}>Habit/Week</Text>
                         </View>
                         
                         {/* Habit name cells */}
@@ -416,7 +416,7 @@ export default function StatsScreen() {
                                         ]}
                                     >
                                         <Text style={styles.weekDateText}>
-                                            {formatDate(week.startDate)}
+                                            {format(week.startDate, 'dd/MM')}
                                         </Text>
                                     </View>
                                 ))}
@@ -575,8 +575,9 @@ export default function StatsScreen() {
             )}
 
             {/* Render tables for daily and weekly habits */}
-            {renderTable(dailyHabits, "Daily Habits")}
-            {renderTable(weeklyBinaryHabits, "Weekly Habits")}
+            {renderTable(dailyHabits.concat(weeklyBinaryHabits), "Habits")}
+            {/* {renderTable(dailyHabits, "Daily Habits")}
+            {renderTable(weeklyBinaryHabits, "Weekly Habits")} */}
             {renderWeeklyCounterTable(weeklyCounterHabits)}
         </ScrollView>
     );
