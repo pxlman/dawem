@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
         color: '#111',
         flexShrink: 1,
         textAlign: 'center',
+        width: '100%'
     },
     textInput: {
         fontSize: 14,

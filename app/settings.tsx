@@ -32,7 +32,8 @@ import { set } from "date-fns";
 let Colors = getColors()
 
 export default function SettingsScreen() {
-  const { timeModules, settings, habits } = useAppState();
+  const state = useAppState();
+  const { timeModules, settings, habits } = state;
   const dispatch = useAppDispatch();
   
   // Update colors whenever theme changes
@@ -201,9 +202,7 @@ export default function SettingsScreen() {
   const handleExportHabits = async () => {
     try {
       const exportData = {
-        habits,
-        timeModules,
-        settings,
+        ...state,
         exportDate: new Date().toISOString(),
       };
       const jsonString = JSON.stringify(exportData, null, 2);
@@ -397,7 +396,7 @@ const renderTimeModuleItem = ({
     { key: "startTime", title: "Start Time of New Day" },
     { key: "timeModules", title: "Time Modules Management" },
     // { key: "theme", title: "Appearance" },
-    // { key: "importExport", title: "Import / Export Data" },
+    { key: "importExport", title: "Import / Export Data" },
     { key: "dataManagement", title: "Data Management" },
   ];
 

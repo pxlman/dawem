@@ -109,16 +109,15 @@ const GoalsScreen: React.FC = () => {
     return (
         <SafeAreaView style={styles.safeArea}>
             {/* Header with testing mode toggle */}
-            <View style={styles.headerContainer}>
+            {/* <View style={styles.headerContainer}>
                 <Text style={styles.header}>My Goals Map</Text>
                 <View style={styles.headerActions}>
-                    {/* Testing mode toggle */}
                     <Button
                         title="Add Top Goal"
                         onPress={() => handleAddGoal(null)}
                     />
                 </View>
-            </View>
+            </View> */}
             
             {/* Display goals count for debugging */}
             <Text style={styles.debugText}>
