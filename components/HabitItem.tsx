@@ -167,13 +167,15 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
 
         return (
             <View style={styles.controls}>
+                {habit.repetition.type === 'weekly' && (
                 <Text style={{color: Colors.textSecondary}}>+{countValue} </Text>
+                )}
                 <TouchableOpacity
                     style={[styles.countButton, isFutureDate ? styles.disabled : {}]}
                     onPress={handleDecrement}
                     disabled={isFutureDate}
                 >
-                    <Ionicons name="remove-circle-outline" size={24} color={isFutureDate ? Colors.grey : Colors.accent} />
+                    <Ionicons name="remove-circle-outline" size={34} color={isFutureDate ? Colors.grey : Colors.accent} />
                 </TouchableOpacity>
                 <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}]}>
                     {habit.repetition.type === 'weekly' && habit.measurement.type === 'count' 
@@ -186,7 +188,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
                     onPress={handleIncrement}
                     disabled={isFutureDate}
                 >
-                    <Ionicons name="add-circle-outline" size={24} color={isFutureDate ? Colors.grey : Colors.accent} />
+                    <Ionicons name="add-circle-outline" size={34} color={isFutureDate ? Colors.grey : Colors.accent} />
                 </TouchableOpacity>
             </View>
         );
@@ -276,88 +278,116 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
 
 // --- Styles ---
 const styles = StyleSheet.create({
-    container: {
-        backgroundColor: Colors.surface, paddingVertical: 12, paddingLeft: 15, paddingRight: 10,
-        marginVertical: 4, marginHorizontal: 10, borderRadius: 8, borderLeftWidth: 6,
-        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        elevation: 1.5, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.18, shadowRadius: 1.0,
-        zIndex: 1,
-    },
-    containerDisabled: {
-        opacity: 0.6,
-    },
-    touchableArea: {
-        flex: 1,
-        marginRight: 10,
-    },
-    title: {
-        fontSize: 16, fontWeight: '500', color: Colors.text
-    },
-    controls: { flexDirection: 'row', alignItems: 'center', },
-    countButton: {
-        padding: 5,
-    },
-    countValue: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginHorizontal: 10,
-        color: Colors.text,
-    },
-    textDisabled: {
-        color: Colors.textSecondary,
-    },
-    disabled: {
-        opacity: 0.5,
-    },
+  container: {
+    backgroundColor: Colors.surface,
+    paddingVertical: 12,
+    paddingLeft: 15,
+    paddingRight: 10,
+    marginVertical: 4,
+    marginHorizontal: 10,
+    borderRadius: 8,
+    borderLeftWidth: 6,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    elevation: 1.5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.18,
+    shadowRadius: 1.0,
+    zIndex: 1,
+  },
+  containerDisabled: {
+    opacity: 0.6,
+  },
+  touchableArea: {
+    flex: 1,
+    marginRight: 10,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: Colors.text,
+  },
+  controls: { flexDirection: "row", alignItems: "center" },
+  countButton: {
+    padding: 5,
+  },
+  countValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginHorizontal: 10,
+    color: Colors.text,
+  },
+  textDisabled: {
+    color: Colors.textSecondary,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
 
-    // --- Combined Button Styles ---
-    button_base: {
-        padding: 8, borderRadius: 25, minWidth: 40, minHeight: 40,
-        justifyContent: 'center', alignItems: 'center', borderWidth: 1.5,
-        borderColor: Colors.accent,
-    },
-    button_none: {
-        backgroundColor: Colors.surface, borderColor: Colors.accent,
-    },
-    button_right: {
-        backgroundColor: Colors.green, borderColor: Colors.green,
-    },
-    button_wrong: {
-        backgroundColor: Colors.red, borderColor: Colors.error,
-    },
-    button_circle: {
-        backgroundColor: Colors.blue, borderColor: Colors.blue,
-    },
+  // --- Combined Button Styles ---
+  button_base: {
+    padding: 8,
+    borderRadius: 25,
+    minWidth: 40,
+    minHeight: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+  },
+  button_none: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.accent,
+  },
+  button_right: {
+    backgroundColor: Colors.green,
+    borderColor: Colors.green,
+  },
+  button_wrong: {
+    backgroundColor: Colors.red,
+    borderColor: Colors.error,
+  },
+  button_circle: {
+    backgroundColor: Colors.blue,
+    borderColor: Colors.blue,
+  },
 
-    // --- Count Control Styles ---
-    countInput: {
-        borderWidth: 1, borderColor: Colors.grey, borderRadius: 5,
-        paddingHorizontal: 10, paddingVertical: 6, minWidth: 50,
-        textAlign: 'center', marginRight: 5, fontSize: 15,
-        color: Colors.text,
-        backgroundColor: Colors.surface,
-    },
-    inputDisabled: {
-         backgroundColor: Colors.lightGrey,
-         color: Colors.darkGrey,
-         borderColor: Colors.darkGrey,
-    },
-    
-    repetitionInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 4,
-    },
-    repetitionIcon: {
-        marginRight: 4,
-    },
-    repetitionText: {
-        fontSize: 12,
-        color: Colors.textSecondary,
-        fontWeight: '400',
-    },
-    // Removed all modal-related styles
+  // --- Count Control Styles ---
+  countInput: {
+    borderWidth: 1,
+    borderColor: Colors.grey,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minWidth: 50,
+    textAlign: "center",
+    marginRight: 5,
+    fontSize: 15,
+    color: Colors.text,
+    backgroundColor: Colors.surface,
+  },
+  inputDisabled: {
+    backgroundColor: Colors.lightGrey,
+    color: Colors.darkGrey,
+    borderColor: Colors.darkGrey,
+  },
+
+  repetitionInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  repetitionIcon: {
+    marginRight: 4,
+  },
+  repetitionText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: "400",
+  },
+  // Removed all modal-related styles
 });
 
 export default HabitItem;

@@ -83,7 +83,7 @@ export interface LogEntry {
     date: string; // 'yyyy-MM-dd'
     timestamp: string;
     status?: HabitLogStatus;
-    value?: number;
+    value?: number | null;
     notes?: string;
 }
 

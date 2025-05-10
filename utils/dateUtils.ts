@@ -48,8 +48,8 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     // Check if the habit is within its start and end dates
     // if (habit.startDate && isBefore(today, habit.startDate)) return false;
     if (habit.endDate && isAfter(today, habit.endDate) ) return false;
-    if (!isBefore(currentDate, new Date())
-        && !isToday(currentDate)) return false;
+    // if (!isBefore(currentDate, new Date())
+    //     && !isToday(currentDate)) return false;
 
     // Handle daily habits
     if (habit.repetition.type === 'daily') {

@@ -171,13 +171,13 @@ export default function StatsScreen() {
     const getHabitStatus = (habit: Habit, date: Date) : {status: HabitStatus, value: number} => {
         // First check if the habit is due on this date
         const status : HabitStatus = 'empty';
-        const isDue = isHabitDue(habit, date);
+        let isDue = isHabitDue(habit, date) && (isBefore(date, new Date()) || isToday(date));
         if(!isDue) return {status:'notdue', value:0}
         const dateStr = date.toISOString().split('T')[0];
         const log = logs.find((l:LogEntry) => l.habitId === habit.id && l.date === dateStr);
-        if(!isDue) return {status: 'empty', value:0}
         if (habit.measurement.type === 'binary') {
-            if (!log) {
+            if (!log || log.value === null) {
+                console.log(habit.title, date)
                 return { status: 'empty', value: 0};
             }
             // For binary habits: right = completed, wrong = missed
@@ -214,7 +214,7 @@ export default function StatsScreen() {
         let value = getWeeklyHabitTotal(habit.id, date, logs, settings.startDayOfWeek);
         let targetValue = habit.measurement.targetValue || 0;
         const dateStr = date.toISOString().split('T')[0];
-        let isDue = isHabitDue(habit, date)
+        let isDue = isHabitDue(habit, date) && !(!isBefore(currentDate, new Date()) && !isToday(currentDate));
         
         if (value > targetValue && targetValue > 0) {
             return { status: 'exceeded', value, isDue, percentage: Math.round((value / targetValue) * 100) }; // Exceeded status
@@ -297,6 +297,8 @@ export default function StatsScreen() {
                                         } else if (status.status === 'missed') {
                                             cellStyle = styles.missedCell;
                                         } else if (status.status === 'notdue') {
+                                            cellStyle = styles.emptyCell;
+                                        } else {
                                             cellStyle = styles.emptyCell;
                                         }
                                         
