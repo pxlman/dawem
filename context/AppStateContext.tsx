@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { appReducer, initialState } from './appReducer'; // Ensure initialState is exported/defined correctly
 import { saveState, loadState } from '../utils/storage';
-import { AppState, AppAction } from '../types';
+import { AppState, AppAction } from '@/types/index';
 import { useDebouncedEffect } from '../hooks/useDebouncedEffect'; // Adjust path if needed
 
 // Context definitions

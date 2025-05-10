@@ -1,31 +1,20 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Button, StyleSheet, Text, SafeAreaView, Alert, Platform, Switch } from 'react-native';
+import { View, Button, StyleSheet, Text, SafeAreaView, Alert, Platform, Switch, Settings } from 'react-native';
 import Constants from 'expo-constants';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
 import GoalTreeMindMap from '../../components/goals/GoalTreeMindMap';
 import { Goal } from '@/types/index';
-import Colors , {fixedColors} from '@/constants/Colors';
+import {fixedColors, getColors} from '@/constants/Colors';
 import { useAppDispatch, useAppState } from '@/context/AppStateContext';
+let Colors = getColors()
 
 // Keep INITIAL_GOALS for testing
 const INITIAL_GOALS: Goal[] = [
   {
     id: uuidv4(),
-    title: "Run 3 times a week consistently",
-    color: "#8BC34A",
-    enabled: true,
-  },
-  {
-    id: uuidv4(),
-    title: "Go to the Gym Regularly",
-    color: "#CDDC39",
-    enabled: true,
-  },
-  {
-    id: uuidv4(),
-    title: "Improve Flexibility",
+    title: "ينقص وزني 20 كيلو",
     color: "#00BCD4",
     enabled: true,
   },
@@ -35,6 +24,8 @@ const GoalsScreen: React.FC = () => {
     // Get app state and dispatch
     const appState = useAppState();
     const dispatch = useAppDispatch();
+    const theme = appState.settings.theme;
+    Colors =  getColors(theme)
     
     // Local state with INITIAL_GOALS
     // const [localGoals, setLocalGoals] = useState<Goal[]>(INITIAL_GOALS);

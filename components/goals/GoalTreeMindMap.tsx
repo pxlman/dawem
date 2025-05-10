@@ -23,10 +23,11 @@ import GoalNodeMindMap, { NODE_WIDTH, NODE_BASE_HEIGHT, NODE_VERTICAL_SPACING, N
 import HabitNodeMindMap, { HABIT_NODE_HEIGHT, HABIT_NODE_WIDTH } from "./HabitNodeMindMap";
 import { Goal, NodeLayout, Habit } from "@/types/index";
 import { useAppDispatch, useAppState } from "@/context/AppStateContext";
-import Colors  from "@/constants/Colors";
+import {getColors}  from "@/constants/Colors";
 import SelectHabitModal from "../SelectHabitModal";
 import { router } from "expo-router";
 import { format } from "date-fns";
+let Colors = getColors()
 
 // Simple node layout interface
 interface ExtendedNodeLayout extends NodeLayout {
@@ -47,7 +48,8 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     onEditGoal,
     onRemoveGoal,
 }) => {
-    const { goals, habits } = useAppState();
+    const { goals, habits, settings } = useAppState();
+    Colors = getColors(settings.theme)
     const dispatch = useAppDispatch();
 
     // Update state to use simplified ExtendedNodeLayout

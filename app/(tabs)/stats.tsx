@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
-import Colors  from '../../constants/Colors';
+import {getColors}  from '../../constants/Colors';
 import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { isHabitDue } from '../../utils/dateUtils';
@@ -9,9 +9,11 @@ import { addDays,subDays,isBefore } from 'date-fns';
 import { getSaturdayDateString } from '../../utils/dateUtils';
 import { getWeeklyHabitTotal } from '@/utils/habitUtils';
 import { getTextColorForBackground } from '@/utils/colorUtils';
+let Colors = getColors()
 
 export default function StatsScreen() {
     const { habits, logs, settings } = useAppState();
+     getColors(settings.theme)
     
     // State for month navigation (0 = current month, -1 = previous month, etc.)
     const [monthOffset, setMonthOffset] = useState(0);

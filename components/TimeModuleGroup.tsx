@@ -2,8 +2,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import HabitItem from './HabitItem'; // Adjust path
-import Colors  from '../constants/Colors'; // Adjust path
+import {getColors}  from '../constants/Colors'; // Adjust path
 import { TimeModule, Habit } from '@/types/index'; // Adjust path
+import { useAppState } from '@/context/AppStateContext';
+let Colors = getColors()
 
 interface TimeModuleGroupProps {
     timeModule?: TimeModule;
@@ -17,6 +19,8 @@ const TimeModuleGroup: React.FC<TimeModuleGroupProps> = ({ timeModule, habits, c
   if (!habits || habits.length === 0) {
     return null;
   }
+  const {settings} = useAppState()
+  Colors =  getColors(settings.theme)
 
   return (
     <View style={styles.container}>

@@ -2,9 +2,13 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Colors from '../../constants/Colors';
+import {getColors} from '../../constants/Colors';
+import { useAppState } from '@/context/AppStateContext';
+let Colors = getColors()
 
 export default function TabLayout() {
+    const {settings} = useAppState();
+    Colors =  getColors(settings.theme)
     return (
         <Tabs
             screenOptions={({ route }:{route:{name:string}}) => ({

@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons,FontAwesome5 } from '@expo/vector-icons';
 import { Habit } from '../../types/index';
-import Colors from '@/constants/Colors';
+import {getColors} from '@/constants/Colors';
 import { getTextColorForBackground } from '@/utils/colorUtils';
+import { useAppState } from '@/context/AppStateContext';
+let Colors = getColors()
 
 // Constants for node sizing
 export const HABIT_NODE_HEIGHT = 30; // Smaller than goal nodes
@@ -28,6 +30,9 @@ const HabitNodeMindMap: React.FC<HabitNodeMindMapProps> = ({
   habit,
   onPress
 }) => {
+  const {settings} = useAppState();
+  const Colors =  getColors(settings.theme);
+
   const handlePress = () => {
     if (onPress) {
       onPress(habit.id);

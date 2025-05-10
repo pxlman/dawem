@@ -99,6 +99,7 @@ export interface AppState {
     timeModules: TimeModule[];
     logs: LogEntry[];
     settings: AppSettings;
+    // theme: ThemeType;
     // dispatch: (action: AppAction) => void;
 }
 
@@ -163,6 +164,7 @@ export type AppAction =
         } 
     }
     | { type: "RESET_LOGS" }
+    | { type: "CHANGE_THEME"; payload: ThemeType }
     | { 
         type: "IMPORT_HABITS";
         payload: {

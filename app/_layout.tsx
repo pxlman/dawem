@@ -4,11 +4,14 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Import GestureHandlerRootView
 import { StatusBar } from 'expo-status-bar';
-import { AppProvider } from '../context/AppStateContext';
-import Colors  from '@/constants/Colors';
+import { AppProvider, useAppState } from '../context/AppStateContext';
+import {getColors}  from '@/constants/Colors';
 import { StyleSheet, Platform, StatusBar as MStatusBar } from 'react-native';
+let Colors = getColors()
 
 export default function RootLayout() {
+    // const {theme} = useAppState();
+    // Colors = getColors('fresh');
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <AppProvider>

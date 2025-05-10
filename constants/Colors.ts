@@ -95,10 +95,10 @@ const needed = {
 }
 
 // Default theme
-let currentTheme: ThemeType = 'browny';
+let currentTheme: ThemeType = 'night';
 
 // Helper to get current theme colors
-const getColors = (theme: ThemeType = 'browny'): ColorPalette => {
+export const getColors = (theme: ThemeType = currentTheme): ColorPalette => {
   return {
     ...themes[theme],
     ...needed
@@ -162,4 +162,4 @@ export const fixedColors = [
 });
 
 // Export current theme colors as default
-export default getColors();
+export default getColors;

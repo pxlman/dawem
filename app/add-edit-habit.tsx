@@ -5,19 +5,21 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext'; // Adjust path if needed
-import Colors , { fixedColors } from '../constants/Colors'; // Adjust path if needed
+import { fixedColors, getColors } from '../constants/Colors'; // Adjust path if needed
 import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig, Goal } from '@/types/index'; // Adjust path if needed
 import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { format } from 'date-fns'; // Ensure format is imported
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { habitById, getGoalOfHabit } from '@/utils/goalUtils';
+let Colors = getColors()
 
 const repetitionOptions = [ { label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, ];
 
 export default function AddHabitModalScreen() {
     const router = useRouter();
     const { habitId, currentDate, goalId } = useLocalSearchParams<{ habitId?: string; currentDate?: string; goalId?:string }>(); // Include currentDate in params
-    const { habits, timeModules, goals } = useAppState(); // Add goals to destructuring
+    const { habits, timeModules, goals, settings } = useAppState(); // Add goals to destructuring
+    Colors = getColors(settings.theme)
     const dispatch = useAppDispatch();
       let chabit = {
         // id: habitId?? null,

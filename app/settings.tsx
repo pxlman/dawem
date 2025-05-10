@@ -1,740 +1,952 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TextInput, TouchableOpacity, Alert, FlatList, Modal, Platform, Share } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import DraggableFlatList from 'react-native-draggable-flatlist';
-import { Ionicons } from '@expo/vector-icons';
-import { useAppState, useAppDispatch } from '../context/AppStateContext';
-import Colors  from '../constants/Colors';
-import { TimeModule } from '@/types/index';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+// src/screens/SettingsScreen.tsx (or wherever your SettingsScreen is)
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Alert,
+  FlatList,
+  Modal,
+  Platform,
+  Share,
+  Dimensions,
+} from "react-native";
+// import { SafeAreaView } from 'react-native-safe-area-context'; // SafeAreaView is good practice for the root
+import DraggableFlatList, {
+  RenderItemParams,
+} from "react-native-draggable-flatlist";
+import { Ionicons } from "@expo/vector-icons";
+import { useAppState, useAppDispatch } from "../context/AppStateContext"; // Adjust path
+import {getColors} from "../constants/Colors"; // Adjust path
+import { TimeModule, ThemeType } from "@/types/index"; // Adjusted to import ThemeType
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker"; // Explicit event type
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
+import { Buffer } from "buffer"; // Import Buffer for base64 conversion if not globally available
+import { set } from "date-fns";
+let Colors = getColors()
 
 export default function SettingsScreen() {
-    const { timeModules, settings, habits } = useAppState();
-    const dispatch = useAppDispatch();
-    const [newTimeModuleName, setNewTimeModuleName] = useState<string>('');
-    const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null);
-    const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
-    
-    // New state for rename modal
-    const [renameModalVisible, setRenameModalVisible] = useState(false);
-    const [moduleToRename, setModuleToRename] = useState<{id: string, name: string} | null>(null);
-    const [newModuleName, setNewModuleName] = useState('');
-    
-    // Simplified state - no longer tracking isEditingStartTime since we only edit start time
-    const [timeEditingModule, setTimeEditingModule] = useState<string | null>(null);
-    const [selectedModuleTime, setSelectedModuleTime] = useState(new Date());
+  const { timeModules, settings, habits } = useAppState();
+  const dispatch = useAppDispatch();
+  
+  // Update colors whenever theme changes
+  useEffect(() => {
+    Colors = getColors(settings.theme)
+  }, [settings.theme])
+  
+  const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null);
+  const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
+  const [moduleToRename, setModuleToRename] = useState<{id: string, name:string}|null>(null);
+  const [selectedModuleTimeValue, setSelectedModuleTimeValue] = useState(
+    new Date()
+  ); // Store Date value for picker
+  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
 
-    useEffect(() => {
-        if (settings.startTimeOfDay) {
-            const [hours, minutes] = settings.startTimeOfDay.split(':').map(Number);
-            if (!isNaN(hours) && !isNaN(minutes)) {
-                const savedStartTime = new Date();
-                savedStartTime.setHours(hours, minutes, 0, 0);
-                setNewDayStartTime(savedStartTime);
-            } else {
-                console.warn('Invalid startTimeOfDay format:', settings.startTimeOfDay);
-                setNewDayStartTime(null); // Fallback to null if invalid
-            }
-        } else {
-            const defaultStartTime = new Date();
-            defaultStartTime.setHours(0, 0, 0, 0);
-            setNewDayStartTime(defaultStartTime);
-        }
-    }, [settings.startTimeOfDay]);
+  // Available themes
+  const themes: ThemeType[] = ["fresh", "dark", "browny", "night"];
 
-    const handleAddTimeModule = () => {
-        const trimmedName = newTimeModuleName.trim();
-        if (!trimmedName) return Alert.alert("Error", "Time Module name cannot be empty.");
-        if (timeModules.some((tm:TimeModule) => tm.name.toLowerCase() === trimmedName.toLowerCase())) {
-            return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
-        }
-        // Add without a default start time
-        dispatch({ 
-            type: 'ADD_TIME_MODULE', 
-            payload: { 
-                name: trimmedName,
-                // No startTime property means it's not set
-            } as Omit<TimeModule, 'id'>
-        });
-        setNewTimeModuleName('');
-    };
+  // Handle theme change
+  const handleThemeChange = (theme: ThemeType) => {
+    dispatch({
+      type: "CHANGE_THEME",
+      payload: theme
+    });
+    setShowThemeDropdown(false); // Close dropdown after selection
+  };
 
-    const handleDeleteTimeModule = (id: string, name: string) => {
-        if (timeModules.length <= 1) { return Alert.alert("Error", "Cannot delete the last Time Module."); }
-        Alert.alert(
-          "Confirm Delete",
-          `Delete Time Module "${name}"?\n\nHabits using it will be reassigned.`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: () =>
-                dispatch({ type: "DELETE_TIME_MODULE", payload: { id } }),
-            },
-          ],
-          { cancelable: true }
+  useEffect(() => {
+    if (settings.startTimeOfDay) {
+      const [hours, minutes] = settings.startTimeOfDay.split(":").map(Number);
+      if (!isNaN(hours) && !isNaN(minutes)) {
+        const savedStartTime = new Date();
+        savedStartTime.setHours(hours, minutes, 0, 0);
+        setNewDayStartTime(savedStartTime);
+      } else {
+        console.warn(
+          "Invalid startTimeOfDay format in settings:",
+          settings.startTimeOfDay
         );
-    };
+        const defaultTime = new Date();
+        defaultTime.setHours(0, 0, 0, 0);
+        setNewDayStartTime(defaultTime);
+      }
+    } else {
+      const defaultStartTime = new Date();
+      defaultStartTime.setHours(0, 0, 0, 0); // Default to midnight
+      setNewDayStartTime(defaultStartTime);
+    }
+  }, [settings.startTimeOfDay]);
 
-    const handleRenameTimeModule = (id: string, currentName: string) => {
-        if (timeModules.length < 1) { 
-            return Alert.alert("Error", "There is no Time Module to rename."); 
-        }
-        
-        // For iOS, we can use Alert.prompt
-        if (Platform.OS === 'ios') {
-            Alert.prompt(
-                "Update Time Module",
-                `Enter a new name for "${currentName}":`,
-                [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                        text: "Rename",
-                        style: 'default',
-                        onPress: (newName) => {
-                            processRename(id, currentName, newName);
-                        },
-                    },
-                ],
-                "plain-text",
-                currentName
-            );
-        } else {
-            // For Android, use our custom modal
-            setModuleToRename({ id, name: currentName });
-            setNewModuleName(currentName);
-            setRenameModalVisible(true);
-        }
-    };
-    
-    // Function to process the rename action
-    const processRename = (id: string, currentName: string, newName?: string) => {
-        const trimmedName = newName?.trim() ?? currentName;
-        if (!trimmedName) {
-            return Alert.alert("Error", "Time Module name cannot be empty.");
-        }
-        if (timeModules.some((tm:TimeModule) => tm.id !== id && tm.name.toLowerCase() === trimmedName.toLowerCase())) {
-            return Alert.alert("Error", `A Time Module named "${trimmedName}" already exists.`);
-        }
-        dispatch({ type: 'UPDATE_TIME_MODULE', payload: { id, name: trimmedName } });
-    };
+  const handleAddTimeModule = () => {
+    const trimmedName = moduleToRename?.name.trim();
+    if (!trimmedName)
+      return Alert.alert("Error", "Time Module name cannot be empty.");
+    if (
+      timeModules.some(
+        (tm: TimeModule) => tm.name.toLowerCase() === trimmedName.toLowerCase()
+      )
+    ) {
+      return Alert.alert(
+        "Error",
+        `A Time Module named "${trimmedName}" already exists.`
+      );
+    }
+    dispatch({
+      type: "ADD_TIME_MODULE",
+      payload: { name: trimmedName } as Omit<TimeModule, "id">, // startTime is implicitly undefined
+    });
+    setModuleToRename(null);
+  };
 
-    const handleTimeChange = (event: any, selectedTime?: Date) => {
-        setIsTimePickerVisible(false);
-        if (selectedTime) {
-            setNewDayStartTime(selectedTime);
-            const formattedTime = selectedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-            dispatch({ type: 'UPDATE_START_TIME', payload: { startTimeOfDay: formattedTime } });
-        } else {
-            console.warn('Invalid time selected:', selectedTime);
-        }
-    };
+  const handleDeleteTimeModule = (id: string, name: string) => {
+    if (timeModules.length <= 1) {
+      return Alert.alert("Error", "Cannot delete the last Time Module.");
+    }
+    Alert.alert(
+      "Confirm Delete",
+      `Delete "${name}"? Habits will be reassigned.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () =>
+            dispatch({ type: "DELETE_TIME_MODULE", payload: { id } }),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
-    const handleResetLogs = () => {
-        Alert.alert(
-            "Confirm Reset",
-            "Delete ALL habit logs? This will not delete your habits.",
-            [
-                { text: "Cancel", style: 'cancel' },
-                { 
-                    text: "Reset Logs", 
-                    style: 'destructive', 
-                    onPress: () => dispatch({ type: 'RESET_LOGS' }) 
-                }
-            ],
-            { cancelable: true }
+  const handleDayStartTimeChange = (
+    event: DateTimePickerEvent,
+    selectedTime?: Date
+  ) => {
+    setIsTimePickerVisible(false); // Hide picker first
+    if (event.type === "set" && selectedTime) {
+      // Check event type for confirmation
+      setNewDayStartTime(selectedTime);
+      const formattedTime = selectedTime.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      dispatch({
+        type: "UPDATE_START_TIME",
+        payload: { startTimeOfDay: formattedTime },
+      });
+    }
+  };
+
+  const handleResetLogs = () => {
+    Alert.alert(
+      "Confirm Reset",
+      "Delete ALL habit logs?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset Logs",
+          style: "destructive",
+          onPress: () => dispatch({ type: "RESET_LOGS" }),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const showModuleTimePicker = (moduleId: string) => {
+    const module = timeModules.find((m: TimeModule) => m.id === moduleId);
+    if (!module) return;
+    const timeStr = module.startTime || "00:00"; // Default to 00:00 if not set
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    const dateForPicker = new Date();
+    dateForPicker.setHours(hours, minutes, 0, 0);
+    setSelectedModuleTimeValue(dateForPicker);
+    setModuleToRename({id:moduleId,name:module?.name}); // This will trigger the DateTimePicker visibility
+  };
+
+  const handleModuleTimeChange = (
+    event: DateTimePickerEvent,
+    selectedTime?: Date
+  ) => {
+    const currentEditingModuleId = moduleToRename?.id; // Capture before resetting
+    setModuleToRename(null); // Hide picker immediately
+
+    if (event.type === "set" && selectedTime && currentEditingModuleId) {
+      const formattedTime = selectedTime.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      dispatch({
+        type: "UPDATE_TIME_MODULE",
+        payload: { id: currentEditingModuleId, startTime: formattedTime },
+      });
+    }
+  };
+
+  const handleClearModuleTime = (moduleId: string) => {
+    dispatch({
+      type: "UPDATE_TIME_MODULE",
+      payload: { id: moduleId, startTime: undefined }, // Send undefined to clear
+    });
+  };
+
+  const handleExportHabits = async () => {
+    try {
+      const exportData = {
+        habits,
+        timeModules,
+        settings,
+        exportDate: new Date().toISOString(),
+      };
+      const jsonString = JSON.stringify(exportData, null, 2);
+      await Share.share({
+        title: "Habit Tracker Export",
+        message: jsonString /* url for iOS if needed */,
+      });
+    } catch (error) {
+      console.error("Export Error:", error);
+      Alert.alert("Export Error", "Could not export data.");
+    }
+  };
+
+  const handleImportHabits = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/json",
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0)
+        return;
+      const fileContent = await FileSystem.readAsStringAsync(
+        result.assets[0].uri
+      );
+      const importedData = JSON.parse(fileContent);
+      if (
+        !importedData.habits ||
+        !Array.isArray(importedData.habits) ||
+        !importedData.timeModules ||
+        !Array.isArray(importedData.timeModules)
+      ) {
+        throw new Error(
+          "Invalid file format. Missing habits or timeModules array."
         );
-    };
-
-    // Simplified to handle only start time
-    const handleEditModuleTime = (moduleId: string) => {
-        const module = timeModules.find((m:TimeModule) => m.id === moduleId);
-        if (!module) return;
-        
-        const timeStr = module.startTime || '00:00';
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        
-        const date = new Date();
-        date.setHours(hours, minutes, 0, 0);
-        
-        setSelectedModuleTime(date);
-        setTimeEditingModule(moduleId);
-    };
-
-    // Simplified time change handler - no start/end validation needed
-    const handleModuleTimeChange = (event: any, selectedTime?: Date) => {
-        setTimeEditingModule(null);
-        
-        if (selectedTime && timeEditingModule) {
-            const formattedTime = selectedTime.toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                hour12: false 
-            });
-            
-            dispatch({
-                type: 'UPDATE_TIME_MODULE',
+      }
+      Alert.alert(
+        "Confirm Import",
+        `Import ${importedData.habits.length} habits and ${importedData.timeModules.length} time modules? Existing items with the same ID will be updated.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Import",
+            onPress: () => {
+              dispatch({
+                type: "IMPORT_HABITS",
                 payload: {
-                    id: timeEditingModule,
-                    startTime: formattedTime
-                }
-            });
-        }
-    };
+                  habits: importedData.habits,
+                  timeModules: importedData.timeModules,
+                },
+              });
+              Alert.alert("Success", "Data imported!");
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Import Error:", error);
+      Alert.alert(
+        "Import Error",
+        error instanceof Error ? error.message : "Could not import data."
+      );
+    }
+  };
 
-    // Clear start time for a module
-    const handleClearModuleTime = (moduleId: string) => {
-        dispatch({
-            type: 'UPDATE_TIME_MODULE',
-            payload: {
-                id: moduleId,
-                startTime: undefined  // Clear the start time
-            }
-        });
-    };
+const renderTimeModuleItem = ({
+  item,
+  drag,
+  isActive,
+}: RenderItemParams<TimeModule>) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempName, setTempName] = useState(item.name);
+  const inputRef = useRef<TextInput>(null);
 
-    // Handle exporting habits to a file
-    const handleExportHabits = async () => {
-        try {
-            // Create a data object with habits and time modules
-            const exportData = {
-                habits,
-                timeModules,
-                exportDate: new Date().toISOString()
-            };
-            
-            const jsonString = JSON.stringify(exportData, null, 2);
-            
-            // Create a filename with current date
-            const date = new Date();
-            // const filename = `habits_export_${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}.json`;
-            
-            // Share the file
-            await Share.share({
-                title: 'Export Habits',
-                message: jsonString,
-                // On iOS we could use a URL, on Android we use the data directly
-                url: Platform.OS === 'ios' ? `data:text/json;base64,${Buffer.from(jsonString).toString('base64')}` : undefined
-            });
-        } catch (error) {
-            console.error('Error exporting habits:', error);
-            Alert.alert('Export Error', 'Could not export habits. Please try again.');
-        }
-    };
+  const handleEdit = () => {
+    setIsEditing(true);
+    setTempName(item.name);
+    inputRef.current?.focus();
+  };
 
-    // Handle importing habits from a file
-    const handleImportHabits = async () => {
-        try {
-            // Show file picker
-            const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/json',
-                copyToCacheDirectory: true
-            });
-            
-            if (result.canceled) {
-                return;
-            }
+  const handleSubmit = () => {
+    if (tempName.trim()) {
+      dispatch({
+        type: "UPDATE_TIME_MODULE",
+        payload: { id: item.id, name: tempName },
+      });
+      setIsEditing(false);
+    }
+  };
+  const handleCancel = () => {
+    setTempName(item.name); // Reset to original name
+    setIsEditing(false);
+  };
 
-            // Read file content
-            const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
-            
-            // Parse JSON
-            let importedData;
-            try {
-                importedData = JSON.parse(fileContent);
-            } catch (error) {
-                throw new Error('Invalid file format. Please select a valid habits export file.');
-            }
-            
-            // Validate imported data structure
-            if (!importedData.habits || !Array.isArray(importedData.habits)) {
-                throw new Error('Invalid file format. The file does not contain valid habit data.');
-            }
-            
-            // Confirm import
-            Alert.alert(
-                'Confirm Import',
-                `This will import ${importedData.habits.length} habits. Your existing habits will be kept. Continue?`,
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    { 
-                        text: 'Import',
-                        onPress: () => {
-                            // Dispatch import action
-                            dispatch({ 
-                                type: 'IMPORT_HABITS', 
-                                payload: { 
-                                    habits: importedData.habits,
-                                    timeModules: importedData.timeModules || []
-                                }
-                            });
-                            Alert.alert('Success', 'Habits imported successfully!');
-                        }
-                    }
-                ]
-            );
-        } catch (error) {
-            console.error('Error importing habits:', error);
-            Alert.alert('Import Error', error instanceof Error ? error.message : 'Could not import habits. Please try again.');
-        }
-    };
-
-    // Updated render item to show optional start time with clear button
-    const renderTimeModuleItem = ({ item, drag, isActive }: { item: TimeModule; drag: () => void; isActive: boolean }) => (
-        <TouchableOpacity
-            onLongPress={drag}
-            style={[
-                styles.listItem,
-                isActive && styles.activeListItem,
-            ]}
-        >
-            <Ionicons name="time-outline" size={20} color={Colors.textSecondary} style={styles.itemIcon} />
-            <View style={styles.moduleInfoContainer}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                {item.startTime ? (
-                    <View style={styles.timeContainer}>
-                        <TouchableOpacity 
-                            style={styles.timeButton}
-                            onPress={() => handleEditModuleTime(item.id)}
-                        >
-                            <Text style={styles.timeButtonText}>Starts at: {item.startTime}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            onPress={() => handleClearModuleTime(item.id)}
-                            style={styles.clearTimeButton}
-                            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-                        >
-                            <Ionicons name="close-circle" size={16} color={Colors.error} />
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <TouchableOpacity 
-                        style={styles.addTimeButton}
-                        onPress={() => handleEditModuleTime(item.id)}
-                    >
-                        <Text style={styles.addTimeText}>+ Add start time</Text>
-                    </TouchableOpacity>
-                )}
+  return (
+    <TouchableWithoutFeedback onPress={() => isEditing && handleSubmit()}>
+      <TouchableOpacity
+        onLongPress={drag}
+        style={[styles.listItem, isActive && styles.activeListItem]}
+        activeOpacity={0.8}
+      >
+        <Ionicons
+          name="reorder-three-outline"
+          size={24}
+          color={Colors.textSecondary}
+          style={styles.dragHandleIcon}
+        />
+        <View style={styles.moduleInfoContainer}>
+          <TextInput
+            ref={inputRef}
+            style={[styles.itemName, isEditing && styles.itemNameEditing]}
+            value={isEditing ? tempName : item.name}
+            editable={isEditing}
+            onChangeText={setTempName}
+            onSubmitEditing={handleSubmit}
+            selectTextOnFocus
+            returnKeyType="done"
+          />
+          {item.startTime ? (
+            <View style={styles.timeContainer}>
+              <TouchableOpacity
+                style={styles.timeButton}
+                onPress={() => showModuleTimePicker(item.id)}
+              >
+                <Text style={styles.timeButtonText}>
+                  Starts: {item.startTime}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleClearModuleTime(item.id)}
+                style={styles.clearTimeButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close-circle" size={18} color={Colors.error} />
+              </TouchableOpacity>
             </View>
-            <View style={styles.actionButtons}>
-                {timeModules.length > 1 && (
-                    <>
-                        <TouchableOpacity onPress={() => handleRenameTimeModule(item.id, item.name)} hitSlop={15}>
-                            <Ionicons name="create-outline" size={22} color={Colors.accent} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleDeleteTimeModule(item.id, item.name)} hitSlop={15}>
-                            <Ionicons name="trash-outline" size={22} color={Colors.error} />
-                        </TouchableOpacity>
-                    </>
-                )}
-            </View>
-        </TouchableOpacity>
-    );
-
-    return (
-        <>
-            <FlatList
-                data={[{ key: 'timeModules' },{ key: 'startTime' }, { key: 'importExport' }, { key: 'dataManagement' }]}
-                renderItem={({ item }) => {
-                    if (item.key === 'startTime') {
-                        return (
-                            <View style={styles.section}>
-                                <Text style={styles.header}>Start Time of New Day</Text>
-                                <TouchableOpacity onPress={() => setIsTimePickerVisible(true)} style={styles.timePickerButton}>
-                                    <Text style={styles.timePickerText}>
-                                        {newDayStartTime
-                                            ? newDayStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-                                            : '00:00'}
-                                    </Text>
-                                </TouchableOpacity>
-                                {isTimePickerVisible && newDayStartTime && (
-                                    <DateTimePicker
-                                        value={newDayStartTime}
-                                        mode="time"
-                                        display="default"
-                                        onChange={handleTimeChange}
-                                    />
-                                )}
-                            </View>
-                        );
-                    } else if (item.key === 'timeModules') {
-                        return (
-                            <View style={styles.section}>
-                                <Text style={styles.header}>Time Modules</Text>
-                                <DraggableFlatList
-                                    data={timeModules}
-                                    renderItem={renderTimeModuleItem}
-                                    keyExtractor={(item) => item.id}
-                                    onDragEnd={({ data }) => dispatch({ type: 'REORDER_TIME_MODULES', payload: data })}
-                                    contentContainerStyle={styles.timeModulesList}
-                                />
-                                <View style={styles.addSection}>
-                                    <Text style={styles.label}>Add New Time Module</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="New Time Module Name (e.g., Morning)"
-                                        value={newTimeModuleName}
-                                        onChangeText={setNewTimeModuleName}
-                                        placeholderTextColor={Colors.textSecondary}
-                                    />
-                                    <TouchableOpacity
-                                        onPress={handleAddTimeModule}
-                                        style={newTimeModuleName.trim() ? styles.addButton : styles.addButtonDisabled}
-                                        disabled={!newTimeModuleName.trim()}
-                                    >
-                                        <Text style={styles.addButtonText}>Add Time Module</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        );
-                    } else if (item.key === 'importExport') {
-                        return (
-                            <View style={styles.section}>
-                                <Text style={styles.header}>Import / Export</Text>
-                                <View style={styles.importExportContainer}>
-                                    <TouchableOpacity
-                                        onPress={handleImportHabits}
-                                        style={[styles.actionButton, styles.secondaryButton]}
-                                    >
-                                        <Ionicons name="arrow-down-circle-outline" size={22} color={Colors.background} />
-                                        <Text style={styles.secondaryButtonText}>Import Habits</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={handleExportHabits}
-                                        style={[styles.actionButton, styles.secondaryButton]}
-                                    >
-                                        <Ionicons name="arrow-up-circle-outline" size={22} color={Colors.background} />
-                                        <Text style={styles.secondaryButtonText}>Export Habits</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <Text style={styles.infoText}>Export your habits for backup or to transfer to another device.</Text>
-                            </View>
-                        );
-                    } else if (item.key === 'dataManagement') {
-                        return (
-                            <View style={[styles.section, { marginTop: 20 }]}>
-                                <Text style={styles.header}>Data Management</Text>
-                                <TouchableOpacity
-                                    onPress={handleResetLogs}
-                                    style={styles.resetButton}
-                                >
-                                    <Text style={styles.resetButtonText}>Reset All Habit Logs</Text>
-                                </TouchableOpacity>
-                                <Text style={styles.infoText}>This will permanently delete all your habit logs but keep your habits intact.</Text>
-                            </View>
-                        );
-                    }
-                    return null;
-                }}
-                keyExtractor={(item) => item.key}
-                contentContainerStyle={styles.flatListContentContainer} // Updated style
-            />
-            
-            {/* Custom Rename Modal for Android */}
-            <Modal
-                animationType='none'
-                transparent={true}
-                visible={renameModalVisible}
-                onRequestClose={() => setRenameModalVisible(false)}
+          ) : (
+            <TouchableOpacity
+              style={styles.addTimeButton}
+              onPress={() => showModuleTimePicker(item.id)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Update Time Module</Text>
-                        <Text style={styles.modalText}>
-                            Enter a new name for "{moduleToRename?.name}":
-                        </Text>
-                        <TextInput
-                            style={styles.modalInput}
-                            value={newModuleName}
-                            onChangeText={setNewModuleName}
-                            autoFocus={true}
-                        />
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.cancelButton]}
-                                onPress={() => setRenameModalVisible(false)}
-                            >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.confirmButton]}
-                                onPress={() => {
-                                    if (moduleToRename) {
-                                        processRename(moduleToRename.id, moduleToRename.name, newModuleName);
-                                    }
-                                    setRenameModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.buttonText}>Rename</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+              <Text style={styles.addTimeText}>+ Add Start Time</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.itemActionButtons}>
+          {isEditing ? (
+            <>
+              <TouchableOpacity
+                onPress={handleSubmit}
+                style={styles.iconButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="checkmark-outline" size={22} color={Colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCancel}
+                style={styles.iconButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close-outline" size={22} color={Colors.error} />
+              </TouchableOpacity>
+            </>
+          ) : (
+            timeModules.length > 1 && (
+              <>
+                <TouchableOpacity
+                  onPress={handleEdit}
+                  style={styles.iconButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="pencil-outline" size={22} color={Colors.accent} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleDeleteTimeModule(item.id, item.name)}
+                  style={styles.iconButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="trash-outline" size={22} color={Colors.error} />
+                </TouchableOpacity>
+              </>
+            )
+          )}
+        </View>
+      </TouchableOpacity>
+    </TouchableWithoutFeedback>
+  );
+};
+
+  // Data for the main FlatList to structure sections
+  const sectionsData = [
+    { key: "startTime", title: "Start Time of New Day" },
+    { key: "timeModules", title: "Time Modules Management" },
+    // { key: "theme", title: "Appearance" },
+    // { key: "importExport", title: "Import / Export Data" },
+    { key: "dataManagement", title: "Data Management" },
+  ];
+
+  const renderSection = ({ item }: { item: (typeof sectionsData)[0] }) => {
+    switch (item.key) {
+      case "startTime":
+        return (
+          <View style={styles.section}>
+            <Text style={styles.header}>{item.title}</Text>
+            <TouchableOpacity
+              onPress={() => setIsTimePickerVisible(true)}
+              style={styles.timePickerButton}
+            >
+              <Text style={styles.timePickerText}>
+                {newDayStartTime
+                  ? newDayStartTime.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    })
+                  : "Set Time"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        );
+      case "timeModules":
+        return (
+          <View style={styles.section}>
+            <Text style={styles.header}>{item.title}</Text>
+            <DraggableFlatList
+              data={timeModules}
+              renderItem={renderTimeModuleItem}
+              keyExtractor={(tm) => tm.id}
+              onDragEnd={({ data }) =>
+                dispatch({ type: "REORDER_TIME_MODULES", payload: data })
+              }
+              containerStyle={{ marginBottom: 10 }} // Add some bottom margin to the list itself
+              scrollEnabled={false} // Disable DraggableFlatList's own scroll
+            />
+            <View style={styles.addSection}>
+              <Text style={styles.label}>Add New Time Module</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Module Name (e.g., Morning)"
+                value={moduleToRename?.name}
+                onChangeText={(v)=>{setModuleToRename({id:moduleToRename?.id||'', name:v.trim()})}}
+                placeholderTextColor={Colors.textSecondary}
+              />
+              <TouchableOpacity
+                onPress={handleAddTimeModule}
+                style={
+                  moduleToRename?.name.trim()
+                    ? styles.addButton
+                    : styles.addButtonDisabled
+                }
+                disabled={!moduleToRename?.name.trim()}
+              >
+                <Text style={styles.addButtonText}>Add Module</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        );
+      case "theme":
+        return (
+          <View style={styles.section}>
+            <Text style={styles.header}>{item.title}</Text>
+            <Text style={styles.label}>Theme</Text>
+            <TouchableOpacity 
+              style={styles.dropdownButton}
+              onPress={() => setShowThemeDropdown(true)}
+            >
+              <View style={[styles.colorIndicator, {backgroundColor: getColors(settings.theme).primary}]} />
+              <Text style={styles.dropdownButtonText}>
+                {settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
+              </Text>
+              <Ionicons name="chevron-down" size={24} color={Colors.textSecondary} />
+            </TouchableOpacity>
             
-            {/* Time picker for module start times */}
-            {timeEditingModule && (
-                <DateTimePicker
-                    value={selectedModuleTime}
-                    mode="time"
-                    display="default"
-                    onChange={handleModuleTimeChange}
+            <Modal
+              visible={showThemeDropdown}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowThemeDropdown(false)}
+            >
+              <TouchableWithoutFeedback onPress={() => setShowThemeDropdown(false)}>
+                <View style={styles.modalOverlay}>
+                  <View style={styles.dropdownContainer}>
+                    {themes.map((theme) => (
+                      <TouchableOpacity
+                        key={theme}
+                        style={[
+                          styles.dropdownItem,
+                          settings.theme === theme && styles.dropdownItemSelected
+                        ]}
+                        onPress={() => handleThemeChange(theme)}
+                      >
+                        <View style={[styles.colorIndicator, {backgroundColor: getColors(theme).primary}]} />
+                        <Text style={[
+                          styles.dropdownItemText,
+                          settings.theme === theme && styles.dropdownItemTextSelected
+                        ]}>
+                          {theme.charAt(0).toUpperCase() + theme.slice(1)}
+                        </Text>
+                        {settings.theme === theme && (
+                          <Ionicons name="checkmark" size={22} color={Colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
+          </View>
+        );
+      case "importExport":
+        return (
+          <View style={styles.section}>
+            <Text style={styles.header}>{item.title}</Text>
+            <View style={styles.importExportButtonsContainer}>
+              <TouchableOpacity
+                onPress={handleImportHabits}
+                style={[styles.actionButtonRow, styles.secondaryButton]}
+              >
+                <Ionicons
+                  name="arrow-down-circle-outline"
+                  size={22}
+                  color={Colors.background}
+                  style={styles.buttonIcon}
                 />
-            )}
-        </>
-    );
+                <Text style={styles.secondaryButtonText}>Import Data</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleExportHabits}
+                style={[styles.actionButtonRow, styles.secondaryButton]}
+              >
+                <Ionicons
+                  name="arrow-up-circle-outline"
+                  size={22}
+                  color={Colors.background}
+                  style={styles.buttonIcon}
+                />
+                <Text style={styles.secondaryButtonText}>Export Data</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.infoText}>
+              Backup your data or transfer to another device.
+            </Text>
+          </View>
+        );
+      case "dataManagement":
+        return (
+          <View style={styles.section}>
+            <Text style={styles.header}>{item.title}</Text>
+            <TouchableOpacity
+              onPress={handleResetLogs}
+              style={styles.resetButton}
+            >
+              <Ionicons
+                name="refresh-circle-outline"
+                size={22}
+                color={Colors.text}
+                style={styles.buttonIcon}
+              />
+              <Text style={styles.resetButtonText}>Reset All Habit Logs</Text>
+            </TouchableOpacity>
+            <Text style={styles.infoText}>
+              This deletes all logs but keeps habits and modules.
+            </Text>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
+      <FlatList
+        data={sectionsData}
+        renderItem={renderSection}
+        keyExtractor={(item) => item.key}
+        contentContainerStyle={styles.flatListContainer}
+        showsVerticalScrollIndicator={false}
+      />
+
+      {isTimePickerVisible && newDayStartTime && (
+        <DateTimePicker
+          value={newDayStartTime}
+          mode="time"
+          display="default"
+          onChange={handleDayStartTimeChange}
+        />
+      )}
+
+      {moduleToRename?.id && (
+        <DateTimePicker
+          value={selectedModuleTimeValue}
+          mode="time"
+          display="default"
+          onChange={handleModuleTimeChange}
+        />
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-        padding: 15,
+  flatListContainer: {
+    // Renamed for clarity
+    padding: 15,
+    paddingBottom: 30, // Ensure space at the bottom
+  },
+  section: {
+    marginBottom: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: 12, // More rounded
+    padding: 15,
+    elevation: 2,
+    shadowColor: Colors.darkGrey,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderWidth: Platform.OS === "ios" ? 1 : 0,
+    borderColor: Colors.lightGrey,
+  },
+  header: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+    color: Colors.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.grey,
+    paddingBottom: 10,
+  },
+  listItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGrey,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+    borderRadius: 8,
+  },
+  activeListItem: { backgroundColor: Colors.primary }, // Highlight active drag item
+  dragHandleIcon: { marginRight: 10, color: Colors.grey },
+  itemIcon: { marginRight: 12 }, // Keep if used elsewhere
+  itemName: { fontSize: 17, color: Colors.text, fontWeight: "500", textAlignVertical:'bottom'},
+  moduleInfoContainer: { flex: 1, justifyContent: "center" },
+  itemActionButtons: { flexDirection: "row", alignItems: "center" }, // Renamed
+  iconButton: { paddingHorizontal: 8 }, // Spacing for icons
+  addSection: {
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: Colors.grey,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: Colors.grey,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 12,
+    backgroundColor: Colors.background,
+    color: Colors.text,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: Colors.textSecondary,
+  },
+  infoText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginTop: 10,
+    lineHeight: 18,
+  },
+  timePickerButton: {
+    backgroundColor: Colors.background,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.grey,
+  },
+  timePickerText: { color: Colors.primary, fontSize: 18, fontWeight: "bold" },
+  addButton: {
+    backgroundColor: Colors.primary,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  addButtonDisabled: {
+    backgroundColor: Colors.grey,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  addButtonText: { color: Colors.surface, fontSize: 16, fontWeight: "bold" },
+  resetButton: {
+    backgroundColor: Colors.error,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  resetButtonText: { color: Colors.text, fontSize: 16, fontWeight: "bold" },
+  importExportButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  actionButtonRow: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  secondaryButton: { backgroundColor: Colors.accent },
+  buttonIcon: { marginRight: 8 },
+  secondaryButtonText: {
+    color: Colors.surface,
+    fontSize: 16,
+    fontWeight: "bold",
+  }, // Changed color for better contrast
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+      },
+  modalContent: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 25,
+    width: "85%",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+      },
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: "bold",
+    marginBottom: 15,
+    color: Colors.text,
+    textAlign: "center",
+  },
+  modalText: {
+    marginBottom: 15,
+    color: Colors.textSecondary,
+    fontSize: 15,
+    textAlign: "center",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: Colors.grey,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 25,
+    color: Colors.text,
+    fontSize: 16,
+    backgroundColor: Colors.background,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 10,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginLeft: 10,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  modalCancelButton: { backgroundColor: Colors.grey }, // Specific style for cancel
+  modalConfirmButton: { backgroundColor: Colors.primary },
+  modalButtonText: { color: Colors.surface, fontWeight: "bold", fontSize: 15 },
+  modalCancelButtonText: {
+    color: Colors.text,
+    fontWeight: "bold",
+    fontSize: 15,
+  }, // Text color for cancel
+  // Time module specific time styles
+  timeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+    justifyContent: "space-between",
+  },
+  timeButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  timeButtonText: { fontSize: 13, color: Colors.primary, fontWeight: "500" },
+  clearTimeButton: { padding: 5 /* For easier touch */ },
+  addTimeButton: { marginTop: 6, alignSelf: "flex-start", paddingVertical: 3 },
+  addTimeText: { color: Colors.accent, fontSize: 14, fontWeight: "500" },
+    menuOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        zIndex: 1002,
     },
-    flatListContentContainer: {
-        padding: 15, // Ensure consistent padding
-        backgroundColor: Colors.background, // Match the background color
+    menuBackground: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.2)',
     },
-    section: {
-        marginBottom: 15, // Reduce spacing between sections
-        backgroundColor: Colors.surface,
-        borderRadius: 8,
-        padding: 15,
-        elevation: 1,
-        borderWidth: 1,
-        borderColor: Colors.grey,
-    },
-    header: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 15,
-        color: Colors.primary,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrey,
-        paddingBottom: 8,
-    },
-    listItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrey,
-        backgroundColor: Colors.surface,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        marginBottom: 8,
-    },
-    itemIcon: { marginRight: 12 },
-    itemName: { fontSize: 18, flex: 1, color: Colors.text },
-    addSection: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: Colors.lightGrey },
-    input: {
-        borderWidth: 1,
-        borderColor: Colors.grey,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 16,
-        marginBottom: 12,
-        backgroundColor: Colors.background,
-        color: Colors.text,
-    },
-    label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: Colors.textSecondary },
-    infoText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginTop: 10 },
-    activeListItem: { backgroundColor: Colors.lightGrey },
-    timePickerButton: {
-        backgroundColor: Colors.accent, // Use primary color for better visibility
-        padding: 12, // Slightly larger padding for better touch area
-        borderRadius: 8,
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    timePickerText: {
-        color: Colors.surface, // Ensure good contrast with the button background
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    addButton: {
-        backgroundColor: Colors.primary, // Use primary color for enabled state
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    addButtonDisabled: {
-        backgroundColor: Colors.grey, // Use grey for disabled state
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    addButtonText: {
-        color: Colors.surface, // Ensure good contrast with the button background
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    resetButton: {
-        backgroundColor: Colors.error, // Use error color for destructive actions
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    resetButtonText: {
-        color: Colors.text, // Ensure good contrast with the button background
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    timeModulesList: {
-        marginTop: 10,
-    },
-    scrollContentContainer: {
-        paddingBottom: 40, // Add padding to ensure content is scrollable
-    },
-    actionButtons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10, // Add spacing between action buttons
-    },
-    // Modal styles
-    modalOverlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalContent: {
+    menuContent: {
         backgroundColor: Colors.surface,
         borderRadius: 10,
-        padding: 20,
-        width: '80%',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3.84,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        color: Colors.text,
-    },
-    modalText: {
-        marginBottom: 15,
-        color: Colors.text,
-    },
-    modalInput: {
-        borderWidth: 1,
-        borderColor: Colors.grey,
-        borderRadius: 5,
-        padding: 10,
-        marginBottom: 20,
-        color: Colors.text,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-    },
-    modalButton: {
         paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 5,
-        marginLeft: 10,
+        paddingHorizontal: 25,
+        minWidth: 160,
+        alignItems: 'center',
+        elevation: 12,
+        zIndex: 1003,
+        // position, top, left set dynamically
     },
-    cancelButton: {
-        backgroundColor: Colors.grey,
+    menuItem: {
+        paddingVertical: 12,
+        width: '100%',
+        alignItems: 'center',
     },
-    confirmButton: {
-        backgroundColor: Colors.primary,
-    },
-    buttonText: {
-        color: Colors.surface,
-        fontWeight: 'bold',
-    },
-    cancelButtonText: {
+    menuItemText: {
+        fontSize: 16,
         color: Colors.text,
-        fontWeight: 'bold',
     },
-    moduleInfoContainer: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    timeButton: {
-        backgroundColor: Colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 5,
-        marginTop: 5,
-        alignSelf: 'flex-start', // Only take up as much width as needed
-    },
-    timeButtonText: {
-        fontSize: 12,
-        color: Colors.background,
-    },
-    timeRangeSeparator: {
-        marginHorizontal: 5,
-        fontSize: 12,
-        color: Colors.textSecondary,
-    },
-    // Updated and new styles for optional time
-    timeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 5,
-    },
-    clearTimeButton: {
-        marginLeft: 8,
-        justifyContent: 'center',
-    },
-    addTimeButton: {
-        marginTop: 5,
-        paddingVertical: 4,
-        paddingHorizontal: 0,
-        backgroundColor: Colors.surface
-    },
-    addTimeText: {
-        color: Colors.accent,
-        fontSize: 14,
-    },
-    // Updated styles for import/export section
-    importExportContainer: {
-        flexDirection: 'column',
-        marginTop: 10,
-    },
-    exportButton: {
-        backgroundColor: Colors.accent,
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        flexDirection: 'row',
-        justifyContent: 'center',
-    },
-    // New shared button style
-    actionButton: {
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        flexDirection: 'row',
-        justifyContent: 'center',
-    },
-    secondaryButton: {
-        backgroundColor: Colors.accent, 
-        marginTop: 10,
-    },
-    actionButtonText: {
-        color: Colors.surface,
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 8,
-    },
-    secondaryButtonText: {
-        color: Colors.background,
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 8,
-    },
+      itemNameEditing: {
+    borderWidth: 1,
+    borderColor: Colors.accent,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: Colors.background,
+  },
+  themeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  themeOption: {
+    padding: 10,
+    margin: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.background,
+    borderWidth: 2,
+    borderColor: Colors.lightGrey,
+    width: 100,
+  },
+  selectedTheme: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.surface,
+  },
+  themeColorSample: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.grey,
+  },
+  themeText: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  selectedThemeText: {
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: Colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.grey,
+    marginBottom: 10,
+  },
+  dropdownButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.text,
+    marginLeft: 10,
+  },
+  dropdownContainer: {
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    padding: 5,
+    width: Dimensions.get('window').width * 0.8,
+    maxHeight: 300,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGrey,
+  },
+  dropdownItemSelected: {
+    backgroundColor: Colors.background,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: Colors.text,
+    marginLeft: 10,
+    flex: 1,
+  },
+  dropdownItemTextSelected: {
+    fontWeight: 'bold',
+    color: Colors.primary,
+  },
+  colorIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.grey,
+  },
 });

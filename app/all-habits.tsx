@@ -4,10 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext';
-import Colors , { fixedColors } from '../constants/Colors';
+import { fixedColors, getColors } from '../constants/Colors';
 import { Habit, TimeModule } from '@/types/index';
 import HabitEditModal from '@/components/HabitEditModal';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
+let Colors = getColors()
 
 // --- Type for grouped data ---
 interface GroupedHabits { [key: string]: { timeModule?: TimeModule; habits: Habit[] } }
@@ -179,7 +180,8 @@ const TimeModuleGroup = React.memo(({
 // Main All Habits Screen component
 export default function AllHabitsScreen() {
     const router = useRouter();
-    const { habits, timeModules } = useAppState();
+    const { habits, timeModules, settings } = useAppState();
+    Colors =  getColors(settings.theme)
     const dispatch = useAppDispatch();
     const [habitToEdit, setHabitToEdit] = React.useState<Habit | null>(null);
     const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);

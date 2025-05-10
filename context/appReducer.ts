@@ -11,18 +11,19 @@ export const initialState: AppState = {
     habits: [],
     goals: [],
     timeModules: [
-        { id: 'global_fajr', name: 'الفجر - الشروق' },
-        { id: 'global_sunrise', name: 'الشروق - الظهر' },
-        { id: 'global_dhuhr', name: 'الظهر - العصر' },
-        { id: 'global_asr', name: 'العصر - المغرب' },
-        { id: 'global_sunset', name: 'المغرب -العشاء' },
-        { id: 'global_night', name: 'العشاء - النوم' },
+        { id: 'global_fajr', name: 'الفجر' },
+        { id: 'global_sunrise', name: 'الشروق' },
+        { id: 'global_dhuhr', name: 'الظهر' },
+        { id: 'global_asr', name: 'العصر' },
+        { id: 'global_sunset', name: 'المغرب' },
+        { id: 'global_night', name: 'العشاء' },
     ],
     logs: [],
     settings: {
         startDayOfWeek: 6,
         theme: 'night'
     },
+    // theme: 'fresh',
     // dispatch: () => { },
 };
 
@@ -413,12 +414,15 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 habits: updatedHabits,
             };
         }
-        // src/context/appReducer.ts
-// ... other imports and cases ...
-
-// src/context/appReducer.ts
-// ... other imports and cases ...
-
+        case 'CHANGE_THEME': {
+            return {
+                ...state,
+                settings: {
+                    ...state.settings,
+                    theme: action.payload,
+                }
+            };
+        }
         case 'REORDER_HABITS_IN_MODULE': {
             const { timeModuleId, habits: orderedModuleHabitsInPayload } = action.payload;
 
@@ -447,7 +451,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const updatedHabits = [...habitsNotInTargetModule, ...finalOrderedModuleHabits];
 
             // console.log("Final Updated Habits:", updatedHabits.map(h => `${h.title} (${h.timeModuleId || 'uncat'})`));
-
             return {
                 ...state,
                 habits: updatedHabits,

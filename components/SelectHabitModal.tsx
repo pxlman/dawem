@@ -10,7 +10,8 @@ import {
 import { useAppDispatch, useAppState } from '@/context/AppStateContext';
 import { Goal, Habit } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
-import Colors  from '@/constants/Colors';
+import {getColors}  from '@/constants/Colors';
+let Colors = getColors()
 
 interface SelectHabitModalProps {
   goal: Goal;
@@ -23,8 +24,9 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
   visible,
   onClose,
 }) => {
-  const { habits, goals } = useAppState();
+  const { habits, goals, settings } = useAppState();
   const dispatch = useAppDispatch();
+  Colors =  getColors(settings.theme)
 
   const [selectedHabits, setSelectedHabits] = useState<Set<string>>(new Set());
   

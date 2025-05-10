@@ -9,7 +9,9 @@ import React, { useRef, useState, useCallback, useMemo, useEffect, memo } from '
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, LayoutChangeEvent, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Goal, NodeLayout } from '../../types/index';
-import Colors  from '@/constants/Colors';
+import {getColors}  from '@/constants/Colors';
+import { useAppState } from '@/context/AppStateContext';
+let Colors = getColors()
 
 interface GoalNodeMindMapProps {
     nodeLayout: NodeLayout;
@@ -31,6 +33,8 @@ const GoalNodeMindMap: React.FC<GoalNodeMindMapProps> = memo(({
     onEditGoal,
     onEditCancel,
 }) => {
+    const {settings} = useAppState();
+    Colors =  getColors(settings.theme)
     const { id, x, y, goalData } = nodeLayout;
     const { title, color, habitsIds, enabled = true } = goalData;
 

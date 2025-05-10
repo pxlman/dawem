@@ -8,8 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppState } from '../../context/AppStateContext';
 import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correct import
 import { isHabitDue } from '../../utils/dateUtils';
-import Colors , { fixedColors } from '../../constants/Colors'; // Import fixed colors
+import { fixedColors, getColors } from '../../constants/Colors'; // Import fixed colors
 import { Habit, TimeModule } from '@/types/index';
+let Colors = getColors()
 
 // --- Date Header Component (With animation for today button) ---
 interface DateHeaderProps { 
@@ -19,6 +20,7 @@ interface DateHeaderProps {
     onShowDatePicker: () => void;
     onTodayPress: () => void; // Add new prop for going to today
 }
+
 
 const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker, onTodayPress }) => {
     // Create animated values for scale and shake effects
@@ -148,10 +150,11 @@ interface TimeModuleGroupData { timeModule?: TimeModule; habits: Habit[] }
 
 // --- Main Screen Component ---
 export default function HabitListScreen() {
+    const { habits, timeModules, settings} = useAppState();
+    Colors = getColors(settings.theme)
     const router = useRouter();
     const navigation = useNavigation();
     const dispatch = useAppDispatch();
-    const { habits, timeModules, settings} = useAppState();
     
     // Get default date based on current time
     const getDefaultDate = () => {

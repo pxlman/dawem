@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform } from 'react-native';
 // Import date-fns functions for date comparison
 import { format, isAfter, startOfDay } from 'date-fns';
-import Colors from '../constants/Colors';
+import {getColors} from '../constants/Colors';
 import { useAppDispatch, useAppState } from '../context/AppStateContext';
 import { isLogForDate } from '../utils/dateUtils';
 import { getWeeklyHabitTotal } from '../utils/habitUtils';
 import { Habit, LogEntry, HabitLogStatus } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
+let Colors = getColors()
 
 interface HabitItemProps {
     habit: Habit;
@@ -17,7 +18,8 @@ interface HabitItemProps {
 
 const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu }) => {
     const dispatch = useAppDispatch();
-    const { logs, settings } = useAppState(); // Removed timeModules as it's not used
+    const { logs, settings, theme } = useAppState(); // Removed timeModules as it's not used
+    Colors = getColors(theme)
     const dateString = format(currentDate, 'yyyy-MM-dd');
     
     // Get the configured start day of week from settings
