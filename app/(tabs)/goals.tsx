@@ -14,7 +14,7 @@ let Colors = getColors()
 const INITIAL_GOALS: Goal[] = [
   {
     id: uuidv4(),
-    title: "ينقص وزني 20 كيلو",
+    title: "رضا ربنا",
     color: "#00BCD4",
     enabled: true,
   },
