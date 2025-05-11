@@ -20,7 +20,7 @@ export default function StatsScreen() {
     
     // State for view mode (weekly or monthly)
     const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
-    const cellsize = viewMode === 'weekly' ? 20 : 16;
+    const cellsize = viewMode === 'weekly' ? 28 : 16;
     
     // State for navigation offset (0 = current, -1 = previous, etc.)
     const [timeOffset, setTimeOffset] = useState(0);
@@ -260,7 +260,7 @@ export default function StatsScreen() {
                     
                     {/* Scrollable right part */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.scrollableArea}>
-                        <View>
+                        <View style={styles.rowsContainer}>
                             {/* Header row with dates */}
                             <View style={styles.headerRow}>
                                 {dates.map((date, index) => (
@@ -407,7 +407,7 @@ export default function StatsScreen() {
                     
                     {/* Scrollable right part */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.scrollableArea}>
-                        <View>
+                        <View style={styles.rowsContainer}>
                             {/* Header row with weeks */}
                             <View style={styles.headerRow}>
                                 {weeklyDates.map((week, index) => (
@@ -665,7 +665,8 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
     },
     scrollableArea: {
-        marginLeft: 90, // Match the width of habitNameCell
+        marginLeft: 115, // Match the width of habitNameCell
+        marginRight: 13
     },
     tableTitle: {
         fontSize: 18,
@@ -683,6 +684,12 @@ const styles = StyleSheet.create({
         height: 50, // Fixed height to match headerNameCell
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
+        minWidth: 250,
+        justifyContent:'center',
+    },
+    rowsContainer: {
+        // backgroundColor: 'black',
+        // width: 300
     },
     headerNameCell: {
         height: 50, // Fixed height to match headerRow
@@ -697,12 +704,14 @@ const styles = StyleSheet.create({
     },
     habitRow: {
         flexDirection: 'row',
-        height: 34, // Fixed height to match habitNameCell
+        height: 40, // Fixed height to match habitNameCell
         alignItems: 'center',
+        minWidth: 250,
+        justifyContent:'center',
     },
     habitNameCell: {
-        width: 90,
-        height: 34, // Fixed height to match habitRow
+        width: 110,
+        height: 40, // Fixed height to match habitRow
         padding: 8,
         backgroundColor: Colors.surface,
         justifyContent: 'center',
@@ -711,6 +720,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: Colors.text,
         fontWeight: '500',
+        textAlign:'center'
     },
     dateCell: {
         width: 16, // GitHub-style cell width
