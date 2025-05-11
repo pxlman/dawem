@@ -6,7 +6,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext'; // Adjust path if needed
 import { fixedColors, getColors } from '../constants/Colors'; // Adjust path if needed
-import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig, Goal } from '@/types/index'; // Adjust path if needed
+import { Habit, HabitMeasurementType, HabitRepetitionType, TimeModule, RepetitionConfig, Goal, AddHabitPayload } from '@/types/index'; // Adjust path if needed
 import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { format } from 'date-fns'; // Ensure format is imported
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -139,12 +139,12 @@ export default function AddHabitModalScreen() {
 
         let config: RepetitionConfig = {
             daysOfWeek: habit.repetition.config.daysOfWeek ?? [],
-            ndaysPerWeek: habit.repetition.config.ndaysPerWeek ?? undefined,
+            // ndaysPerWeek: habit.repetition.config.ndaysPerWeek ?? undefined,
         };
 
         // Adjust config for measurement type
         if (habit.measurement.type === 'binary') {
-            config.ndaysPerWeek = undefined;
+          habit.measurement.targetValue = undefined;
         } else {
             config.daysOfWeek = [];
         }
@@ -155,9 +155,9 @@ export default function AddHabitModalScreen() {
         };
 
         if (!habitId) {
-            dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
+            dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<AddHabitPayload, 'id' | 'createdAt'> });
         } else {
-            dispatch({ type: 'UPDATE_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> });
+            dispatch({ type: 'UPDATE_HABIT', payload: habitData as Omit<AddHabitPayload, 'id' | 'createdAt'> });
         }
 
         if (router.canGoBack()) router.back();
@@ -369,19 +369,16 @@ export default function AddHabitModalScreen() {
             <>
               {habit.measurement.type === "count" && (
                 <>
-                  <Text style={styles.label}>Target days per week</Text>
+                  <Text style={styles.label}>Target value per week</Text>
                   <TextInput
                     style={styles.input}
                     keyboardType="number-pad"
-                    value={habit.repetition.config.ndaysPerWeek?.toString() || ''}
+                    value={habit.measurement.targetValue?.toString() || ''}
                     onChangeText={text => setHabit(prev => ({
                         ...prev,
-                        repetition: {
-                            ...prev.repetition,
-                            config: {
-                                ...prev.repetition.config,
-                                ndaysPerWeek: parseInt(text) || 0
-                            }
+                        measurement: {
+                          ...prev.measurement,
+                          targetValue: parseInt(text) || 0
                         }
                     }))}
                     placeholder="e.g., 3"

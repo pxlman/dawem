@@ -167,5 +167,6 @@ export type AppAction =
     | { type: "CHANGE_THEME"; payload: ThemeType }
     | { 
         type: "IMPORT_DATA";
-        payload: AppState
-    };
+        payload: {habits: Habit[], goals: Goal[], timeModules: TimeModule[]};
+    }
+    ;

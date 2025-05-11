@@ -4,10 +4,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, 
 import { format, addDays, subDays } from 'date-fns'; // Ensure format is imported
 import { useRouter, useNavigation } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Octicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppState } from '../../context/AppStateContext';
 import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correct import
-import { isHabitDue } from '../../utils/dateUtils';
+import { getDefaultDate, getTodayDate, isHabitDue } from '../../utils/dateUtils';
 import { fixedColors, getColors } from '../../constants/Colors'; // Import fixed colors
 import { Habit, TimeModule } from '@/types/index';
 let Colors = getColors()
@@ -23,6 +23,7 @@ interface DateHeaderProps {
 
 
 const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextDay, onShowDatePicker, onTodayPress }) => {
+    const {settings} = useAppState()
     // Create animated values for scale and shake effects
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -113,6 +114,16 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
             onNextDay();
         }, 75);
     };
+
+    // Function to check if the displayed date is today
+    const isToday = () => {
+        const today = getDefaultDate(settings.startTimeOfDay || '00:00')
+        return (
+            currentDate.getDate() === today.getDate() &&
+            currentDate.getMonth() === today.getMonth() &&
+            currentDate.getFullYear() === today.getFullYear()
+        );
+    };
     
     return (
         <View style={styles.datePickerContainer}>
@@ -120,19 +131,22 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
                 <Ionicons name="chevron-back" size={24} style={styles.dateArrowIcon} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleTodayPress}>
-                <Animated.Text 
-                    style={[
-                        styles.dateText, 
-                        { 
-                            transform: [
-                                { scale: scaleAnim },
-                                { translateX: shakeAnim }
-                            ] 
-                        }
-                    ]}
-                >
-                    {format(currentDate, 'EEE, MMM d, yyyy')}
-                </Animated.Text>
+                <View style={styles.dateContainer}>
+                    <Animated.Text 
+                        style={[
+                            styles.dateText, 
+                            { 
+                                transform: [
+                                    { scale: scaleAnim },
+                                    { translateX: shakeAnim }
+                                ] 
+                            }
+                        ]}
+                    >
+                        {format(currentDate, 'EEE, MMM d, yyyy')}
+                    </Animated.Text>
+                    {!isToday() && <Octicons name='dot-fill' color={Colors.primary} size={18} style={styles.todayDot} />}
+                </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={onShowDatePicker} style={styles.todayButton}>
                 <Ionicons name='calendar-outline' style={styles.todayButtonIcon} />
@@ -156,26 +170,8 @@ export default function HabitListScreen() {
     const navigation = useNavigation();
     const dispatch = useAppDispatch();
     
-    // Get default date based on current time
-    const getDefaultDate = () => {
-        const now = new Date();
-        // now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        const currentHour = now.getHours();
-        const currentMinute = now.getMinutes();
-        // Assuming startTimeOfDay is 4:00 AM (04:00)
-        // You can replace this with a value from your app settings if available
-        const startTimeOfDay = settings.startTimeOfDay;
-        const startHour = (parseInt(startTimeOfDay?.split(':')[0]?? '0'));
-        const startMinute = parseInt(startTimeOfDay?.split(':')[1]?? '0');
-        // If current time is before the start time of day, return yesterday
-        if (currentHour < startHour || (currentHour === startHour && currentMinute < startMinute)) {
-            return subDays(now, 1);
-        }
-        // Otherwise return today
-        return now;
-    };
     
-    const [currentDate, setCurrentDate] = useState(getDefaultDate());
+    const [currentDate, setCurrentDate] = useState(getDefaultDate(settings.startTimeOfDay));
     const [showDatePicker, setShowDatePicker] = useState(false);
 
     // Add header buttons using useLayoutEffect
@@ -294,7 +290,7 @@ export default function HabitListScreen() {
     // Add function to go to today's date
     const goToToday = () => {
         // console.log(getDefaultDate())
-        setCurrentDate(getDefaultDate());
+        setCurrentDate(getDefaultDate(settings.startTimeOfDay));
     };
 
     return (
@@ -386,11 +382,18 @@ const styles = StyleSheet.create({
     dateArrowIcon: {
         color:Colors.accent
     },
+    dateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     dateText: { 
         fontSize: 17, 
         fontWeight: '600', 
         color: Colors.primary, 
         paddingVertical: 5,
+    },
+    todayDot: {
+        marginLeft: 16,
     },
     allHabitsButton: {
         flexDirection: 'row',

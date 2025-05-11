@@ -457,8 +457,12 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             };
         }
         case 'IMPORT_DATA': {
+            console.log(action.payload)
             return {
-                ...action.payload,
+                ...state,
+                habits: action.payload.habits,
+                goals: action.payload.goals,
+                timeModules: action.payload.timeModules
             };
         }
 // ... other cases ...

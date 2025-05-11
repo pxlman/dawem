@@ -28,7 +28,10 @@ import DateTimePicker, {
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { Buffer } from "buffer"; // Import Buffer for base64 conversion if not globally available
-import { set } from "date-fns";
+import { format, set } from "date-fns";
+import Sharing from 'expo-sharing'
+// import { downloadJsonFile, downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
+// import { saveJsonFileWithPicker } from "@/utils/fileUtils";
 let Colors = getColors()
 
 export default function SettingsScreen() {
@@ -200,19 +203,61 @@ export default function SettingsScreen() {
   };
 
   const handleExportHabits = async () => {
+    const exportData = {
+      habits: mergeArraysWithoutDuplicates(state.habits, habits),
+      timeModules: mergeArraysWithoutDuplicates(state.timeModules, timeModules),
+      goals: mergeArraysWithoutDuplicates(state.goals, state.goals)
+    };
+    const jsonString = JSON.stringify(exportData, null, 2);
+
+    // Format date for filename - YYYY-MM-DD_HH-MM-SS
+    const now = new Date();
+    const dateString = format(now, "yyyy-MM-dd_HH-mm-ss");
+    const filename = `dawem-${dateString}.json`;
+    const fileUri = FileSystem.cacheDirectory + filename;
+
     try {
-      const exportData = {
-        ...state,
-        exportDate: new Date().toISOString(),
-      };
-      const jsonString = JSON.stringify(exportData, null, 2);
-      await Share.share({
-        title: "Habit Tracker Export",
-        message: jsonString /* url for iOS if needed */,
+      await FileSystem.writeAsStringAsync(fileUri, jsonString, {
+        encoding: FileSystem.EncodingType.UTF8,
       });
+      console.log(`Temporary file saved to: ${fileUri}`);
+
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert(
+          "Saving Not Available",
+          "Unable to save or share the file on this device."
+        );
+        return;
+      }
+      // The Sharing dialog will allow the user to "Save to Files" (iOS)
+      // or choose a file manager app (Android) to save the file.
+      // The user can typically rename the file in the system's save dialog.
+      await Sharing.shareAsync(fileUri, {
+        mimeType: "application/json", // Helps Android suggest appropriate apps
+        dialogTitle: `Save ${filename} As...`, // Title for the share dialog
+        UTI: "public.json", // Uniform Type Identifier for iOS
+      });
+      console.log(`Sharing dialog presented for: ${fileUri}`);
+
+      // Note: After sharing, you might want to delete the temporary file from cache,
+      // but it's often fine to let the OS manage cache cleanup.
+      // If you want to delete:
+      // setTimeout(async () => {
+      //   try {
+      //     await FileSystem.deleteAsync(fileUri, { idempotent: true });
+      //     console.log(`Temporary file deleted: ${fileUri}`);
+      //   } catch (deleteError) {
+      //     console.error('Error deleting temporary file:', deleteError);
+      //   }
+      // }, 5000); // Delete after 5 seconds (giving time for sharing to complete)
     } catch (error) {
-      console.error("Export Error:", error);
-      Alert.alert("Export Error", "Could not export data.");
+      console.error("Error preparing or sharing file:", error);
+      Alert.alert(
+        "Save Error",
+        `Could not save the file: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   };
 
@@ -224,10 +269,9 @@ export default function SettingsScreen() {
       });
       if (result.canceled || !result.assets || result.assets.length === 0)
         return;
-      const fileContent = await FileSystem.readAsStringAsync(
-        result.assets[0].uri
-      );
-      const importedData:AppState = JSON.parse(fileContent);
+      const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+      // Alert.alert('hi',fileContent)
+      const importedData= JSON.parse(fileContent);
       if (
         !importedData.habits ||
         !Array.isArray(importedData.habits) ||
@@ -240,19 +284,26 @@ export default function SettingsScreen() {
       }
       Alert.alert(
         "Confirm Import",
-        `Danger option read carefully, import ${importedData.habits.length} habits, ${importedData.goals.length} goals and ${importedData.timeModules} time modules?`,
+        `Danger option read carefully, import ${importedData.habits.length} habits, ${importedData.goals.length} goals and ${importedData.timeModules.length} time modules?`,
         [
           { text: "Cancel", style: "cancel" },
           {
             text: "Import",
             onPress: () => {
+              // Create merged arrays without duplicates by ID
+              const mergedHabits = mergeArraysWithoutDuplicates(state.habits, importedData.habits);
+              const mergedTimeModules = mergeArraysWithoutDuplicates(state.timeModules, importedData.timeModules);
+              const mergedGoals = mergeArraysWithoutDuplicates(state.goals, importedData.goals);
+              
               dispatch({
                 type: "IMPORT_DATA",
                 payload: {
-                  ...importedData
+                  habits: mergedHabits,
+                  timeModules: mergedTimeModules,
+                  goals: mergedGoals,
                 },
               });
-              Alert.alert("Success", "Data imported!");
+              Alert.alert("Success", "Data imported without duplicates!");
             },
           },
         ]
@@ -264,6 +315,18 @@ export default function SettingsScreen() {
         error instanceof Error ? error.message : "Could not import data."
       );
     }
+  };
+
+  // Helper function to merge arrays while avoiding duplicate IDs
+  const mergeArraysWithoutDuplicates = (currentArray: any[], importedArray: any[]) => {
+    // Create a map of existing IDs for quick lookup
+    const existingIds = new Set(currentArray.map(item => item.id));
+    
+    // Filter out items from importedArray that already exist in currentArray
+    const uniqueImportedItems = importedArray.filter(item => !existingIds.has(item.id));
+    
+    // Return the merged array
+    return [...currentArray, ...uniqueImportedItems];
   };
 
 const renderTimeModuleItem = ({

@@ -183,8 +183,8 @@ export default function AllHabitsScreen() {
     const { habits, timeModules, settings } = useAppState();
     Colors =  getColors(settings.theme)
     const dispatch = useAppDispatch();
-    const [habitToEdit, setHabitToEdit] = React.useState<Habit | null>(null);
-    const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);
+    // const [habitToEdit, setHabitToEdit] = React.useState<Habit | null>(null);
+    // const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);
     const currentDate = new Date();
 
     // Group all habits by time module and sort them by sortOrder - memoized
@@ -216,16 +216,6 @@ export default function AllHabitsScreen() {
         return result;
     }, [habits, timeModules]);
 
-    const openEditModal = useCallback((habit: Habit) => {
-        setHabitToEdit(habit);
-        setIsEditModalVisible(true);
-    }, []);
-
-    const closeEditModal = useCallback(() => {
-        setHabitToEdit(null);
-        setIsEditModalVisible(false);
-    }, []);
-
     const handleDeleteHabit = useCallback((habit: Habit) => {
         Alert.alert(
             'Delete Habit',
@@ -253,11 +243,11 @@ export default function AllHabitsScreen() {
                 key={item.id}
                 timeModule={item.timeModule}
                 habits={item.habits}
-                onEditHabit={openEditModal}
+                onEditHabit={(h:Habit)=>router.push({pathname:'/add-edit-habit', params: { habitId: h.id }})}
                 onDeleteHabit={handleDeleteHabit}
             />
         );
-    }, [openEditModal, handleDeleteHabit]);
+    }, [handleDeleteHabit]);
 
     // Key extractor for the main list
     const keyExtractor = useCallback((item: TimeModuleGroupData) => item.id, []);
@@ -293,15 +283,6 @@ export default function AllHabitsScreen() {
             >
                 <Text style={styles.addButtonText}>+</Text>
             </TouchableOpacity>
-
-            {/* Edit modal */}
-            {isEditModalVisible && habitToEdit && (
-                <HabitEditModal
-                    habit={habitToEdit}
-                    currentDate={currentDate}
-                    onClose={closeEditModal}
-                />
-            )}
         {/* </SafeAreaView> */}
         </View>
     );
