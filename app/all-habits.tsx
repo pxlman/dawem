@@ -125,7 +125,7 @@ const TimeModuleGroup = React.memo(({
                     habits: data
                 }
             });
-            data.forEach(d => {console.log(d.title)})
+            // data.forEach(d => {console.log(d.title)})
             
             // Reset updating flag after dispatch
             setTimeout(() => setIsUpdating(false), 100);

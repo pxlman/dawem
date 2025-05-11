@@ -144,10 +144,13 @@ export default function StatsScreen() {
         
         // For weekly counter habit view, we'll use the current week
         const weekStartDay = dates[dates.length - 1]; // First day in the list (in reverse order)
-        weeks.push({
-            startDate: weekStartDay,
-            endDate: addDays(weekStartDay, 7)
-        });
+        dates.map(d => {
+            if(d.getDay() === 6)
+                weeks.push({
+                    startDate: d,
+                    endDate: addDays(weekStartDay, 7)
+                });
+        })
         
         return weeks;
     }, [dates]);
@@ -178,7 +181,6 @@ export default function StatsScreen() {
         const log = logs.find((l:LogEntry) => l.habitId === habit.id && l.date === dateStr);
         if (habit.measurement.type === 'binary') {
             if (!log || log.value === null) {
-                console.log(habit.title, date)
                 return { status: 'empty', value: 0};
             }
             // For binary habits: right = completed, wrong = missed
@@ -215,6 +217,7 @@ export default function StatsScreen() {
         let value = getWeeklyHabitTotal(habit.id, date, logs, settings.startDayOfWeek);
         let targetValue = habit.measurement.targetValue || 0;
         let isDue = isHabitDue(habit, date);
+        console.log(habit.title, date, isDue)
         
         if (value > targetValue) {
             return { status: 'exceeded', value, isDue, percentage: Math.round((value / targetValue) * 100) }; // Exceeded status
