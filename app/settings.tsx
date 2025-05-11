@@ -21,7 +21,7 @@ import DraggableFlatList, {
 import { Ionicons } from "@expo/vector-icons";
 import { useAppState, useAppDispatch } from "../context/AppStateContext"; // Adjust path
 import {getColors} from "../constants/Colors"; // Adjust path
-import { TimeModule, ThemeType } from "@/types/index"; // Adjusted to import ThemeType
+import { TimeModule, ThemeType, AppState } from "@/types/index"; // Adjusted to import ThemeType
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker"; // Explicit event type
@@ -227,7 +227,7 @@ export default function SettingsScreen() {
       const fileContent = await FileSystem.readAsStringAsync(
         result.assets[0].uri
       );
-      const importedData = JSON.parse(fileContent);
+      const importedData:AppState = JSON.parse(fileContent);
       if (
         !importedData.habits ||
         !Array.isArray(importedData.habits) ||
@@ -240,17 +240,16 @@ export default function SettingsScreen() {
       }
       Alert.alert(
         "Confirm Import",
-        `Import ${importedData.habits.length} habits and ${importedData.timeModules.length} time modules? Existing items with the same ID will be updated.`,
+        `Danger option read carefully, import ${importedData.habits.length} habits, ${importedData.goals.length} goals and ${importedData.timeModules} time modules?`,
         [
           { text: "Cancel", style: "cancel" },
           {
             text: "Import",
             onPress: () => {
               dispatch({
-                type: "IMPORT_HABITS",
+                type: "IMPORT_DATA",
                 payload: {
-                  habits: importedData.habits,
-                  timeModules: importedData.timeModules,
+                  ...importedData
                 },
               });
               Alert.alert("Success", "Data imported!");

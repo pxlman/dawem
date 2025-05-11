@@ -456,6 +456,11 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 habits: updatedHabits,
             };
         }
+        case 'IMPORT_DATA': {
+            return {
+                ...action.payload,
+            };
+        }
 // ... other cases ...
 
         default:

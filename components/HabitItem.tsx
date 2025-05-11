@@ -350,8 +350,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
   },
   button_circle: {
-    backgroundColor: Colors.blue,
-    borderColor: Colors.blue,
+    backgroundColor: Colors.buff,
+    borderColor: Colors.buff,
   },
 
   // --- Count Control Styles ---

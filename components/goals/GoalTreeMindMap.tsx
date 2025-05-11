@@ -479,6 +479,10 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                     "What would you like to add to this goal?",
                     [
                         {
+                            text: "Cancel",
+                            style: "cancel"
+                        },
+                        {
                             text: "Habit",
                             onPress: () => setShowHabitModal(true)
                         },
@@ -486,10 +490,6 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                             text: "Subgoal",
                             onPress: () => onAddGoal(focusedNodeId)
                         },
-                        {
-                            text: "Cancel",
-                            style: "cancel"
-                        }
                     ]
                 );
             }

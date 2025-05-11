@@ -20,6 +20,7 @@ export default function StatsScreen() {
     
     // State for view mode (weekly or monthly)
     const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
+    const cellsize = viewMode === 'weekly' ? 20 : 16;
     
     // State for navigation offset (0 = current, -1 = previous, etc.)
     const [timeOffset, setTimeOffset] = useState(0);
@@ -97,13 +98,13 @@ export default function StatsScreen() {
         const { firstDay, lastDay } = displayedPeriod;
         
         let endDate;
-        // if (timeOffset === 0) {
-        //     // Current period: Use today as the end date
-        //     endDate = new Date();
-        // } else {
+        if (timeOffset === 0 && viewMode === 'monthly') {
+            // Current period: Use today as the end date
+            endDate = new Date();
+        } else {
             // Past period: Use the last day of the period
             endDate = new Date(lastDay);
-        // }
+        }
         
         // Make sure we don't go beyond the last day of the period
         if (endDate > lastDay) {
@@ -173,7 +174,7 @@ export default function StatsScreen() {
         const status : HabitStatus = 'empty';
         let isDue = isHabitDue(habit, date) && (isBefore(date, new Date()) || isToday(date));
         if(!isDue) return {status:'notdue', value:0}
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = format(date, 'yyyy-MM-dd');
         const log = logs.find((l:LogEntry) => l.habitId === habit.id && l.date === dateStr);
         if (habit.measurement.type === 'binary') {
             if (!log || log.value === null) {
@@ -213,12 +214,11 @@ export default function StatsScreen() {
         // For weekly counter habits, use the Saturday date as the key date
         let value = getWeeklyHabitTotal(habit.id, date, logs, settings.startDayOfWeek);
         let targetValue = habit.measurement.targetValue || 0;
-        const dateStr = date.toISOString().split('T')[0];
-        let isDue = isHabitDue(habit, date) && !(!isBefore(currentDate, new Date()) && !isToday(currentDate));
+        let isDue = isHabitDue(habit, date);
         
-        if (value > targetValue && targetValue > 0) {
+        if (value > targetValue) {
             return { status: 'exceeded', value, isDue, percentage: Math.round((value / targetValue) * 100) }; // Exceeded status
-        } else if (value === targetValue && targetValue > 0) {
+        } else if (value === targetValue) {
             return { status: 'completed', value, isDue, percentage: 100 };
         } else if (value > 0) {
             const percentage = targetValue > 0 ? Math.min(100, Math.round((value / targetValue) * 100)) : 0;
@@ -267,7 +267,8 @@ export default function StatsScreen() {
                                     <View 
                                         key={`date-${index}`} 
                                         style={[
-                                            styles.dateCell, 
+                                            styles.dateCell,
+                                            {width:cellsize},
                                             date.getDay() === 5 && styles.startOfWeekCell, // Week start at saturday
                                             // Highlight today for current month (should be first day in the list)
                                             isToday(date) && styles.todayCellHeader,
@@ -294,7 +295,7 @@ export default function StatsScreen() {
                                             cellStyle = styles.exceededCell; // New style for exceeded
                                         } else if (status.status === 'partial') {
                                             cellStyle = styles.partialCell;
-                                        } else if (status.status === 'missed') {
+                                        } else if (status.status === 'missed' && !isToday(date)) {
                                             cellStyle = styles.missedCell;
                                         } else if (status.status === 'notdue') {
                                             cellStyle = styles.emptyCell;
@@ -309,6 +310,7 @@ export default function StatsScreen() {
                                                 key={`${habit.id}-${index}`} 
                                                 style={[
                                                     styles.dataCell, 
+                                                    {width:cellsize},
                                                     notDueStyle, // Apply not-due styling
                                                     cellStyle,
                                                     date.getDay() === 5 && styles.startOfWeekCell, // Week start at saturday
@@ -345,7 +347,7 @@ export default function StatsScreen() {
                 {/* Legend for this table - updated to include exceeded */}
                 <View style={styles.legendContainer}>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
                         <Text style={styles.legendText}>Exceeded</Text>
                     </View>
                     <View style={styles.legendItem}>
@@ -357,7 +359,7 @@ export default function StatsScreen() {
                         <Text style={styles.legendText}>Missed</Text>
                     </View>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
                         <Text style={styles.legendText}>Partial</Text>
                     </View>
                     <View style={styles.legendItem}>
@@ -486,7 +488,7 @@ export default function StatsScreen() {
                 {/* Legend for this table */}
                 <View style={styles.legendContainer}>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
                         <Text style={styles.legendText}>Exceeded Target</Text>
                     </View>
                     <View style={styles.legendItem}>
@@ -494,7 +496,7 @@ export default function StatsScreen() {
                         <Text style={styles.legendText}>Completed (100%)</Text>
                     </View>
                     <View style={styles.legendItem}>
-                        <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
+                        <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
                         <Text style={styles.legendText}>Partial Progress</Text>
                     </View>
                     <View style={styles.legendItem}>
@@ -755,10 +757,10 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.green,
     },
     exceededCell: {
-        backgroundColor: Colors.buff, // New style for exceeded targets
+        backgroundColor: Colors.blue,
     },
     partialCell: {
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.buff,
     },
     missedCell: {
         backgroundColor: Colors.red,
@@ -853,6 +855,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     exceededCountText: {
-        color: '#000000', // Black text for buff background for better contrast
+        color: 'white', // Changed from black to white since blue background requires white text
     },
 });

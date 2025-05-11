@@ -166,9 +166,6 @@ export type AppAction =
     | { type: "RESET_LOGS" }
     | { type: "CHANGE_THEME"; payload: ThemeType }
     | { 
-        type: "IMPORT_HABITS";
-        payload: {
-            habits: Habit[];
-            timeModules: TimeModule[];
-        }
+        type: "IMPORT_DATA";
+        payload: AppState
     };
