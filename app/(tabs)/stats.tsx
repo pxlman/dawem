@@ -696,11 +696,13 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
+        // textAlign:'center'
     },
     headerText: {
         fontWeight: '600',
         fontSize: 14,
         color: Colors.primary,
+        textAlign:'center'
     },
     habitRow: {
         flexDirection: 'row',
