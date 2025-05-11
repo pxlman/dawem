@@ -30,6 +30,7 @@ import * as FileSystem from "expo-file-system";
 import { Buffer } from "buffer"; // Import Buffer for base64 conversion if not globally available
 import { format, set } from "date-fns";
 import Sharing from 'expo-sharing'
+import { downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
 // import { downloadJsonFile, downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
 // import { saveJsonFileWithPicker } from "@/utils/fileUtils";
 let Colors = getColors()
@@ -206,7 +207,7 @@ export default function SettingsScreen() {
     const exportData = {
       habits: mergeArraysWithoutDuplicates(state.habits, habits),
       timeModules: mergeArraysWithoutDuplicates(state.timeModules, timeModules),
-      goals: mergeArraysWithoutDuplicates(state.goals, state.goals)
+      goals: mergeArraysWithoutDuplicates(state.goals, state.goals),
     };
     const jsonString = JSON.stringify(exportData, null, 2);
 
@@ -217,28 +218,7 @@ export default function SettingsScreen() {
     const fileUri = FileSystem.cacheDirectory + filename;
 
     try {
-      await FileSystem.writeAsStringAsync(fileUri, jsonString, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-      console.log(`Temporary file saved to: ${fileUri}`);
-
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert(
-          "Saving Not Available",
-          "Unable to save or share the file on this device."
-        );
-        return;
-      }
-      // The Sharing dialog will allow the user to "Save to Files" (iOS)
-      // or choose a file manager app (Android) to save the file.
-      // The user can typically rename the file in the system's save dialog.
-      await Sharing.shareAsync(fileUri, {
-        mimeType: "application/json", // Helps Android suggest appropriate apps
-        dialogTitle: `Save ${filename} As...`, // Title for the share dialog
-        UTI: "public.json", // Uniform Type Identifier for iOS
-      });
-      console.log(`Sharing dialog presented for: ${fileUri}`);
-
+      await downloadJsonFileToDownloadsAndroid(filename, jsonString);
       // Note: After sharing, you might want to delete the temporary file from cache,
       // but it's often fine to let the OS manage cache cleanup.
       // If you want to delete:
@@ -251,13 +231,23 @@ export default function SettingsScreen() {
       //   }
       // }, 5000); // Delete after 5 seconds (giving time for sharing to complete)
     } catch (error) {
-      console.error("Error preparing or sharing file:", error);
+      try {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: "application/json", // Helps Android suggest appropriate apps
+          dialogTitle: `Save ${filename} As...`, // Title for the share dialog
+          UTI: "public.json", // Uniform Type Identifier for iOS
+        });
+      } catch (e) {
+        // The Sharing dialog will allow the user to "Save to Files" (iOS)
+        // or choose a file manager app (Android) to save the file.
+        // The user can typically rename the file in the system's save dialog.
+        // console.log(`Sharing dialog presented for: ${fileUri}`);
       Alert.alert(
-        "Save Error",
-        `Could not save the file: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        "Save/Share Error",
+        `Could not save or share the json file`
       );
+      }
+      // console.error("Error preparing or sharing file:", error);
     }
   };
 
