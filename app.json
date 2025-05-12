@@ -6,7 +6,7 @@
     "description": "A special life tracker by an organized structure of Goals/Habits/Times",
     "version": "1.0.5",
     "orientation": "portrait",
-    "icon": "./assets/images/icon2.png",
+    "icon": "./assets/images/icon4.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
@@ -16,7 +16,7 @@
     "android": {
       "package": "com.pxlman.dawem",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon2.png",
+        "foregroundImage": "./assets/images/icon4.png",
         "backgroundColor": "#111111"
       },
       "permissions": [ "WRITE_EXTERNAL_STORAGE" ]
@@ -24,15 +24,15 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/splash-white.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash1-white.png",
-          "imageWidth": 600,
+          "image": "./assets/images/splash-white.png",
+          "imageWidth": 500,
           "resizeMode": "contain",
           "backgroundColor": "#111111"
         }
