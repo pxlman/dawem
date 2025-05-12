@@ -20,7 +20,7 @@ import DraggableFlatList, {
 } from "react-native-draggable-flatlist";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppState, useAppDispatch } from "../context/AppStateContext"; // Adjust path
-import {getColors} from "../constants/Colors"; // Adjust path
+import { getColors } from "../constants/Colors"; // Adjust path
 import { TimeModule, ThemeType, AppState } from "@/types/index"; // Adjusted to import ThemeType
 import DateTimePicker, {
   DateTimePickerEvent,
@@ -29,11 +29,11 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { Buffer } from "buffer"; // Import Buffer for base64 conversion if not globally available
 import { format, set } from "date-fns";
-import Sharing from 'expo-sharing'
+import Sharing from "expo-sharing";
 import { downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
 // import { downloadJsonFile, downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
 // import { saveJsonFileWithPicker } from "@/utils/fileUtils";
-let Colors = getColors()
+let Colors = getColors();
 
 // Helper function to get a random element from an array
 const getRandomElement = <T,>(array: T[]): T => {
@@ -44,26 +44,56 @@ export default function SettingsScreen() {
   const state = useAppState();
   const { timeModules, settings, habits } = state;
   const dispatch = useAppDispatch();
-  
+
   // Update colors whenever theme changes
   useEffect(() => {
-    Colors = getColors(settings.theme)
-  }, [settings.theme])
-    const quotes = [
-    {text:"اتق الله حيثما كنت، وأتبع السيئة الحسنة تمحها، وخالق الناس بخلق حسن.",author:'صلى الله عليه وسلم'},
-    {text:"سددوا وقاربوا واعلموا أنه لن يدخل أحدكم عمله الجنة وأن أحب الأعمال إلى الله أدومها وإن قل",author:'صلى الله عليه وسلم'},
-    {text:"إذا أحب الله عبدا عسله. قال: يا رسول الله، وما عسله؟ قال: يوفق له عملا صالحا بين يدي أجله حتى يرضى عنه جيرانه -أو قال: من حوله-.",author:'صلى الله عليه وسلم'},
-    {text:"وإذا عرَف الإنسان عيوب نفسه وآفاتها دفعَه ذلك إلى محاسبتها، ومجاهدتها ليصل بها إلى تزكيتها من تلك العيوب، فإن تمَّ له ذلك فقد فاز وأفلح، قال الله عز وجل: ﴿ وَنَفْسٍ وَمَا سَوَّاهَا * فَأَلْهَمَهَا فُجُورَهَا وَتَقْوَاهَا * قَدْ أَفْلَحَ مَنْ زَكَّاهَا ﴾ [الشمس: 7 - 9] قال العلامة السعدي رحمه الله: أي: طهَّر نفسه من الذنوب، ونقَّاها من العيوب، ورقَّاها بطاعة الله، وعلَّاها بالعلم النافع، والعمل الصالح.", author:'صلى الله عليه وسلم'},
-    {text:"حاسبوا أنفسكم قبل أن تُحاسبوا، وزِنُوا أنفسكم قبل أن تُوزنوا.", author:'عمر بن الخطاب رضي الله عنه'}, 
-    {text:"وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا ۚ وَإِنَّ اللَّهَ لَمَعَ الْمُحْسِنِينَ", author:'سورة العنكبوت'},
-    {text:"يقول الله تعالى: من تقرَّب إليَّ شبرًا تقرَّبتُ إليه ذراعًا ومن تقرَّب إليَّ ذراعًا تقرَّبتُ إليه باعًا ومن أتاني يمشي أتيتُه هَرولةً", author:'حديث قدسي'},
-    {text:'ما تَقَرَّبَ إِلَيَّ عَبدي بِشيءٍ أحبَّ إِلَيَّ مِمّا افْتَرَضْتُهُ عليهِ، وما زالَ عَبدي يَتَقَرَّبُ إِلَيَّ بِالنَّوافِلِ حتى أُحِبَّهُ',author:'من حديث قدسي'},
-    {text: 'وَأَنْ لَيْسَ لِلإنْسَانِ إِلا مَا سَعَى (-) وَأَنَّ سَعْيَهُ سَوْفَ يُرَى', author:'سورة النجم'}
-  ]
-  const randomQuote = getRandomElement(quotes)
+    Colors = getColors(settings.theme);
+  }, [settings.theme]);
+  const quotes = [
+    {
+      text: "اتق الله حيثما كنت، وأتبع السيئة الحسنة تمحها، وخالق الناس بخلق حسن.",
+      author: "صلى الله عليه وسلم",
+    },
+    {
+      text: "سددوا وقاربوا واعلموا أنه لن يدخل أحدكم عمله الجنة وأن أحب الأعمال إلى الله أدومها وإن قل",
+      author: "صلى الله عليه وسلم",
+    },
+    {
+      text: "إذا أحب الله عبدا عسله. قال: يا رسول الله، وما عسله؟ قال: يوفق له عملا صالحا بين يدي أجله حتى يرضى عنه جيرانه -أو قال: من حوله-.",
+      author: "صلى الله عليه وسلم",
+    },
+    {
+      text: "وإذا عرَف الإنسان عيوب نفسه وآفاتها دفعَه ذلك إلى محاسبتها، ومجاهدتها ليصل بها إلى تزكيتها من تلك العيوب، فإن تمَّ له ذلك فقد فاز وأفلح، قال الله عز وجل: ﴿ وَنَفْسٍ وَمَا سَوَّاهَا * فَأَلْهَمَهَا فُجُورَهَا وَتَقْوَاهَا * قَدْ أَفْلَحَ مَنْ زَكَّاهَا ﴾ [الشمس: 7 - 9] قال العلامة السعدي رحمه الله: أي: طهَّر نفسه من الذنوب، ونقَّاها من العيوب، ورقَّاها بطاعة الله، وعلَّاها بالعلم النافع، والعمل الصالح.",
+      author: "صلى الله عليه وسلم",
+    },
+    {
+      text: "حاسبوا أنفسكم قبل أن تُحاسبوا، وزِنُوا أنفسكم قبل أن تُوزنوا.",
+      author: "عمر بن الخطاب رضي الله عنه",
+    },
+    {
+      text: "وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا ۚ وَإِنَّ اللَّهَ لَمَعَ الْمُحْسِنِينَ",
+      author: "سورة العنكبوت",
+    },
+    {
+      text: "يقول الله تعالى: من تقرَّب إليَّ شبرًا تقرَّبتُ إليه ذراعًا ومن تقرَّب إليَّ ذراعًا تقرَّبتُ إليه باعًا ومن أتاني يمشي أتيتُه هَرولةً",
+      author: "حديث قدسي",
+    },
+    {
+      text: "ما تَقَرَّبَ إِلَيَّ عَبدي بِشيءٍ أحبَّ إِلَيَّ مِمّا افْتَرَضْتُهُ عليهِ، وما زالَ عَبدي يَتَقَرَّبُ إِلَيَّ بِالنَّوافِلِ حتى أُحِبَّهُ",
+      author: "من حديث قدسي",
+    },
+    {
+      text: "وَأَنْ لَيْسَ لِلإنْسَانِ إِلا مَا سَعَى (-) وَأَنَّ سَعْيَهُ سَوْفَ يُرَى",
+      author: "سورة النجم",
+    },
+  ];
+  const randomQuote = getRandomElement(quotes);
   const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null);
   const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
-  const [moduleToRename, setModuleToRename] = useState<{id: string, name:string}|null>(null);
+  const [moduleToRename, setModuleToRename] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [selectedModuleTimeValue, setSelectedModuleTimeValue] = useState(
     new Date()
   ); // Store Date value for picker
@@ -76,7 +106,7 @@ export default function SettingsScreen() {
   const handleThemeChange = (theme: ThemeType) => {
     dispatch({
       type: "CHANGE_THEME",
-      payload: theme
+      payload: theme,
     });
     setShowThemeDropdown(false); // Close dropdown after selection
   };
@@ -189,7 +219,7 @@ export default function SettingsScreen() {
     const dateForPicker = new Date();
     dateForPicker.setHours(hours, minutes, 0, 0);
     setSelectedModuleTimeValue(dateForPicker);
-    setModuleToRename({id:moduleId,name:module?.name}); // This will trigger the DateTimePicker visibility
+    setModuleToRename({ id: moduleId, name: module?.name }); // This will trigger the DateTimePicker visibility
   };
 
   const handleModuleTimeChange = (
@@ -243,7 +273,7 @@ export default function SettingsScreen() {
           await FileSystem.deleteAsync(fileUri, { idempotent: true });
           console.log(`Temporary file deleted: ${fileUri}`);
         } catch (deleteError) {
-          console.error('Error deleting temporary file:', deleteError);
+          console.error("Error deleting temporary file:", deleteError);
         }
       }, 20000); // Delete after 20 seconds (giving time for sharing to complete)
     } catch (error) {
@@ -258,10 +288,10 @@ export default function SettingsScreen() {
         // or choose a file manager app (Android) to save the file.
         // The user can typically rename the file in the system's save dialog.
         // console.log(`Sharing dialog presented for: ${fileUri}`);
-      Alert.alert(
-        "Save/Share Error",
-        `Could not save or share the json file`
-      );
+        Alert.alert(
+          "Save/Share Error",
+          `Could not save or share the json file`
+        );
       }
       // console.error("Error preparing or sharing file:", error);
     }
@@ -275,9 +305,11 @@ export default function SettingsScreen() {
       });
       if (result.canceled || !result.assets || result.assets.length === 0)
         return;
-      const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
+      const fileContent = await FileSystem.readAsStringAsync(
+        result.assets[0].uri
+      );
       // Alert.alert('hi',fileContent)
-      const importedData= JSON.parse(fileContent);
+      const importedData = JSON.parse(fileContent);
       if (
         !importedData.habits ||
         !Array.isArray(importedData.habits) ||
@@ -297,10 +329,19 @@ export default function SettingsScreen() {
             text: "Import",
             onPress: () => {
               // Create merged arrays without duplicates by ID
-              const mergedHabits = mergeArraysWithoutDuplicates(state.habits, importedData.habits);
-              const mergedTimeModules = mergeArraysWithoutDuplicates(state.timeModules, importedData.timeModules);
-              const mergedGoals = mergeArraysWithoutDuplicates(state.goals, importedData.goals);
-              
+              const mergedHabits = mergeArraysWithoutDuplicates(
+                state.habits,
+                importedData.habits
+              );
+              const mergedTimeModules = mergeArraysWithoutDuplicates(
+                state.timeModules,
+                importedData.timeModules
+              );
+              const mergedGoals = mergeArraysWithoutDuplicates(
+                state.goals,
+                importedData.goals
+              );
+
               dispatch({
                 type: "IMPORT_DATA",
                 payload: {
@@ -324,140 +365,165 @@ export default function SettingsScreen() {
   };
 
   // Helper function to merge arrays while avoiding duplicate IDs
-  const mergeArraysWithoutDuplicates = (currentArray: any[], importedArray: any[]) => {
+  const mergeArraysWithoutDuplicates = (
+    currentArray: any[],
+    importedArray: any[]
+  ) => {
     // Create a map of existing IDs for quick lookup
-    const existingIds = new Set(currentArray.map(item => item.id));
-    
+    const existingIds = new Set(currentArray.map((item) => item.id));
+
     // Filter out items from importedArray that already exist in currentArray
-    const uniqueImportedItems = importedArray.filter(item => !existingIds.has(item.id));
-    
+    const uniqueImportedItems = importedArray.filter(
+      (item) => !existingIds.has(item.id)
+    );
+
     // Return the merged array
     return [...currentArray, ...uniqueImportedItems];
   };
 
-const renderTimeModuleItem = ({
-  item,
-  drag,
-  isActive,
-}: RenderItemParams<TimeModule>) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempName, setTempName] = useState(item.name);
-  const inputRef = useRef<TextInput>(null);
+  const renderTimeModuleItem = ({
+    item,
+    drag,
+    isActive,
+  }: RenderItemParams<TimeModule>) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempName, setTempName] = useState(item.name);
+    const inputRef = useRef<TextInput>(null);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-    setTempName(item.name);
-    inputRef.current?.focus();
-  };
+    const handleEdit = () => {
+      setIsEditing(true);
+      setTempName(item.name);
+      inputRef.current?.focus();
+    };
 
-  const handleSubmit = () => {
-    if (tempName.trim()) {
-      dispatch({
-        type: "UPDATE_TIME_MODULE",
-        payload: { id: item.id, name: tempName },
-      });
+    const handleSubmit = () => {
+      if (tempName.trim()) {
+        dispatch({
+          type: "UPDATE_TIME_MODULE",
+          payload: { id: item.id, name: tempName },
+        });
+        setIsEditing(false);
+      }
+    };
+    const handleCancel = () => {
+      setTempName(item.name); // Reset to original name
       setIsEditing(false);
-    }
-  };
-  const handleCancel = () => {
-    setTempName(item.name); // Reset to original name
-    setIsEditing(false);
-  };
+    };
 
-  return (
-    <TouchableWithoutFeedback onPress={() => isEditing && handleSubmit()}>
-      <TouchableOpacity
-        onLongPress={drag}
-        style={[styles.listItem, isActive && styles.activeListItem]}
-        activeOpacity={0.8}
-      >
-        <Ionicons
-          name="reorder-three-outline"
-          size={24}
-          color={Colors.textSecondary}
-          style={styles.dragHandleIcon}
-        />
-        <View style={styles.moduleInfoContainer}>
-          <TextInput
-            ref={inputRef}
-            style={[styles.itemName, isEditing && styles.itemNameEditing]}
-            value={isEditing ? tempName : item.name}
-            editable={isEditing}
-            onChangeText={setTempName}
-            onSubmitEditing={handleSubmit}
-            selectTextOnFocus
-            returnKeyType="done"
+    return (
+      <TouchableWithoutFeedback onPress={() => isEditing && handleSubmit()}>
+        <TouchableOpacity
+          onLongPress={drag}
+          style={[styles.listItem, isActive && styles.activeListItem]}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name="reorder-three-outline"
+            size={24}
+            color={Colors.textSecondary}
+            style={styles.dragHandleIcon}
           />
-          {item.startTime ? (
-            <View style={styles.timeContainer}>
+          <View style={styles.moduleInfoContainer}>
+            <TextInput
+              ref={inputRef}
+              style={[styles.itemName, isEditing && styles.itemNameEditing]}
+              value={isEditing ? tempName : item.name}
+              editable={isEditing}
+              onChangeText={setTempName}
+              onSubmitEditing={handleSubmit}
+              selectTextOnFocus
+              returnKeyType="done"
+            />
+            {item.startTime ? (
+              <View style={styles.timeContainer}>
+                <TouchableOpacity
+                  style={styles.timeButton}
+                  onPress={() => showModuleTimePicker(item.id)}
+                >
+                  <Text style={styles.timeButtonText}>
+                    Starts: {item.startTime}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleClearModuleTime(item.id)}
+                  style={styles.clearTimeButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={Colors.error}
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : (
               <TouchableOpacity
-                style={styles.timeButton}
+                style={styles.addTimeButton}
                 onPress={() => showModuleTimePicker(item.id)}
               >
-                <Text style={styles.timeButtonText}>
-                  Starts: {item.startTime}
-                </Text>
+                <Text style={styles.addTimeText}>+ Add Start Time</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleClearModuleTime(item.id)}
-                style={styles.clearTimeButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close-circle" size={18} color={Colors.error} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.addTimeButton}
-              onPress={() => showModuleTimePicker(item.id)}
-            >
-              <Text style={styles.addTimeText}>+ Add Start Time</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <View style={styles.itemActionButtons}>
-          {isEditing ? (
-            <>
-              <TouchableOpacity
-                onPress={handleSubmit}
-                style={styles.iconButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="checkmark-outline" size={22} color={Colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleCancel}
-                style={styles.iconButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close-outline" size={22} color={Colors.error} />
-              </TouchableOpacity>
-            </>
-          ) : (
-            timeModules.length > 1 && (
+            )}
+          </View>
+          <View style={styles.itemActionButtons}>
+            {isEditing ? (
               <>
                 <TouchableOpacity
-                  onPress={handleEdit}
+                  onPress={handleSubmit}
                   style={styles.iconButton}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="pencil-outline" size={22} color={Colors.accent} />
+                  <Ionicons
+                    name="checkmark-outline"
+                    size={22}
+                    color={Colors.primary}
+                  />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => handleDeleteTimeModule(item.id, item.name)}
+                  onPress={handleCancel}
                   style={styles.iconButton}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="trash-outline" size={22} color={Colors.error} />
+                  <Ionicons
+                    name="close-outline"
+                    size={22}
+                    color={Colors.error}
+                  />
                 </TouchableOpacity>
               </>
-            )
-          )}
-        </View>
-      </TouchableOpacity>
-    </TouchableWithoutFeedback>
-  );
-};
+            ) : (
+              timeModules.length > 1 && (
+                <>
+                  <TouchableOpacity
+                    onPress={handleEdit}
+                    style={styles.iconButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons
+                      name="pencil-outline"
+                      size={22}
+                      color={Colors.accent}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleDeleteTimeModule(item.id, item.name)}
+                    style={styles.iconButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={22}
+                      color={Colors.error}
+                    />
+                  </TouchableOpacity>
+                </>
+              )
+            )}
+          </View>
+        </TouchableOpacity>
+      </TouchableWithoutFeedback>
+    );
+  };
 
   // Data for the main FlatList to structure sections
   const sectionsData = [
@@ -474,9 +540,7 @@ const renderTimeModuleItem = ({
       case "quote":
         return (
           <View style={styles.quoteSection}>
-            <Text style={styles.quoteText}>
-              "{randomQuote.text}"
-            </Text>
+            <Text style={styles.quoteText}>"{randomQuote.text}"</Text>
             <Text style={styles.quoteAuthor}>- {randomQuote.author}</Text>
           </View>
         );
@@ -520,7 +584,12 @@ const renderTimeModuleItem = ({
                 style={styles.input}
                 placeholder="Module Name (e.g., Morning)"
                 value={moduleToRename?.name}
-                onChangeText={(v)=>{setModuleToRename({id:moduleToRename?.id||'', name:v.trim()})}}
+                onChangeText={(v) => {
+                  setModuleToRename({
+                    id: moduleToRename?.id || "",
+                    name: v.trim(),
+                  });
+                }}
                 placeholderTextColor={Colors.textSecondary}
               />
               <TouchableOpacity
@@ -542,24 +611,36 @@ const renderTimeModuleItem = ({
           <View style={styles.section}>
             <Text style={styles.header}>{item.title}</Text>
             <Text style={styles.label}>Theme</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dropdownButton}
               onPress={() => setShowThemeDropdown(true)}
             >
-              <View style={[styles.colorIndicator, {backgroundColor: getColors(settings.theme).primary}]} />
+              <View
+                style={[
+                  styles.colorIndicator,
+                  { backgroundColor: getColors(settings.theme).primary },
+                ]}
+              />
               <Text style={styles.dropdownButtonText}>
-                {settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
+                {settings.theme.charAt(0).toUpperCase() +
+                  settings.theme.slice(1)}
               </Text>
-              <Ionicons name="chevron-down" size={24} color={Colors.textSecondary} />
+              <Ionicons
+                name="chevron-down"
+                size={24}
+                color={Colors.textSecondary}
+              />
             </TouchableOpacity>
-            
+
             <Modal
               visible={showThemeDropdown}
               transparent
               animationType="fade"
               onRequestClose={() => setShowThemeDropdown(false)}
             >
-              <TouchableWithoutFeedback onPress={() => setShowThemeDropdown(false)}>
+              <TouchableWithoutFeedback
+                onPress={() => setShowThemeDropdown(false)}
+              >
                 <View style={styles.modalOverlay}>
                   <View style={styles.dropdownContainer}>
                     {themes.map((theme) => (
@@ -567,19 +648,32 @@ const renderTimeModuleItem = ({
                         key={theme}
                         style={[
                           styles.dropdownItem,
-                          settings.theme === theme && styles.dropdownItemSelected
+                          settings.theme === theme &&
+                            styles.dropdownItemSelected,
                         ]}
                         onPress={() => handleThemeChange(theme)}
                       >
-                        <View style={[styles.colorIndicator, {backgroundColor: getColors(theme).primary}]} />
-                        <Text style={[
-                          styles.dropdownItemText,
-                          settings.theme === theme && styles.dropdownItemTextSelected
-                        ]}>
+                        <View
+                          style={[
+                            styles.colorIndicator,
+                            { backgroundColor: getColors(theme).primary },
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            styles.dropdownItemText,
+                            settings.theme === theme &&
+                              styles.dropdownItemTextSelected,
+                          ]}
+                        >
                           {theme.charAt(0).toUpperCase() + theme.slice(1)}
                         </Text>
                         {settings.theme === theme && (
-                          <Ionicons name="checkmark" size={22} color={Colors.primary} />
+                          <Ionicons
+                            name="checkmark"
+                            size={22}
+                            color={Colors.primary}
+                          />
                         )}
                       </TouchableOpacity>
                     ))}
@@ -722,7 +816,12 @@ const styles = StyleSheet.create({
   activeListItem: { backgroundColor: Colors.primary }, // Highlight active drag item
   dragHandleIcon: { marginRight: 10, color: Colors.grey },
   itemIcon: { marginRight: 12 }, // Keep if used elsewhere
-  itemName: { fontSize: 17, color: Colors.text, fontWeight: "500", textAlignVertical:'bottom'},
+  itemName: {
+    fontSize: 17,
+    color: Colors.text,
+    fontWeight: "500",
+    textAlignVertical: "bottom",
+  },
   moduleInfoContainer: { flex: 1, justifyContent: "center" },
   itemActionButtons: { flexDirection: "row", alignItems: "center" }, // Renamed
   iconButton: { paddingHorizontal: 8 }, // Spacing for icons
@@ -820,7 +919,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.6)",
-      },
+  },
   modalContent: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
@@ -831,7 +930,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-      },
+  },
   modalTitle: {
     fontSize: 19,
     fontWeight: "bold",
@@ -893,37 +992,43 @@ const styles = StyleSheet.create({
   clearTimeButton: { padding: 5 /* For easier touch */ },
   addTimeButton: { marginTop: 6, alignSelf: "flex-start", paddingVertical: 3 },
   addTimeText: { color: Colors.accent, fontSize: 14, fontWeight: "500" },
-    menuOverlay: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 1002,
-    },
-    menuBackground: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.2)',
-    },
-    menuContent: {
-        backgroundColor: Colors.surface,
-        borderRadius: 10,
-        paddingVertical: 10,
-        paddingHorizontal: 25,
-        minWidth: 160,
-        alignItems: 'center',
-        elevation: 12,
-        zIndex: 1003,
-        // position, top, left set dynamically
-    },
-    menuItem: {
-        paddingVertical: 12,
-        width: '100%',
-        alignItems: 'center',
-    },
-    menuItemText: {
-        fontSize: 16,
-        color: Colors.text,
-    },
-      itemNameEditing: {
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1002,
+  },
+  menuBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  menuContent: {
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    minWidth: 160,
+    alignItems: "center",
+    elevation: 12,
+    zIndex: 1003,
+    // position, top, left set dynamically
+  },
+  menuItem: {
+    paddingVertical: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: Colors.text,
+  },
+  itemNameEditing: {
     borderWidth: 1,
     borderColor: Colors.accent,
     borderRadius: 6,
@@ -932,17 +1037,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   themeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     marginVertical: 10,
   },
   themeOption: {
     padding: 10,
     margin: 8,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.background,
     borderWidth: 2,
     borderColor: Colors.lightGrey,
@@ -963,16 +1068,16 @@ const styles = StyleSheet.create({
   themeText: {
     color: Colors.text,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   selectedThemeText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.primary,
   },
   dropdownButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 15,
     backgroundColor: Colors.background,
     borderRadius: 8,
@@ -990,18 +1095,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: 8,
     padding: 5,
-    width: Dimensions.get('window').width * 0.8,
+    width: Dimensions.get("window").width * 0.8,
     maxHeight: 300,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
   dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightGrey,
@@ -1016,7 +1121,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dropdownItemTextSelected: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.primary,
   },
   colorIndicator: {
