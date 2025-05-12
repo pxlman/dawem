@@ -59,9 +59,13 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     
     const today = format(currentDate, 'yyyy-MM-dd'); // Format as 'yyyy-MM-dd'
 
-    if(habit.repetition.type === 'weekly' && habit.measurement.type === 'count' && habit.startDate){
-        const weekend = format(getWeekBoundaries(currentDate).end, 'yyyy-MM-dd');
-        if(isAfter(weekend, habit.startDate)) return true;
+    if(habit.repetition.type === 'weekly' && habit.measurement.type === 'count'){
+        if(habit.startDate){
+            const weekend = format(getWeekBoundaries(currentDate).end, 'yyyy-MM-dd');
+            if(isAfter(weekend, habit.startDate)) return true;
+        }else {
+            return true
+        }
     }
     // Check if the habit is within its start and end dates
     if (habit.startDate && isBefore(today, habit.startDate)) return false;
