@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform, I18nManager, StyleProp } from 'react-native';
 // Import date-fns functions for date comparison
 import { format, isAfter, startOfDay } from 'date-fns';
 import {getColors} from '../constants/Colors';
@@ -8,6 +8,7 @@ import { isLogForDate } from '../utils/dateUtils';
 import { getWeeklyHabitTotal } from '../utils/habitUtils';
 import { Habit, LogEntry, HabitLogStatus } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
+import { ColorProps } from 'react-native-svg';
 let Colors = getColors()
 
 interface HabitItemProps {
@@ -51,7 +52,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         if (['right', 'wrong', 'circle'].includes(todaysLog.status as HabitLogStatus)) {
             return todaysLog.status as HabitLogStatus;
         }
-        if (todaysLog.value !== undefined && todaysLog.value > 0 && habit.measurement.type === 'binary') return 'right';
+        if (todaysLog.value !== undefined && todaysLog.value||0 > 0 && habit.measurement.type === 'binary') return 'right';
         return 'none';
     };
     const [currentButtonStatus, setCurrentButtonStatus] = useState<HabitLogStatus | 'none'>(getInitialStatus);
@@ -164,7 +165,18 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
             setCountValue(newValue);
             updateLog(undefined, newValue);
         };
+        let progressStyle: StyleProp<ColorProps> = { };
+        let value = (habit.repetition.type === 'daily')? countValue: weeklyTotal
 
+        if(value === (habit.measurement.targetValue||0)){
+            progressStyle.color = Colors.green;
+        } else if(value > (habit.measurement.targetValue||0)){
+            progressStyle.color = Colors.blue;
+        } else {
+            // This cause if it's a weekly habit so the user can do it 
+            // whenever he likes so don't bother him with the red color
+            if(habit.repetition.type === 'daily') progressStyle.color = Colors.red;
+        }
         return (
             <View style={styles.controls}>
                 {habit.repetition.type === 'weekly' && (
@@ -177,10 +189,10 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
                 >
                     <Ionicons name="remove-circle-outline" size={34} color={isFutureDate ? Colors.grey : Colors.accent} />
                 </TouchableOpacity>
-                <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}]}>
+                <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}, progressStyle]}>
                     {habit.repetition.type === 'weekly' && habit.measurement.type === 'count' 
-                        ? `${weeklyTotal || '0'} / ${habit.measurement.targetValue}`
-                        : `${countValue || '0'} / ${habit.measurement.targetValue}`
+                        ? (!I18nManager.isRTL)? `${weeklyTotal || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${weeklyTotal || '0'}`
+                        : (!I18nManager.isRTL)? `${countValue || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${weeklyTotal || '0'}`
                     }
                 </Text>
                 <TouchableOpacity

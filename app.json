@@ -18,7 +18,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon2.png",
         "backgroundColor": "#111111"
-      }
+      },
+      "permissions": [ "WRITE_EXTERNAL_STORAGE" ]
     },
     "web": {
       "bundler": "metro",

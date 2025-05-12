@@ -41,7 +41,7 @@ export const getDefaultDate = (startTimeOfDay: string|undefined) => {
     const currentMinute = now.getMinutes();
     // Assuming startTimeOfDay is 4:00 AM (04:00)
     // You can replace this with a value from your app settings if available
-    const startHour = (parseInt(startTimeOfDay.split(':')[0] ?? '0'));
+    const startHour =  parseInt(startTimeOfDay.split(':')[0] ?? '0');
     const startMinute = parseInt(startTimeOfDay.split(':')[1] ?? '0');
     // If current time is before the start time of day, return yesterday
     if (currentHour < startHour || (currentHour === startHour && currentMinute < startMinute)) {
@@ -59,12 +59,12 @@ export function isHabitDue(habit: Habit, currentDate: Date): boolean {
     
     const today = format(currentDate, 'yyyy-MM-dd'); // Format as 'yyyy-MM-dd'
 
-    if(habit.repetition.type === 'weekly' && habit.measurement.type === 'count'){
+    if(habit.repetition.type === 'weekly' && habit.measurement.type === 'count' && habit.startDate){
         const weekend = format(getWeekBoundaries(currentDate).end, 'yyyy-MM-dd');
         if(isAfter(weekend, habit.startDate)) return true;
     }
     // Check if the habit is within its start and end dates
-    // if (habit.startDate && isBefore(today, habit.startDate)) return false;
+    if (habit.startDate && isBefore(today, habit.startDate)) return false;
     if (habit.endDate && isAfter(today, habit.endDate) ) return false;
     // if (!isBefore(currentDate, new Date())
     //     && !isToday(currentDate)) return false;

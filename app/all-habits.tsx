@@ -8,6 +8,7 @@ import { fixedColors, getColors } from '../constants/Colors';
 import { Habit, TimeModule } from '@/types/index';
 import HabitEditModal from '@/components/HabitEditModal';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
+import { format } from 'date-fns';
 let Colors = getColors()
 
 // --- Type for grouped data ---
@@ -278,7 +279,7 @@ export default function AllHabitsScreen() {
                 style={styles.addButton} 
                 onPress={() => router.push({
                     pathname: '/add-edit-habit',
-                    params: { currentDate: new Date().toISOString().split('T')[0] }
+                    params: { currentDate: format(new Date(),'yyyy-MM-dd')}
                 })}
             >
                 <Text style={styles.addButtonText}>+</Text>

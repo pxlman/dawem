@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, I18nManager } from 'react-native';
 import { Ionicons,FontAwesome5 } from '@expo/vector-icons';
 import { Habit } from '../../types/index';
 import {getColors} from '@/constants/Colors';
@@ -126,12 +126,13 @@ const styles = StyleSheet.create({
   },
   hatIconContainer: {
     position: 'absolute',
-    left: -10,
+    left: (I18nManager.isRTL)? 'auto': -11,
+    right: (I18nManager.isRTL)? -11: 'auto',
     top: -15,
     zIndex: 10,
   },
   hatIcon: {
-    transform: [{ rotate: '-30deg' }],
+    transform: [{ rotate: (I18nManager.isRTL)? '30deg': '-30deg' }],
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,

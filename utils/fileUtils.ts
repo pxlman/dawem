@@ -94,49 +94,39 @@ export const downloadJsonFileToDownloadsAndroid = async (filename: string, jsonS
     let fileUri = '';
     try {
         if (FileSystem.documentDirectory) {
-             // Check for storage permissions (simplified example)
-            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+            // Get a permission to a dir selected by the user
+            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync(FileSystem.documentDirectory);
             if (!permissions.granted) {
-                Alert.alert("Permission Denied", "Storage permission is required to save the file.");
+                Alert.alert("Permission Denied", "Storage permission is required to save the file. Try sharing it.");
                 return;
             }
-            // This URI will point to a location within the directory the user granted access to.
-            // You'd ideally let the user pick the 'Downloads' directory here.
-            // For a simpler, non-SAF approach, writing to `FileSystem.documentDirectory` + 'Download/' (if dir exists)
-            // or using MediaStore is better for shared Downloads.
-
-            // Let's try saving to a "Download" subdirectory within the app's document directory
-            // This is app-specific, not the system "Downloads" folder.
-            const downloadDir = FileSystem.documentDirectory + 'Download/';
-            // Ensure directory exists
-            const dirInfo = await FileSystem.getInfoAsync(downloadDir);
-            if (!dirInfo.exists) {
-                await FileSystem.makeDirectoryAsync(downloadDir, { intermediates: true });
-            }
-            fileUri = downloadDir + filename;
-
+            console.log('permitted ', permissions.directoryUri)
+            // permitted dir uri
+            const dirUri = permissions.directoryUri;
+            // Create an empty file .json at the permitted dir
+            const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                dirUri,
+                filename,
+                'application/json',
+            );
+            // Write the json content to this file
             await FileSystem.writeAsStringAsync(fileUri, jsonString, {
                 encoding: FileSystem.EncodingType.UTF8,
             });
             Alert.alert('File Saved', `File saved to app's document folder: ${filename}. You might need to browse to it.`);
             console.log(`File saved to: ${fileUri}`);
-
-            // To make it appear in MediaStore (like Downloads gallery for media, or accessible via file managers):
-            // This part is more complex and might require a native module or more direct MediaStore interaction.
-            // For simple JSON, just saving it to the app's dir and informing the user might be enough.
-            // Or trigger a share intent like in the other function.
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri, {
-                    mimeType: 'application/json',
-                    dialogTitle: `File ${filename} saved. Share it?`,
-                });
-            }
-
         } else {
-            Alert.alert('Error', 'Document directory is not available.');
+            // Alert.alert('Error', 'Document directory is not available.');
+            throw new Error('Document directory is not available.');
         }
     } catch (error) {
         console.error('Android download error:', error);
         Alert.alert('Download Error', `Could not download the file: ${error instanceof Error ? error.message : String(error)}`);
+        if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, {
+                mimeType: 'application/json',
+                dialogTitle: `File ${filename} saved. Share it?`,
+            });
+        }
     }
 };

@@ -65,7 +65,7 @@ export interface Habit {
     createdAt: string;
     enabled: boolean; // New property to control if the habit is active
     // archived?: boolean;
-    startDate: string; // Start date of the habit
+    startDate: string | null; // Start date of the habit
     endDate?: string | null; // End date of the habit (null means "forever")
     // sortOrder?: number; // Track the order of habits within a time module
     // goalId?: string | null;
@@ -126,7 +126,7 @@ export type AppAction =
     | { type: "LOAD_STATE"; payload: AppState }
     | { type: "RESET_STATE" }
     | { type: "ADD_HABIT"; payload: AddHabitPayload }
-    | { type: "UPDATE_HABIT"; payload: Partial<Habit> & { id: string } }
+    | { type: "UPDATE_HABIT"; payload: Partial<Habit> & { id: string, goalId?:string } }
     | { type: "DELETE_HABIT"; payload: { id: string } }
     // Goal-related actions
     | { type: "ADD_GOAL"; payload: Omit<Goal, "id"> }

@@ -14,7 +14,7 @@ let Colors = getColors()
 const INITIAL_GOALS: Goal[] = [
   {
     id: uuidv4(),
-    title: "رضا ربنا",
+    title: "هدف أكبر",
     color: "#00BCD4",
     enabled: true,
   },
@@ -63,7 +63,7 @@ const GoalsScreen: React.FC = () => {
     const handleAddGoal = useCallback(
       (parentGoalId: string | null = null) => {
         const newGoal = {
-          title: "New Goal - Edit Me!",
+          title: "Edit Me!",
           color: fixedColors[5],
           enabled: true,
         };

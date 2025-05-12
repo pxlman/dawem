@@ -37,7 +37,7 @@ export default function AddHabitModalScreen() {
         },
         timeModuleId: timeModules[0].id,
         enabled: true,
-        startDate: currentDate,
+        startDate: null, // Keep this null by default (from ever)
         endDate: null,
       } as Habit;
       if (habitId) {
@@ -78,7 +78,7 @@ export default function AddHabitModalScreen() {
       
       // Add a "None" option at the beginning
       return [
-        { label: 'None', value: null },
+        { label: 'None', value: '' },
         ...leafGoals.map((goal:Goal) => ({ label: goal.title, value: goal.id }))
       ];
     }, [goals]);
@@ -88,8 +88,8 @@ export default function AddHabitModalScreen() {
         setHabit({
             ...chabit,
             timeModuleId: chabit.timeModuleId ||  timeModules[0]?.id,
-            startDate: format(selectedDate, 'yyyy-MM-dd'),
-            endDate: null,
+            startDate: chabit.startDate,
+            endDate: chabit.endDate,
         });
     }, [habitId, timeModules, selectedDate]);
 
@@ -157,7 +157,7 @@ export default function AddHabitModalScreen() {
         if (!habitId) {
             dispatch({ type: 'ADD_HABIT', payload: habitData as Omit<AddHabitPayload, 'id' | 'createdAt'> });
         } else {
-            dispatch({ type: 'UPDATE_HABIT', payload: habitData as Omit<AddHabitPayload, 'id' | 'createdAt'> });
+            dispatch({ type: 'UPDATE_HABIT', payload: habitData as Omit<Habit, 'id' | 'createdAt'> & {id:string, goalId?:string} });
         }
 
         if (router.canGoBack()) router.back();
@@ -434,7 +434,7 @@ export default function AddHabitModalScreen() {
                 <Text style={styles.datePickerText}>
                   {habit.startDate
                     ? format(new Date(habit.startDate), "MMM d, yyyy")
-                    : "Select Start Date"}
+                    : "From ever"}
                 </Text>
               </TouchableOpacity>
               {showStartDatePicker && (
@@ -447,10 +447,20 @@ export default function AddHabitModalScreen() {
                       if (selectedDate)
                           setHabit(prev => ({
                               ...prev,
-                              startDate: selectedDate.toISOString().split("T")[0]
+                              startDate: format(selectedDate,'yyyy-MM-dd')
                           }));
                   }}
                 />
+              )}
+              {habit.startDate && (
+                <TouchableOpacity
+                  onPress={() => setHabit(prev => ({ ...prev, startDate: null }))}
+                  style={styles.clearButton}
+                >
+                  <Text style={styles.clearButtonText}>
+                    Clear Start Date (Set to From ever)
+                  </Text>
+                </TouchableOpacity>
               )}
 
               <Text style={styles.label}>End Date</Text>
@@ -472,7 +482,7 @@ export default function AddHabitModalScreen() {
                       if (selectedDate)
                           setHabit(prev => ({
                               ...prev,
-                              endDate: selectedDate.toISOString().split("T")[0]
+                              endDate: format(selectedDate, 'yyyy-MM-dd')
                           }));
                   }}
                 />

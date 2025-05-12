@@ -222,14 +222,14 @@ export default function SettingsScreen() {
       // Note: After sharing, you might want to delete the temporary file from cache,
       // but it's often fine to let the OS manage cache cleanup.
       // If you want to delete:
-      // setTimeout(async () => {
-      //   try {
-      //     await FileSystem.deleteAsync(fileUri, { idempotent: true });
-      //     console.log(`Temporary file deleted: ${fileUri}`);
-      //   } catch (deleteError) {
-      //     console.error('Error deleting temporary file:', deleteError);
-      //   }
-      // }, 5000); // Delete after 5 seconds (giving time for sharing to complete)
+      setTimeout(async () => {
+        try {
+          await FileSystem.deleteAsync(fileUri, { idempotent: true });
+          console.log(`Temporary file deleted: ${fileUri}`);
+        } catch (deleteError) {
+          console.error('Error deleting temporary file:', deleteError);
+        }
+      }, 20000); // Delete after 20 seconds (giving time for sharing to complete)
     } catch (error) {
       try {
         await Sharing.shareAsync(fileUri, {

@@ -208,7 +208,7 @@ const HabitEditModal: React.FC<HabitEditModalProps> = ({ habit, currentDate, onC
                         display="default"
                         onChange={(event, date) => {
                             setShowEndDatePicker(false);
-                            if (date) setEditedEndDate(date.toISOString().split('T')[0]);
+                            if (date) setEditedEndDate(format(date, 'yyyy-MM-dd'));
                         }}
                     />
                 )}

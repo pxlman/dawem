@@ -5,6 +5,7 @@ import { AddHabitPayload } from '@/types/index';
 import { ThemeType } from '@/types/index';
 import { getSaturdayDateString } from '../utils/dateUtils'; // Import the shared function
 import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
+import { format } from 'date-fns';
 
 // Initial State with default global Time Modules
 export const initialState: AppState = {
@@ -402,7 +403,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             // Set the endDate to the day before the selected date
             const date = new Date(fromDate);
             date.setDate(date.getDate() - 1);
-            const newEndDate = date.toISOString().split('T')[0]; // Format as 'yyyy-MM-dd'
+            const newEndDate = format(date,'yyyy-MM-dd'); // Format as 'yyyy-MM-dd'
 
             // Update the habit's endDate
             const updatedHabits = state.habits.map((habit:Habit) =>
