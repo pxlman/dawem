@@ -126,8 +126,7 @@ const styles = StyleSheet.create({
   },
   hatIconContainer: {
     position: 'absolute',
-    left: (I18nManager.isRTL)? 'auto': -11,
-    right: (I18nManager.isRTL)? -11: 'auto',
+    left: -11,
     top: -15,
     zIndex: 10,
   },
