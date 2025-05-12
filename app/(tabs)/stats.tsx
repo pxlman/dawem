@@ -409,7 +409,7 @@ export default function StatsScreen() {
                     </View>
                     
                     {/* Scrollable right part */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.scrollableArea}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollableArea}>
                         <View style={styles.rowsContainer}>
                             {/* Header row with weeks */}
                             <View style={styles.headerRow}>
