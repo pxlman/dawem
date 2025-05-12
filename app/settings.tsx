@@ -445,6 +445,7 @@ const renderTimeModuleItem = ({
 
   // Data for the main FlatList to structure sections
   const sectionsData = [
+    { key: "quote", title: "Inspiration" },
     { key: "startTime", title: "Start Time of New Day" },
     { key: "timeModules", title: "Time Modules Management" },
     // { key: "theme", title: "Appearance" },
@@ -454,6 +455,15 @@ const renderTimeModuleItem = ({
 
   const renderSection = ({ item }: { item: (typeof sectionsData)[0] }) => {
     switch (item.key) {
+      case "quote":
+        return (
+          <View style={styles.quoteSection}>
+            <Text style={styles.quoteText}>
+              "سددوا وقاربوا واعلموا أنه لن يدخل أحدكم عمله الجنة وأن أحب الأعمال إلى الله أدومها وإن قل"
+            </Text>
+            <Text style={styles.quoteAuthor}>- صلى الله عليه وسلم</Text>
+          </View>
+        );
       case "startTime":
         return (
           <View style={styles.section}>
@@ -999,5 +1009,33 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.grey,
+  },
+  quoteSection: {
+    marginBottom: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    elevation: 2,
+    shadowColor: Colors.darkGrey,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderWidth: Platform.OS === "ios" ? 1 : 0,
+    borderColor: Colors.lightGrey,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  quoteText: {
+    fontSize: 16,
+    fontStyle: "italic",
+    color: Colors.text,
+    lineHeight: 24,
+    marginBottom: 10,
+  },
+  quoteAuthor: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: "right",
+    fontWeight: "500",
   },
 });
