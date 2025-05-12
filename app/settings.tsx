@@ -183,11 +183,7 @@ export default function SettingsScreen() {
     if (event.type === "set" && selectedTime) {
       // Check event type for confirmation
       setNewDayStartTime(selectedTime);
-      const formattedTime = selectedTime.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
+      const formattedTime = `${selectedTime.getHours()}:${selectedTime.getMinutes()}`;
       dispatch({
         type: "UPDATE_START_TIME",
         payload: { startTimeOfDay: formattedTime },
