@@ -35,6 +35,11 @@ import { downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
 // import { saveJsonFileWithPicker } from "@/utils/fileUtils";
 let Colors = getColors()
 
+// Helper function to get a random element from an array
+const getRandomElement = <T,>(array: T[]): T => {
+  return array[Math.floor(Math.random() * array.length)];
+};
+
 export default function SettingsScreen() {
   const state = useAppState();
   const { timeModules, settings, habits } = state;
@@ -44,7 +49,18 @@ export default function SettingsScreen() {
   useEffect(() => {
     Colors = getColors(settings.theme)
   }, [settings.theme])
-  
+    const quotes = [
+    {text:"اتق الله حيثما كنت، وأتبع السيئة الحسنة تمحها، وخالق الناس بخلق حسن.",author:'صلى الله عليه وسلم'},
+    {text:"سددوا وقاربوا واعلموا أنه لن يدخل أحدكم عمله الجنة وأن أحب الأعمال إلى الله أدومها وإن قل",author:'صلى الله عليه وسلم'},
+    {text:"إذا أحب الله عبدا عسله. قال: يا رسول الله، وما عسله؟ قال: يوفق له عملا صالحا بين يدي أجله حتى يرضى عنه جيرانه -أو قال: من حوله-.",author:'صلى الله عليه وسلم'},
+    {text:"وإذا عرَف الإنسان عيوب نفسه وآفاتها دفعَه ذلك إلى محاسبتها، ومجاهدتها ليصل بها إلى تزكيتها من تلك العيوب، فإن تمَّ له ذلك فقد فاز وأفلح، قال الله عز وجل: ﴿ وَنَفْسٍ وَمَا سَوَّاهَا * فَأَلْهَمَهَا فُجُورَهَا وَتَقْوَاهَا * قَدْ أَفْلَحَ مَنْ زَكَّاهَا ﴾ [الشمس: 7 - 9] قال العلامة السعدي رحمه الله: أي: طهَّر نفسه من الذنوب، ونقَّاها من العيوب، ورقَّاها بطاعة الله، وعلَّاها بالعلم النافع، والعمل الصالح.", author:'صلى الله عليه وسلم'},
+    {text:"حاسبوا أنفسكم قبل أن تُحاسبوا، وزِنُوا أنفسكم قبل أن تُوزنوا.", author:'عمر بن الخطاب رضي الله عنه'}, 
+    {text:"وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا ۚ وَإِنَّ اللَّهَ لَمَعَ الْمُحْسِنِينَ", author:'سورة العنكبوت'},
+    {text:"يقول الله تعالى: من تقرَّب إليَّ شبرًا تقرَّبتُ إليه ذراعًا ومن تقرَّب إليَّ ذراعًا تقرَّبتُ إليه باعًا ومن أتاني يمشي أتيتُه هَرولةً", author:'حديث قدسي'},
+    {text:'ما تَقَرَّبَ إِلَيَّ عَبدي بِشيءٍ أحبَّ إِلَيَّ مِمّا افْتَرَضْتُهُ عليهِ، وما زالَ عَبدي يَتَقَرَّبُ إِلَيَّ بِالنَّوافِلِ حتى أُحِبَّهُ',author:'من حديث قدسي'},
+    {text: 'وَأَنْ لَيْسَ لِلإنْسَانِ إِلا مَا سَعَى (-) وَأَنَّ سَعْيَهُ سَوْفَ يُرَى', author:'سورة النجم'}
+  ]
+  const randomQuote = getRandomElement(quotes)
   const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null);
   const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
   const [moduleToRename, setModuleToRename] = useState<{id: string, name:string}|null>(null);
@@ -459,9 +475,9 @@ const renderTimeModuleItem = ({
         return (
           <View style={styles.quoteSection}>
             <Text style={styles.quoteText}>
-              "سددوا وقاربوا واعلموا أنه لن يدخل أحدكم عمله الجنة وأن أحب الأعمال إلى الله أدومها وإن قل"
+              "{randomQuote.text}"
             </Text>
-            <Text style={styles.quoteAuthor}>- صلى الله عليه وسلم</Text>
+            <Text style={styles.quoteAuthor}>- {randomQuote.author}</Text>
           </View>
         );
       case "startTime":
