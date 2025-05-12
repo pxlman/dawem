@@ -160,7 +160,7 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
             <Text style={styles.buttonText}>Save</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.buttonText}>Cancel</Text>
+            <Text style={[styles.buttonText, {color:Colors.text}]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
