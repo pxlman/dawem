@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx
 import React, { useState, useMemo, useLayoutEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert, Animated, I18nManager } from 'react-native';
 import { format, addDays, subDays } from 'date-fns'; // Ensure format is imported
 import { useRouter, useNavigation } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -128,7 +128,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
     return (
         <View style={styles.datePickerContainer}>
             <TouchableOpacity onPress={handlePrevDay} style={styles.dateArrow} hitSlop={10}>
-                <Ionicons name="chevron-back" size={24} style={styles.dateArrowIcon} />
+                <Ionicons name={!I18nManager.isRTL?"chevron-back":'chevron-forward'} size={24} style={styles.dateArrowIcon} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleTodayPress}>
                 <View style={styles.dateContainer}>
@@ -152,7 +152,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
                 <Ionicons name='calendar-outline' style={styles.todayButtonIcon} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleNextDay} style={styles.dateArrow} hitSlop={10}>
-                <Ionicons name="chevron-forward" size={24} style={styles.dateArrowIcon} />
+                <Ionicons name={!I18nManager.isRTL?"chevron-forward":'chevron-back'} size={24} style={styles.dateArrowIcon} />
             </TouchableOpacity>
         </View>
     );
