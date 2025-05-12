@@ -71,7 +71,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         if (newStatus === undefined && newValue === undefined) {
             return;
         }
-        
+        Alert.alert('hi',dateString)
         const payload: { habitId: string; date: string; status?: HabitLogStatus; value?: number } = {
             habitId: habit.id, 
             date: dateString,
@@ -191,9 +191,11 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
                     <Ionicons name="remove-circle-outline" size={34} color={isFutureDate ? Colors.grey : Colors.accent} />
                 </TouchableOpacity>
                 <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}, progressStyle]}>
-                    {habit.repetition.type === 'weekly' && habit.measurement.type === 'count' 
-                        ? (!I18nManager.isRTL)? `${weeklyTotal || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${weeklyTotal || '0'}`
-                        : (!I18nManager.isRTL)? `${countValue || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${weeklyTotal || '0'}`
+                    {
+                    // habit.repetition.type === 'weekly' && habit.measurement.type === 'count' 
+                    //     ? (!I18nManager.isRTL)? `${weeklyTotal || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${weeklyTotal || '0'}`
+                        // : (!I18nManager.isRTL)? `${countValue || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${countValue || '0'}`
+                        (!I18nManager.isRTL)? `${value || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${value || '0'}`
                     }
                 </Text>
                 <TouchableOpacity
