@@ -262,7 +262,7 @@ export default function StatsScreen() {
                     </View>
                     
                     {/* Scrollable right part */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.scrollableArea}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} scrollEnabled={viewMode === 'monthly'} style={styles.scrollableArea}>
                         <View style={styles.rowsContainer}>
                             {/* Header row with dates */}
                             <View style={styles.headerRow}>
