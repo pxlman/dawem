@@ -131,7 +131,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   hatIcon: {
-    transform: [{ rotate: (I18nManager.isRTL)? '30deg': '-30deg' }],
+    // transform: [{ rotate: (I18nManager.isRTL)? '30deg': '-30deg' }],
+    transform: [{ rotate:'-30deg'}],
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
