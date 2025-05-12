@@ -7,6 +7,7 @@ import {
     Text,
     Platform,
     Alert,
+    I18nManager,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
@@ -599,21 +600,21 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
 
     // --- Component Return JSX ---
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { direction: 'ltr' }]}>
             <GestureDetector gesture={composedGesture}>
-                <View style={styles.gestureArea}>
-                    <Animated.View style={animatedCanvasStyle}>
+                <View style={[styles.gestureArea, { direction: 'ltr' }]}>
+                    <Animated.View style={[animatedCanvasStyle, { direction: 'ltr' }]}>
                         <View
                             style={[
                                 styles.canvas,
-                                { width: canvasSize.width, height: canvasSize.height },
+                                { width: canvasSize.width, height: canvasSize.height, direction: 'ltr' },
                             ]}
                         >
                             <Svg
                                 width="100%"
                                 height="100%"
                                 style={StyleSheet.absoluteFill}
-                                pointerEvents="none"
+                                pointerEvents='none'
                             >
                                 {renderLines}
                             </Svg>
@@ -632,12 +633,12 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                         activeOpacity={0.7}
                     >
                         <Ionicons
-                            name="add"
+                            name={((focusedGoalData?.habitsIds||[]).length === 0)? 'add':'git-branch-outline'}
                             size={22}
                             color={Colors.grey}
                         />
                         <Text style={styles.actionText}>
-                            Add
+                            {((focusedGoalData?.habitsIds||[]).length === 0)? 'Add':'Modify'}
                         </Text>
                     </TouchableOpacity>
 
@@ -704,15 +705,18 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         position: "relative",
+        direction: 'ltr', // Force LTR layout
     },
     gestureArea: {
         flex: 1,
         overflow: "hidden",
         backgroundColor: Colors.background,
+        direction: 'ltr', // Force LTR layout
     },
     canvas: {
         position: "relative",
         backgroundColor: "transparent",
+        direction: 'ltr', // Force LTR layout
     },
     floatingActionPanel: {
         position: "absolute",
