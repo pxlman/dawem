@@ -2,7 +2,6 @@
 import *
 as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import * as RNFS from 'react-native-fs'
 import { Platform, Alert } from 'react-native';
 
 /**
