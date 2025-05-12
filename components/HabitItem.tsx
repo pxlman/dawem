@@ -85,7 +85,8 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
     const handleSinglePress = () => {
         // updateLog function handles the future date check internally
         let nextStatus: HabitLogStatus | undefined;
-        if (currentButtonStatus === 'right') nextStatus = 'wrong';
+        if (currentButtonStatus === 'right') nextStatus = 'circle';
+        else if (currentButtonStatus === 'circle') nextStatus = 'wrong';
         else if (currentButtonStatus === 'wrong') nextStatus = 'right';
         else nextStatus = 'right'; // Default to 'right' from 'none' or 'circle'
 
