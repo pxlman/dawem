@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, I18nManager } from 'react-native';
+import React, { useMemo, useState, useLayoutEffect, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, I18nManager, findNodeHandle } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
 import { getColors } from '../../constants/Colors';
 import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
@@ -24,6 +24,10 @@ export default function StatsScreen() {
     
     // State for navigation offset (0 = current, -1 = previous, etc.)
     const [timeOffset, setTimeOffset] = useState(0);
+    
+    // Add refs for scrolling to today's date
+    const scrollViewRef = useRef<ScrollView>(null);
+    const todayCellRef = useRef<View>(null);
     
     // Add header buttons using useLayoutEffect
     useLayoutEffect(() => {
@@ -92,36 +96,46 @@ export default function StatsScreen() {
         }
     }, [timeOffset, viewMode, settings.startDayOfWeek]);
     
-    // Generate dates for the selected period in reverse order (most recent first)
+    // Generate dates for the selected period in chronological order (oldest first)
     const dates = useMemo(() => {
         const result = [];
         const { firstDay, lastDay } = displayedPeriod;
         
-        let endDate;
-        if (timeOffset === 0 && viewMode === 'monthly') {
-            // Current period: Use today as the end date
-            endDate = new Date();
-        } else {
-            // Past period: Use the last day of the period
-            endDate = new Date(lastDay);
-        }
+        let currentDate = new Date(firstDay);
         
-        // Make sure we don't go beyond the last day of the period
-        if (endDate > lastDay) {
-            endDate = new Date(lastDay);
-        }
-        
-        // Start from end date and go backwards to first day of period
-        const currentDate = new Date(endDate);
-        
-        // Continue until we reach before the first day of the period
-        while (currentDate >= firstDay) {
+        // Start from first day and go forward to end of period or today
+        while (currentDate <= lastDay) {
             result.push(new Date(currentDate)); // Add a copy of the date
-            currentDate.setDate(currentDate.getDate() - 1); // Go back one day
+            currentDate.setDate(currentDate.getDate() + 1); // Advance one day
         }
         
         return result;
     }, [displayedPeriod, timeOffset]);
+
+    // Find index of today's date in the dates array
+    const todayIndex = useMemo(() => {
+        const today = new Date();
+        return dates.findIndex(date => 
+            date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()
+        );
+    }, [dates]);
+
+    // Scroll to today's date when dates change or when the component mounts
+    useEffect(() => {
+        if (timeOffset === 0 && todayIndex !== -1 && scrollViewRef.current) {
+            // For weekly view, calculate the appropriate scroll offset
+            const scrollTo = todayIndex * (cellsize + 2); // cellsize + margins
+            
+            // Allow layout to complete before scrolling
+            setTimeout(() => {
+                if (scrollViewRef.current) {
+                    scrollViewRef.current.scrollTo({ x: scrollTo, animated: true });
+                }
+            }, 100);
+        }
+    }, [dates, todayIndex, timeOffset, viewMode]);
 
     // Navigation handlers
     const goToPrevious = () => setTimeOffset(prev => prev - 1);
@@ -262,18 +276,24 @@ export default function StatsScreen() {
                     </View>
                     
                     {/* Scrollable right part */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} scrollEnabled={viewMode === 'monthly'} style={styles.scrollableArea}>
+                    <ScrollView 
+                        ref={scrollViewRef}
+                        horizontal 
+                        showsHorizontalScrollIndicator={false} 
+                        scrollEnabled={true} 
+                        style={styles.scrollableArea}
+                    >
                         <View style={styles.rowsContainer}>
                             {/* Header row with dates */}
                             <View style={styles.headerRow}>
                                 {dates.map((date, index) => (
                                     <View 
                                         key={`date-${index}`} 
+                                        ref={isToday(date) ? todayCellRef : null}
                                         style={[
                                             styles.dateCell,
                                             {width:cellsize},
-                                            date.getDay() === 5 && styles.startOfWeekCell, // Week start at saturday
-                                            // Highlight today for current month (should be first day in the list)
+                                            date.getDay() === 6 && styles.startOfWeekCell, // Week start at saturday
                                             isToday(date) && styles.todayCellHeader,
                                         ]}
                                     >
@@ -316,7 +336,7 @@ export default function StatsScreen() {
                                                     {width:cellsize},
                                                     notDueStyle, // Apply not-due styling
                                                     cellStyle,
-                                                    date.getDay() === 5 && styles.startOfWeekCell, // Week start at saturday
+                                                    date.getDay() === 6 && styles.startOfWeekCell, // Week start at saturday
                                                     isToday(date) && styles.todayCellIndicator
                                                 ]}
                                             >
@@ -382,6 +402,25 @@ export default function StatsScreen() {
     const renderWeeklyCounterTable = (tableHabits: Habit[]) => {
         if (tableHabits.length === 0) return null;
 
+        // Modify weekly dates array to align with the chronological order
+        const chronologicalWeeklyDates = useMemo(() => {
+            const weeks: { startDate: Date, endDate: Date }[] = [];
+            
+            if (dates.length === 0) return weeks;
+            
+            // Group dates by week
+            for (let i = 0; i < dates.length; i++) {
+                if (dates[i].getDay() === 6) { // Saturday (week start)
+                    weeks.push({
+                        startDate: dates[i],
+                        endDate: addDays(dates[i], 7)
+                    });
+                }
+            }
+            
+            return weeks;
+        }, [dates]);
+
         return (
             <View style={styles.tableContainer}>
                 <Text style={styles.tableTitle}>Weekly Counters </Text>
@@ -409,11 +448,16 @@ export default function StatsScreen() {
                     </View>
                     
                     {/* Scrollable right part */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollableArea}>
+                    <ScrollView 
+                        ref={scrollViewRef}
+                        horizontal 
+                        showsHorizontalScrollIndicator={false} 
+                        style={styles.scrollableArea}
+                    >
                         <View style={styles.rowsContainer}>
                             {/* Header row with weeks */}
                             <View style={styles.headerRow}>
-                                {weeklyDates.map((week, index) => (
+                                {chronologicalWeeklyDates.map((week, index) => (
                                     <View 
                                         key={`week-${index}`} 
                                         style={[
@@ -433,7 +477,7 @@ export default function StatsScreen() {
                             {tableHabits.map(habit => (
                                 <View key={habit.id} style={styles.habitRow}>
                                     {/* Data cells for each week */}
-                                    {weeklyDates.map((week, index) => {
+                                    {chronologicalWeeklyDates.map((week, index) => {
                                         const status = getWeeklyCounterStatus(habit, week.startDate);
                                         let cellStyle = styles.emptyCell;
                                         
