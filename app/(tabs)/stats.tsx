@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, I18nManager } from 'react-native';
 import { useAppState } from '../../context/AppStateContext';
 import { getColors } from '../../constants/Colors';
 import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
@@ -536,7 +536,7 @@ export default function StatsScreen() {
                     onPress={goToPrevious} 
                     style={styles.navButtonHeader}
                 >
-                    <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+                    <Ionicons name={!I18nManager.isRTL?"chevron-back":'chevron-forward'} size={24} color={Colors.primary} />
                 </TouchableOpacity>
                 
                 <TouchableOpacity 
@@ -569,7 +569,7 @@ export default function StatsScreen() {
                     disabled={timeOffset === 0}
                 >
                     <Ionicons 
-                        name="chevron-forward" 
+                        name={!I18nManager.isRTL?"chevron-forward":'chevron-back'} 
                         size={24} 
                         color={timeOffset === 0 ? Colors.darkGrey : Colors.primary} 
                     />
