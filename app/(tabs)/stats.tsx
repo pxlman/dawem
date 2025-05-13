@@ -405,8 +405,12 @@ export default function StatsScreen() {
                                             cellStyle = styles.exceededCell; // New style for exceeded
                                         } else if (status.status === 'partial') {
                                             cellStyle = styles.partialCell;
-                                        } else if (status.status === 'missed' && !isToday(date)) {
-                                            cellStyle = styles.missedCell;
+                                        } else if (status.status === 'missed') {
+                                            // if it's still today and the measurement type is count
+                                            // so it's still not missed
+                                            if(!isToday(date) || habit.measurement.type !== 'count'){
+                                                cellStyle = styles.missedCell;
+                                            }
                                         } else if (status.status === 'notdue') {
                                             cellStyle = styles.emptyCell;
                                         } else {
