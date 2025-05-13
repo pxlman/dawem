@@ -59,6 +59,7 @@ export interface Habit {
     title: string;
     color: string;
     icon?: string;
+    description?: string;
     repetition: HabitRepetition;
     measurement: HabitMeasurement;
     timeModuleId: string;
