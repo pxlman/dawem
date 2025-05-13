@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform, I18nManager, StyleProp } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform, I18nManager, StyleProp, TextInput } from 'react-native';
 // Import date-fns functions for date comparison
 import { format, isAfter, startOfDay } from 'date-fns';
 import {getColors} from '../constants/Colors';
@@ -152,6 +152,10 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         );
     };
 
+    // Add state to track if we're in edit mode for the count input
+    const [isEditingCount, setIsEditingCount] = useState(false);
+    const [tempInputValue, setTempInputValue] = useState('');
+
     const renderCountControls = () => {
         const handleIncrement = () => {
             if (isFutureDate) return; // Prevent logging for future dates
@@ -166,6 +170,25 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
             setCountValue(newValue);
             updateLog(undefined, newValue);
         };
+        
+        // Function to handle direct count value input
+        const handleCountValuePress = () => {
+            if (isFutureDate) return; // Prevent editing for future dates
+            setTempInputValue(value.toString());
+            setIsEditingCount(true);
+        };
+        
+        // Function to save the input value
+        const handleSaveCountValue = () => {
+            const newValue = parseInt(tempInputValue, 10);
+            // Validate that the value is a number and not negative
+            if (!isNaN(newValue) && newValue >= 0) {
+                setCountValue(newValue);
+                updateLog(undefined, newValue);
+            }
+            setIsEditingCount(false);
+        };
+        
         let progressStyle: StyleProp<ColorProps> = { };
         let value = (habit.repetition.type === 'daily')? countValue: weeklyTotal
 
@@ -178,6 +201,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
             // whenever he likes so don't bother him with the red color
             if(habit.repetition.type === 'daily') progressStyle.color = Colors.red;
         }
+        
         return (
             <View style={styles.controls}>
                 {habit.repetition.type === 'weekly' && (
@@ -190,14 +214,33 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
                 >
                     <Ionicons name="remove-circle-outline" size={34} color={isFutureDate ? Colors.grey : Colors.accent} />
                 </TouchableOpacity>
-                <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}, progressStyle]}>
-                    {
-                    // habit.repetition.type === 'weekly' && habit.measurement.type === 'count' 
-                    //     ? (!I18nManager.isRTL)? `${weeklyTotal || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${weeklyTotal || '0'}`
-                        // : (!I18nManager.isRTL)? `${countValue || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${countValue || '0'}`
-                        (!I18nManager.isRTL)? `${value || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${value || '0'}`
-                    }
-                </Text>
+                
+                {isEditingCount ? (
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.countInput}
+                            value={tempInputValue}
+                            onChangeText={setTempInputValue}
+                            keyboardType="numeric"
+                            autoFocus={true}
+                            selectTextOnFocus={true}
+                            onBlur={handleSaveCountValue}
+                            onSubmitEditing={handleSaveCountValue}
+                        />
+                    </View>
+                ) : (
+                    <TouchableOpacity
+                        onPress={handleCountValuePress}
+                        disabled={isFutureDate}
+                    >
+                        <Text style={[styles.countValue, isFutureDate ? styles.textDisabled : {}, progressStyle]}>
+                            {
+                                (!I18nManager.isRTL)? `${value || '0'} / ${habit.measurement.targetValue}`: `${habit.measurement.targetValue} / ${value || '0'}`
+                            }
+                        </Text>
+                    </TouchableOpacity>
+                )}
+                
                 <TouchableOpacity
                     style={[styles.countButton, isFutureDate ? styles.disabled : {}]}
                     onPress={handleIncrement}
@@ -372,21 +415,19 @@ const styles = StyleSheet.create({
   // --- Count Control Styles ---
   countInput: {
     borderWidth: 1,
-    borderColor: Colors.grey,
+    borderColor: Colors.accent,
     borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    minWidth: 50,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 70,
     textAlign: "center",
-    marginRight: 5,
-    fontSize: 15,
+    fontSize: 16,
     color: Colors.text,
     backgroundColor: Colors.surface,
   },
-  inputDisabled: {
-    backgroundColor: Colors.lightGrey,
-    color: Colors.darkGrey,
-    borderColor: Colors.darkGrey,
+  
+  inputContainer: {
+    marginHorizontal: 10,
   },
 
   repetitionInfo: {
