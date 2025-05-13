@@ -25,8 +25,9 @@ export default function StatsScreen() {
     // State for navigation offset (0 = current, -1 = previous, etc.)
     const [timeOffset, setTimeOffset] = useState(0);
     
-    // Add refs for scrolling to today's date
-    const scrollViewRef = useRef<ScrollView>(null);
+    // Create separate refs for daily and weekly scrolling
+    const dailyScrollViewRef = useRef<ScrollView>(null);
+    const weeklyScrollViewRef = useRef<ScrollView>(null);
     const todayCellRef = useRef<View>(null);
     
     // Add header buttons using useLayoutEffect
@@ -124,16 +125,38 @@ export default function StatsScreen() {
 
     // Scroll to today's date when dates change or when the component mounts
     useEffect(() => {
-        if (timeOffset === 0 && todayIndex !== -1 && scrollViewRef.current) {
-            // For weekly view, calculate the appropriate scroll offset
-            const scrollTo = todayIndex * (cellsize + 2); // cellsize + margins
-            
+        if (timeOffset === 0 && todayIndex !== -1) {
             // Allow layout to complete before scrolling
             setTimeout(() => {
-                if (scrollViewRef.current) {
-                    scrollViewRef.current.scrollTo({ x: scrollTo, animated: true });
+                // For daily habits table
+                if (dailyScrollViewRef.current) {
+                    // Calculate the appropriate scroll offset based on cell size
+                    const scrollTo = todayIndex * (cellsize + 2); // cellsize + margins
+                    dailyScrollViewRef.current.scrollTo({ x: scrollTo, animated: true });
                 }
-            }, 100);
+                
+                // For weekly habits, find current week
+                if (weeklyScrollViewRef.current) {
+                    const today = new Date();
+                    // Find the index of the current week
+                    const chronologicalWeeklyDates = dates
+                        .filter(date => date.getDay() === 6)
+                        .map(date => ({
+                            startDate: date,
+                            endDate: addDays(date, 6)
+                        }));
+                    
+                    const currentWeekIndex = chronologicalWeeklyDates.findIndex(
+                        week => today >= week.startDate && today <= week.endDate
+                    );
+                    
+                    if (currentWeekIndex !== -1) {
+                        // Weekly cells are wider, adjust scroll position accordingly
+                        const weeklyScrollTo = currentWeekIndex * 76; // 70 (cell width) + margins
+                        weeklyScrollViewRef.current.scrollTo({ x: weeklyScrollTo, animated: true });
+                    }
+                }
+            }, 300); // Increase timeout to ensure layout is complete
         }
     }, [dates, todayIndex, timeOffset, viewMode]);
 
@@ -230,18 +253,82 @@ export default function StatsScreen() {
         // For weekly counter habits, use the Saturday date as the key date
         let value = getWeeklyHabitTotal(habit.id, date, logs, settings.startDayOfWeek);
         let targetValue = habit.measurement.targetValue || 0;
-        let isDue = isHabitDue(habit, date);
-        console.log(habit.title, date, isDue)
         
-        if (value > targetValue) {
-            return { status: 'exceeded', value, isDue, percentage: Math.round((value / targetValue) * 100) }; // Exceeded status
-        } else if (value === targetValue) {
-            return { status: 'completed', value, isDue, percentage: 100 };
+        // Check if the week is in the future
+        const today = new Date();
+        const weekStart = date; // This is already the start of the week (Saturday)
+        const weekEnd = addDays(weekStart, 6);
+        const isFutureWeek = weekStart > today;
+        const isCurrentWeek = today >= weekStart && today <= weekEnd;
+        const isPastWeek = weekEnd < today;
+        
+        // If it's a future week, it's not due yet
+        if (isFutureWeek) {
+            return { 
+                status: 'notdue', 
+                value: 0, 
+                isDue: false, 
+                percentage: 0, 
+                isFutureWeek, 
+                isCurrentWeek,
+                isPastWeek
+            };
+        }
+        
+        // For current or past weeks
+        let isDue = isHabitDue(habit, date);
+        
+        if (value > targetValue && targetValue > 0) {
+            return { 
+                status: 'exceeded', 
+                value, 
+                isDue, 
+                percentage: Math.round((value / targetValue) * 100),
+                isFutureWeek, 
+                isCurrentWeek,
+                isPastWeek
+            };
+        } else if (value === targetValue && targetValue > 0) {
+            return { 
+                status: 'completed', 
+                value, 
+                isDue, 
+                percentage: 100,
+                isFutureWeek, 
+                isCurrentWeek,
+                isPastWeek
+            };
         } else if (value > 0) {
             const percentage = targetValue > 0 ? Math.min(100, Math.round((value / targetValue) * 100)) : 0;
-            return { status: 'partial', value, isDue, percentage };
+            return { 
+                status: 'partial', 
+                value, 
+                isDue, 
+                percentage,
+                isFutureWeek, 
+                isCurrentWeek,
+                isPastWeek
+            };
+        } else if (isPastWeek) {
+            return { 
+                status: 'missed', 
+                value: 0, 
+                isDue: true, // Past weeks are considered due
+                percentage: 0,
+                isFutureWeek, 
+                isCurrentWeek,
+                isPastWeek
+            };
         } else {
-            return { status: 'missed', value: 0, isDue, percentage: 0 };
+            return { 
+                status: 'empty', 
+                value: 0, 
+                isDue, 
+                percentage: 0,
+                isFutureWeek, 
+                isCurrentWeek,
+                isPastWeek
+            };
         }
     };
 
@@ -277,7 +364,7 @@ export default function StatsScreen() {
                     
                     {/* Scrollable right part */}
                     <ScrollView 
-                        ref={scrollViewRef}
+                        ref={dailyScrollViewRef}  // Use the daily-specific ref
                         horizontal 
                         showsHorizontalScrollIndicator={false} 
                         scrollEnabled={true} 
@@ -328,6 +415,10 @@ export default function StatsScreen() {
                                         
                                         // Add not-due styling
                                         const notDueStyle = status.status === 'notdue' ? styles.notDueCell : {};
+                                        
+                                        // Enhanced today highlight styling
+                                        const todayHighlight = isToday(date) ? styles.cellHighlight : {};
+                                        
                                         return (
                                             <View 
                                                 key={`${habit.id}-${index}`} 
@@ -337,7 +428,8 @@ export default function StatsScreen() {
                                                     notDueStyle, // Apply not-due styling
                                                     cellStyle,
                                                     date.getDay() === 6 && styles.startOfWeekCell, // Week start at saturday
-                                                    isToday(date) && styles.todayCellIndicator
+                                                    isToday(date) && styles.todayCellIndicator,
+                                                    todayHighlight, // Apply enhanced today highlight
                                                 ]}
                                             >
                                                 {/* Show lock icon for non-due habits */}
@@ -449,7 +541,7 @@ export default function StatsScreen() {
                     
                     {/* Scrollable right part */}
                     <ScrollView 
-                        ref={scrollViewRef}
+                        ref={weeklyScrollViewRef}  // Use the weekly-specific ref
                         horizontal 
                         showsHorizontalScrollIndicator={false} 
                         style={styles.scrollableArea}
@@ -457,20 +549,28 @@ export default function StatsScreen() {
                         <View style={styles.rowsContainer}>
                             {/* Header row with weeks */}
                             <View style={styles.headerRow}>
-                                {chronologicalWeeklyDates.map((week, index) => (
-                                    <View 
-                                        key={`week-${index}`} 
-                                        style={[
-                                            styles.weekCell,
-                                            // Highlight current week
-                                            isBefore(new Date(), week.endDate) && styles.todayCell
-                                        ]}
-                                    >
-                                        <Text style={styles.weekDateText}>
-                                            {format(week.startDate, 'dd/MM')}
-                                        </Text>
-                                    </View>
-                                ))}
+                                {chronologicalWeeklyDates.map((week, index) => {
+                                    // Check if this is the current week
+                                    const today = new Date();
+                                    const isCurrentWeek = today >= week.startDate && today <= week.endDate;
+                                    
+                                    return (
+                                        <View 
+                                            key={`week-${index}`} 
+                                            style={[
+                                                styles.weekCell,
+                                                isCurrentWeek && styles.currentWeekHeaderCell // Apply special styling to current week header
+                                            ]}
+                                        >
+                                            <Text style={[
+                                                styles.weekDateText,
+                                                isCurrentWeek && styles.currentWeekHeaderText // Apply special text styling
+                                            ]}>
+                                                {format(week.startDate, 'dd/MM')}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
                             </View>
                             
                             {/* Habit data rows */}
@@ -481,8 +581,9 @@ export default function StatsScreen() {
                                         const status = getWeeklyCounterStatus(habit, week.startDate);
                                         let cellStyle = styles.emptyCell;
                                         
+                                        // Style based on status
                                         if (status.status === 'exceeded') {
-                                            cellStyle = styles.exceededCell; // New style for exceeded
+                                            cellStyle = styles.exceededCell;
                                         } else if (status.status === 'completed') {
                                             cellStyle = styles.completedCell;
                                         } else if (status.status === 'partial') {
@@ -491,8 +592,9 @@ export default function StatsScreen() {
                                             cellStyle = styles.missedCell;
                                         }
                                         
-                                        // Add not-due styling
-                                        const notDueStyle = !status.isDue ? styles.notDueCell : {};
+                                        // Additional styles based on week timing
+                                        const weekTimingStyle = status.isCurrentWeek ? {...styles.currentWeekCell,...styles.cellHighlight} : 
+                                                               status.isFutureWeek ? styles.futureWeekCell : {};
                                         
                                         return (
                                             <View 
@@ -500,23 +602,23 @@ export default function StatsScreen() {
                                                 style={[
                                                     styles.weekDataCell, 
                                                     cellStyle,
-                                                    notDueStyle,
+                                                    weekTimingStyle,
+                                                    status.isFutureWeek && styles.notDueCell, // Apply not-due styling to future weeks
                                                 ]}
                                             >
-                                                {/* Show value and percentage */}
+                                                {/* Show value and percentage for non-empty cells */}
                                                 {status.value > 0 && (
                                                     <Text style={[
                                                         styles.weekCountText,
-                                                        !status.isDue && styles.notDueText,
-                                                        // Use darker text for buff background
+                                                        status.isFutureWeek && styles.notDueText,
                                                         status.status === 'exceeded' && styles.exceededCountText
                                                     ]}>
                                                         {status.value}/{habit.measurement.targetValue || 0} ({status.percentage}%)
                                                     </Text>
                                                 )}
                                                 
-                                                {/* Show lock icon for non-due habits with no data */}
-                                                {!status.isDue && status.value === 0 && (
+                                                {/* Show lock icon for future weeks */}
+                                                {status.isFutureWeek && (
                                                     <Ionicons 
                                                         name="lock-closed" 
                                                         size={12} 
@@ -692,28 +794,24 @@ const styles = StyleSheet.create({
     },
     tableContent: {
         flexDirection: 'row',
-        position: 'relative',
+        width: '100%', // Ensure the table takes full width
     },
     fixedColumn: {
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        zIndex: 10,
+        width: '35%', // Increased from 30% to 40% of the container width
+        flexShrink: 0, // Prevent shrinking
         backgroundColor: Colors.surface,
         borderRightWidth: 1,
         borderRightColor: Colors.grey,
-        // Shadow for the fixed column (Android)
-        elevation: 4,
-        // Shadow for iOS
         shadowColor: '#000',
         shadowOffset: { width: 2, height: 0 },
         shadowOpacity: 0.2,
         shadowRadius: 3,
+        zIndex: 10,
     },
     scrollableArea: {
-        marginLeft: 115, // Match the width of habitNameCell
-        marginRight: 13
+        flex: 1, // Take the remaining 60%
+        marginLeft: 4,
+        marginRight: 4,
     },
     tableTitle: {
         fontSize: 18,
@@ -731,19 +829,17 @@ const styles = StyleSheet.create({
         height: 50, // Fixed height to match headerNameCell
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
-        minWidth: 250,
         justifyContent:'center',
     },
     rowsContainer: {
-        // backgroundColor: 'black',
-        // width: 300
+        flexGrow: 1, // Take up available space
+        flexShrink: 1, // Allow shrinking if needed
     },
     headerNameCell: {
         height: 50, // Fixed height to match headerRow
         backgroundColor: Colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
-        // textAlign:'center'
     },
     headerText: {
         fontWeight: '600',
@@ -755,11 +851,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         height: 40, // Fixed height to match habitNameCell
         alignItems: 'center',
-        minWidth: 250,
         justifyContent:'center',
     },
     habitNameCell: {
-        width: 110,
+        width: '100%', // Take full width of the fixed column
         height: 40, // Fixed height to match habitRow
         padding: 8,
         backgroundColor: Colors.surface,
@@ -769,7 +864,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: Colors.text,
         fontWeight: '500',
-        textAlign:'center'
+        textAlign:'center',
+        paddingHorizontal: 6, // Add some padding to give more room for text
     },
     dateCell: {
         width: 16, // GitHub-style cell width
@@ -810,7 +906,7 @@ const styles = StyleSheet.create({
     },
     firstDayIndicator: {
         borderWidth: 1,
-        borderColor: Colors.primary + '66', // Subtle border to indicate today
+        borderColor: Colors.primary + '66', // Subtle b35order to indicate today
     },
     completedCell: {
         backgroundColor: Colors.green,
@@ -860,13 +956,22 @@ const styles = StyleSheet.create({
         color: Colors.textSecondary,
     },
     todayCellIndicator: {
-        borderWidth: 1,
-        borderColor: Colors.primary + '66', // Subtle border to indicate today
+        borderWidth: 2, // Increased from 1 to 2 for better visibility
+        borderColor: Colors.primary, // Changed to full primary color (was using opacity)
     },
     todayCellHeader: {
         backgroundColor: Colors.primary + '55', // Stronger highlight for today in header
-        borderWidth: 1,
+        borderWidth: 2, // Increased from 1 to 2 for better visibility
         borderColor: Colors.primary,
+    },
+    cellHighlight: {
+        // Add a subtle glow effect to today's cells
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 5, // For Android
+        zIndex: 5, // Ensure highlighted cells appear above others
     },
     daysRemainingText: {
         fontSize: 12,
@@ -884,7 +989,9 @@ const styles = StyleSheet.create({
     },
     // New styles for weekly counter habits table
     weekCell: {
-        width: 70, // Wider cell for weekly view
+        width: 70, // Keep this width for now
+        flexShrink: 1, // Allow shrinking if space is constrained
+        minWidth: 50, // Set a minimum width
         alignItems: 'center',
         justifyContent: 'center',
         padding: 4,
@@ -892,13 +999,15 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
     },
-    weekDateText: {
+weekDateText: {
         fontSize: 10,
         color: Colors.textSecondary,
         textAlign: 'center',
     },
     weekDataCell: {
         width: 70, // Match width of weekCell
+        flexShrink: 1, // Allow shrinking if space is constrained
+        minWidth: 50, // Set a minimum width
         height: 30, // Taller to fit more content
         justifyContent: 'center',
         alignItems: 'center',
@@ -907,7 +1016,7 @@ const styles = StyleSheet.create({
         marginVertical: 2,
         padding: 2,
     },
-    weekCountText: {
+weekCountText: {
         fontSize: 10,
         fontWeight: 'bold',
         color: 'white',
@@ -915,5 +1024,24 @@ const styles = StyleSheet.create({
     },
     exceededCountText: {
         color: 'white', // Changed from black to white since blue background requires white text
+    },
+    currentWeekCell: {
+        borderWidth: 2,
+        borderColor: Colors.primary,
+    },
+    
+    futureWeekCell: {
+        backgroundColor: Colors.lightGrey,
+        opacity: 0.5,
+    },
+    currentWeekHeaderCell: {
+        backgroundColor: Colors.primary + '33', // Light version of primary color
+        borderBottomWidth: 2,
+        borderBottomColor: Colors.primary,
+    },
+    
+    currentWeekHeaderText: {
+        color: Colors.primary,
+        fontWeight: 'bold',
     },
 });
