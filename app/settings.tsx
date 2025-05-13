@@ -49,6 +49,9 @@ export default function SettingsScreen() {
   useEffect(() => {
     Colors = getColors(settings.theme);
   }, [settings.theme]);
+  
+  // Create a ref to store the random quote so it won't change on re-renders
+  
   const quotes = [
     {
       text: "اتق الله حيثما كنت، وأتبع السيئة الحسنة تمحها، وخالق الناس بخلق حسن.",
@@ -87,7 +90,8 @@ export default function SettingsScreen() {
       author: "سورة النجم",
     },
   ];
-  const randomQuote = getRandomElement(quotes);
+  const randomQuoteRef = useRef(getRandomElement(quotes));
+  
   const [newDayStartTime, setNewDayStartTime] = useState<Date | null>(null);
   const [isTimePickerVisible, setIsTimePickerVisible] = useState(false);
   const [moduleToRename, setModuleToRename] = useState<{
@@ -536,8 +540,8 @@ export default function SettingsScreen() {
       case "quote":
         return (
           <View style={styles.quoteSection}>
-            <Text style={styles.quoteText}>"{randomQuote.text}"</Text>
-            <Text style={styles.quoteAuthor}>- {randomQuote.author}</Text>
+            <Text style={styles.quoteText}>"{randomQuoteRef.current.text}"</Text>
+            <Text style={styles.quoteAuthor}>- {randomQuoteRef.current.author}</Text>
           </View>
         );
       case "startTime":
@@ -581,21 +585,21 @@ export default function SettingsScreen() {
                 placeholder="Module Name (e.g., Morning)"
                 value={moduleToRename?.name}
                 onChangeText={(v) => {
-                  setModuleToRename({
-                    id: moduleToRename?.id || "",
+                  setModuleToRename((prev) => ({
+                    id: prev?.id || "",
                     name: v,
-                  });
+                  }));
                 }}
                 placeholderTextColor={Colors.textSecondary}
               />
               <TouchableOpacity
                 onPress={handleAddTimeModule}
                 style={
-                  moduleToRename?.name.trim()
+                  moduleToRename?.name?.trim()
                     ? styles.addButton
                     : styles.addButtonDisabled
                 }
-                disabled={!moduleToRename?.name.trim()}
+                disabled={!moduleToRename?.name?.trim()}
               >
                 <Text style={styles.addButtonText}>Add Module</Text>
               </TouchableOpacity>
