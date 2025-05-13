@@ -583,7 +583,7 @@ export default function SettingsScreen() {
                 onChangeText={(v) => {
                   setModuleToRename({
                     id: moduleToRename?.id || "",
-                    name: v.trim(),
+                    name: v,
                   });
                 }}
                 placeholderTextColor={Colors.textSecondary}
