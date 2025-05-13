@@ -9,6 +9,7 @@ import { getWeeklyHabitTotal } from '../utils/habitUtils';
 import { Habit, LogEntry, HabitLogStatus } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { ColorProps } from 'react-native-svg';
+import { router } from 'expo-router';
 let Colors = getColors()
 
 interface HabitItemProps {
@@ -20,7 +21,7 @@ interface HabitItemProps {
 const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu }) => {
     const dispatch = useAppDispatch();
     const { logs, settings} = useAppState(); // Removed timeModules as it's not used
-    Colors = getColors(settings.theme)
+        Colors = getColors(settings.theme)
     const dateString = format(currentDate, 'yyyy-MM-dd');
     
     // Get the configured start day of week from settings
@@ -117,6 +118,11 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
             ],
             { cancelable: true }
         );
+    };
+    
+    // Navigation to habit details
+    const handleHabitPress = () => {
+        router.push({pathname:'/habit/[id]', params:{id:habit.id}})
     };
 
     // --- Render Functions ---
@@ -324,6 +330,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
             <TouchableOpacity
                 style={styles.touchableArea}
                 onLongPress={handleLongPressMenu}
+                onPress={handleHabitPress}
                 delayLongPress={300}
             >
                 <Text style={[styles.title, isFutureDate ? styles.textDisabled : {}]}>{habit.title}</Text>
