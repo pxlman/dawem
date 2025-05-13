@@ -36,7 +36,7 @@ export interface NodeLayout { // for the goal mind map
 // --- ADDED fields to RepetitionConfig ---
 export interface RepetitionConfig {
     daysOfWeek?: number[]; // 0=Sat, 1=Sun, ..., 6=Fri (For 'weekly')
-    ndaysPerWeek?: number; // Number of days the habit should be done in a week
+    // ndaysPerWeek?: number; // Number of days the habit should be done in a week
     // daysOfMonth?: number[]; // 1-31 (For 'monthly')
     // Add other future options here (interval, timesPerWeek etc.)
 }
