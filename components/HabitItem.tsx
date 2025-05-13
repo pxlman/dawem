@@ -71,7 +71,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         if (newStatus === undefined && newValue === undefined) {
             return;
         }
-        Alert.alert('hi',dateString)
+        // Alert.alert('hi',dateString)
         const payload: { habitId: string; date: string; status?: HabitLogStatus; value?: number } = {
             habitId: habit.id, 
             date: dateString,
