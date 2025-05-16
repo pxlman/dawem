@@ -18,15 +18,9 @@
 - [ ] جدول اسبوعي يوضح الوحدات اليومية وفي مقابلها الأيام ويظهر من خلالها الأعمال في جدول واضح في الفهم
 
 # Screenshots
-![habits](./images/habits.png)
-![add-habits](./images/addhabit.png)
-![all-habits](./images/allhabits.png)
-![stats](./images/stats.png)
-![goals](./images/goals.png)
-![settings](./images/settings.png)
-<img src="./images/habits.png" alt="drawing" width="50"/>
-<img src="./images/addhabit.png" alt="add-habit" width="50"/>
-<img src="./images/allhabits.png" alt="drawing" width="50"/>
-<img src="./images/stats.png" alt="drawing" width="50"/>
-<img src="./images/goals.png" alt="drawing" width="50"/>
-<img src="./images/settings.png" alt="drawing" width="50"/>
+<img src="./images/habits.png" alt="drawing" width="200"/>
+<img src="./images/addhabit.png" alt="add-habit" width="200"/>
+<img src="./images/allhabits.png" alt="drawing" width="200"/>
+<img src="./images/stats.png" alt="drawing" width="200"/>
+<img src="./images/goals.png" alt="drawing" width="200"/>
+<img src="./images/settings.png" alt="drawing" width="200"/>
