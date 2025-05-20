@@ -95,7 +95,7 @@ const playWaterDropSound = async () => {
     
     // Unload sound when finished
     sound.setOnPlaybackStatusUpdate(status => {
-      if (status.didJustFinish) {
+      if (status.isLoaded && status.didJustFinish) {
         sound.unloadAsync();
       }
     });
@@ -161,25 +161,22 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
     }, [todaysLog]);
 
     // Helper function to dispatch log updates
-    const updateLog = (newStatus?: HabitLogStatus, newValue?: number) => {
+    const updateLog = (newStatus?: HabitLogStatus|undefined, newValue?: number) => {
         if (isFutureDate) {
             return; // Prevent logging for future dates
-        }
-        if (newStatus === undefined && newValue === undefined) {
-            return;
         }
         // Alert.alert('hi',dateString)
         const payload: { habitId: string; date: string; status?: HabitLogStatus; value?: number } = {
             habitId: habit.id, 
             date: dateString,
-            ...(newStatus !== undefined && { status: newStatus }),
-            ...(newValue !== undefined && { value: newValue }),
+            ...({ status: newStatus }),
+            ...({ value: newValue }),
         };
         dispatch({ type: 'LOG_HABIT', payload });
     };
 
     // Reference to button for positioning animation
-    const buttonRef = useRef<TouchableOpacity>(null);
+    const buttonRef = useRef<View>(null);
 
     // --- Binary Button Handlers ---
     const handleSinglePress = () => {
@@ -198,7 +195,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
             if (nextStatus === 'right') {
                 // Get button position for animation
                 if (buttonRef.current) {
-                    buttonRef.current.measureInWindow((x, y, width, height) => {
+                    buttonRef.current.measureInWindow((x:number, y:number, width:number, height:number) => {
                         setWaterDropPosition({ x: x + width/2, y: y + height/2 });
                         setShowWaterDrop(true);
                         playWaterDropSound();
@@ -216,23 +213,24 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
     const handleLongPress = () => {
         if (isFutureDate) { return; } // Prevent menu for future dates
         Vibration.vibrate(50);
-        Alert.alert(
-            `Log: ${habit.title}`,
-            `Choose status for ${format(currentDate, 'MMM d')}:`,
-            [
-                { text: 'Did (✓)', onPress: () => { setCurrentButtonStatus('right'); updateLog('right'); } },
-                { text: 'Didn\'t (✕)', onPress: () => { setCurrentButtonStatus('wrong'); updateLog('wrong'); } },
-                { text: 'Late (O)', onPress: () => { setCurrentButtonStatus('circle'); updateLog('circle'); } },
-                { text: 'Clear Log', style: 'destructive', onPress: () => {
-                    setCurrentButtonStatus('none');
-                    // TODO: Implement DELETE_LOG action or specific handling in LOG_HABIT for undefined status
-                    console.warn("Clear log needs proper implementation in reducer.");
-                    updateLog(undefined); // Attempt to clear by sending undefined status
-                    }},
-                { text: 'Cancel', style: 'cancel' },
-            ],
-            { cancelable: true }
-        );
+        setCurrentButtonStatus('none'); updateLog(undefined,undefined);
+        // Alert.alert(
+        //     `Log: ${habit.title}`,
+        //     `Choose status for ${format(currentDate, 'MMM d')}:`,
+        //     [
+        //         { text: 'Did (✓)', onPress: () => { setCurrentButtonStatus('right'); updateLog('right'); } },
+        //         { text: 'Didn\'t (✕)', onPress: () => { setCurrentButtonStatus('wrong'); updateLog('wrong'); } },
+        //         { text: 'Late (O)', onPress: () => { setCurrentButtonStatus('circle'); updateLog('circle'); } },
+        //         { text: 'Clear Log', style: 'destructive', onPress: () => {
+        //             setCurrentButtonStatus('none');
+        //             // TODO: Implement DELETE_LOG action or specific handling in LOG_HABIT for undefined status
+        //             console.warn("Clear log needs proper implementation in reducer.");
+        //             updateLog(undefined); // Attempt to clear by sending undefined status
+        //             }},
+        //         { text: 'Cancel', style: 'cancel' },
+        //     ],
+        //     { cancelable: true }
+        // );
     };
 
     // --- Render Functions ---

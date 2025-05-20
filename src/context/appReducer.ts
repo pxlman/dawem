@@ -131,26 +131,41 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
             const existingLogIndex = state.logs.findIndex((log: LogEntry) => log.habitId === habitId && log.date === logDate);
             let newLogs: LogEntry[];
-            // Include only defined status/value in base update
-            const logBase: Partial<LogEntry> & { habitId: string, date: string, timestamp: string } = {
-                habitId, date: logDate, timestamp: new Date().toISOString(),
-                ...(status !== undefined && { status }), ...(value !== undefined && { value }),
-            };
-            const isClearing = status === undefined && value === undefined; // Check if it's a clear request
-
-            if (existingLogIndex > -1) {
-                if (isClearing) { // If clearing, remove the log
-                    newLogs = state.logs.filter((_, index: number) => index !== existingLogIndex);
-                } else { // Otherwise, update the existing log
-                    const originalLogId = state.logs[existingLogIndex].id;
-                    newLogs = state.logs.map((log: LogEntry, index: number) => index === existingLogIndex ? { ...log, ...logBase, id: originalLogId } : log);
+            
+            // Check if this is a request to delete the log (both status and value are undefined)
+            if (status === undefined && value === undefined) {
+                // Simply filter out the log with matching habitId and date
+                if (existingLogIndex > -1) {
+                    newLogs = state.logs.filter((_, index) => index !== existingLogIndex);
+                } else {
+                    // No log to delete
+                    return state;
                 }
-            } else if (!isClearing) { // Add new log only if not clearing
-                const newLogEntry: LogEntry = { ...logBase, id: generateId(), };
-                newLogs = [...state.logs, newLogEntry];
             } else {
-                newLogs = state.logs; // No change if clearing a non-existent log
+                // Include only defined status/value in base update
+                const logBase: Partial<LogEntry> & { habitId: string, date: string, timestamp: string } = {
+                    habitId, 
+                    date: logDate, 
+                    timestamp: new Date().toISOString(),
+                    ...(status !== undefined && { status }), 
+                    ...(value !== undefined && { value }),
+                };
+
+                if (existingLogIndex > -1) {
+                    // Update existing log
+                    const originalLogId = state.logs[existingLogIndex].id;
+                    newLogs = state.logs.map((log: LogEntry, index: number) => 
+                        index === existingLogIndex ? { ...log, ...logBase, id: originalLogId } : log);
+                } else {
+                    // Create new log
+                    const newLogEntry: LogEntry = { 
+                        ...logBase, 
+                        id: generateId(), 
+                    };
+                    newLogs = [...state.logs, newLogEntry];
+                }
             }
+            
             return { ...state, logs: newLogs };
         }
 
