@@ -35,13 +35,13 @@ const WaterDropAnimation: React.FC<WaterDropProps> = ({
       Animated.parallel([
         Animated.timing(scaleAnim, {
           toValue: 1,
-          duration: 700,
+          duration: 400, // Reduced from 700ms to 400ms for faster animation
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 150,
+          duration: 100, // Reduced from 150ms to 100ms for faster appearance
           useNativeDriver: true,
         }),
       ]).start();
@@ -50,14 +50,14 @@ const WaterDropAnimation: React.FC<WaterDropProps> = ({
       setTimeout(() => {
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 600,
+          duration: 400,
           useNativeDriver: true,
         }).start(() => {
           if (onAnimationComplete) {
             onAnimationComplete();
           }
         });
-      }, 200);
+      }, 150);
     } else {
       scaleAnim.setValue(0);
       opacityAnim.setValue(0);
