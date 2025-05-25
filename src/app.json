@@ -4,7 +4,7 @@
     "scheme": "dawem",
     "slug": "dawem",
     "description": "A special life tracker by an organized structure of Goals/Habits/Times",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon4.png",
     "userInterfaceStyle": "dark",

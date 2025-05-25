@@ -17,5 +17,14 @@
 - [ ] خاصية تسمع بتغيير نظام تحديد اوقات العادات من الفترات الزمنية (الصلاة على النظام الافتراضي) الى الاوقات المحددة بالساعة
 - [ ] جدول اسبوعي يوضح الوحدات اليومية وفي مقابلها الأيام ويظهر من خلالها الأعمال في جدول واضح في الفهم
 
+### Building
+```bash
+git clone https://github.com/pxlman/dawem 
+cd dawem/src
+npm install
+npx expo prebiuld
+cd android
+./gradlew assembleRelease # Now you can find the apk in dawem/src/android/app/build/outputs/apk/release/app-release.apk
+```
 # Screenshots
 <img src="./images/habits.png" alt="drawing" width="200"/> <img src="./images/addhabit.png" alt="add-habit" width="200"/> <img src="./images/allhabits.png" alt="drawing" width="200"/> <img src="./images/stats.png" alt="drawing" width="200"/> <img src="./images/goals.png" alt="drawing" width="200"/> <img src="./images/settings.png" alt="drawing" width="200"/>

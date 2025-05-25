@@ -462,11 +462,22 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             });
 
             // 3. Concatenate the habits not in the target module with the newly ordered habits for that module.
-            // This effectively places the reordered module habits at the end of the "other" habits.
-            // If you want to preserve the module's original "block" position, the first more complex solution is needed.
             const updatedHabits = [...habitsNotInTargetModule, ...finalOrderedModuleHabits];
 
-            // console.log("Final Updated Habits:", updatedHabits.map(h => `${h.title} (${h.timeModuleId || 'uncat'})`));
+            // 4. Create a mapping of time module IDs to their indices
+            const timeModuleOrder = state.timeModules.reduce((acc, tm, index) => {
+                acc[tm.id] = index;
+                return acc;
+            }, {} as Record<string, number>);
+
+            // 5. Sort the updated habits based on the time module order
+            updatedHabits.sort((a, b) => {
+                const indexA = timeModuleOrder[a.timeModuleId] !== undefined ? timeModuleOrder[a.timeModuleId] : Infinity;
+                const indexB = timeModuleOrder[b.timeModuleId] !== undefined ? timeModuleOrder[b.timeModuleId] : Infinity;
+
+                return indexA - indexB; // Sort by index
+            });
+
             return {
                 ...state,
                 habits: updatedHabits,
@@ -476,9 +487,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             console.log(action.payload)
             return {
                 ...state,
-                habits: action.payload.habits,
-                goals: action.payload.goals,
-                timeModules: action.payload.timeModules
+                habits: {...action.payload.habits,...state.habits},
+                goals: {...action.payload.goals,...state.goals},
+                timeModules: {...action.payload.timeModules,...state.timeModules},
             };
         }
 // ... other cases ...
