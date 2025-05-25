@@ -61,6 +61,44 @@ function linkHabitToGoal(goals: Goal[], habitId: string, goalId: string): Goal[]
     });
 }
 
+// Helper function to reorder habits based on time modules
+function reorderHabitsByTimeModule(habits: Habit[], timeModules: TimeModule[]): Habit[] {
+    // Create a mapping of time module IDs to their indices
+    const timeModuleOrder = timeModules.reduce((acc, tm, index) => {
+        acc[tm.id] = index;
+        return acc;
+    }, {} as Record<string, number>);
+    
+    // Group habits by time module ID
+    const habitsByModule: Record<string, Habit[]> = {};
+    
+    // Add habits to their respective groups
+    habits.forEach(habit => {
+        const moduleId = habit.timeModuleId || 'uncategorized';
+        if (!habitsByModule[moduleId]) {
+            habitsByModule[moduleId] = [];
+        }
+        habitsByModule[moduleId].push(habit);
+    });
+    
+    // Combine all habits, ordered by time module
+    const orderedHabits: Habit[] = [];
+    
+    // Sort time modules by their order in timeModules
+    const sortedModuleIds = Object.keys(habitsByModule).sort((a, b) => {
+        const indexA = timeModuleOrder[a] !== undefined ? timeModuleOrder[a] : Infinity;
+        const indexB = timeModuleOrder[b] !== undefined ? timeModuleOrder[b] : Infinity;
+        return indexA - indexB;
+    });
+    
+    // Add habits from each module in the correct order
+    sortedModuleIds.forEach(moduleId => {
+        orderedHabits.push(...habitsByModule[moduleId]);
+    });
+    
+    return orderedHabits;
+}
+
 export const appReducer = (state: AppState, action: AppAction): AppState => {
     // console.log(`Reducer Action: ${action.type}`); // Optional logging
     console.log(action.type, action)
@@ -89,9 +127,12 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 updatedGoals = linkHabitToGoal(state.goals, newHabitId, goalId);
             }
             
+            // Add the new habit and then reorder all habits by time module
+            const updatedHabits = reorderHabitsByTimeModule([...state.habits, newHabit], state.timeModules);
+            
             return { 
                 ...state, 
-                habits: [...state.habits, newHabit],
+                habits: updatedHabits,
                 goals: updatedGoals
             };
         }
@@ -102,18 +143,25 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             if (payload.goalId) {
                 updatedGoals = linkHabitToGoal(state.goals, payload.id || '', payload.goalId);
             }
+            
+            // Update the habit in the array
+            const updatedHabits = state.habits.map((habit: Habit) => {
+                if (habit.id === payload.id) {
+                    return {
+                        ...habit,
+                        ...payload,
+                        endDate: payload.endDate ?? null,
+                    };
+                }
+                return habit;
+            });
+            
+            // Reorder habits after updating
+            const reorderedHabits = reorderHabitsByTimeModule(updatedHabits, state.timeModules);
+            
             return {
                 ...state,
-                habits: state.habits.map((habit: Habit) => {
-                    if (habit.id === payload.id) {
-                        return {
-                            ...habit,
-                            ...payload,
-                            endDate: payload.endDate ?? null,
-                        };
-                    }
-                    return habit;
-                }),
+                habits: reorderedHabits,
                 goals: updatedGoals
             };
         }
@@ -199,16 +247,34 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const replacementModule = state.timeModules.find((tm:TimeModule) => tm.id !== timeModuleIdToDelete);
             const replacementModuleId = replacementModule?.id ?? '';
              if (!replacementModuleId) { return state; }
+            
+            // Update habits with new time module ID
+            const updatedHabits = state.habits.map((h:Habit) => 
+                h.timeModuleId === timeModuleIdToDelete ? { ...h, timeModuleId: replacementModuleId } : h
+            );
+            
+            // Filter out the deleted time module
+            const updatedTimeModules = state.timeModules.filter((tm:TimeModule) => 
+                tm.id !== timeModuleIdToDelete
+            );
+            
+            // Reorder habits after changing time modules
+            const reorderedHabits = reorderHabitsByTimeModule(updatedHabits, updatedTimeModules);
+            
             return {
                 ...state,
-                timeModules: state.timeModules.filter((tm:TimeModule) => tm.id !== timeModuleIdToDelete),
-                habits: state.habits.map((h:Habit) => h.timeModuleId === timeModuleIdToDelete ? { ...h, timeModuleId: replacementModuleId } : h ),
+                timeModules: updatedTimeModules,
+                habits: reorderedHabits,
             };
         }
         case 'REORDER_TIME_MODULES': {
+            // After reordering time modules, reorder habits accordingly
+            const reorderedHabits = reorderHabitsByTimeModule(state.habits, action.payload);
+            
             return {
                 ...state,
                 timeModules: action.payload,
+                habits: reorderedHabits,
             };
         }
 
@@ -461,21 +527,40 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 return !isInTargetModule;
             });
 
-            // 3. Concatenate the habits not in the target module with the newly ordered habits for that module.
-            const updatedHabits = [...habitsNotInTargetModule, ...finalOrderedModuleHabits];
-
-            // 4. Create a mapping of time module IDs to their indices
+            // 3. Create a mapping of time module IDs to their indices
             const timeModuleOrder = state.timeModules.reduce((acc, tm, index) => {
                 acc[tm.id] = index;
                 return acc;
             }, {} as Record<string, number>);
-
-            // 5. Sort the updated habits based on the time module order
-            updatedHabits.sort((a, b) => {
-                const indexA = timeModuleOrder[a.timeModuleId] !== undefined ? timeModuleOrder[a.timeModuleId] : Infinity;
-                const indexB = timeModuleOrder[b.timeModuleId] !== undefined ? timeModuleOrder[b.timeModuleId] : Infinity;
-
-                return indexA - indexB; // Sort by index
+            
+            // 4. Group habits by time module ID
+            const habitsByModule: Record<string, Habit[]> = {};
+            
+            // Add all non-target module habits to their respective groups
+            habitsNotInTargetModule.forEach(habit => {
+                const moduleId = habit.timeModuleId || 'uncategorized';
+                if (!habitsByModule[moduleId]) {
+                    habitsByModule[moduleId] = [];
+                }
+                habitsByModule[moduleId].push(habit);
+            });
+            
+            // Add the newly ordered habits to their target module group
+            habitsByModule[timeModuleId] = finalOrderedModuleHabits;
+            
+            // 5. Combine all habits, ordered first by time module, then by the user's specified order within each module
+            const updatedHabits: Habit[] = [];
+            
+            // Sort time modules by their order in state.timeModules
+            const sortedModuleIds = Object.keys(habitsByModule).sort((a, b) => {
+                const indexA = timeModuleOrder[a] !== undefined ? timeModuleOrder[a] : Infinity;
+                const indexB = timeModuleOrder[b] !== undefined ? timeModuleOrder[b] : Infinity;
+                return indexA - indexB;
+            });
+            
+            // Add habits from each module in the correct order
+            sortedModuleIds.forEach(moduleId => {
+                updatedHabits.push(...habitsByModule[moduleId]);
             });
 
             return {

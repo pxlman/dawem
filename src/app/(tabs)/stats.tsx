@@ -193,19 +193,26 @@ export default function StatsScreen() {
     }, [dates]);
 
     // Split habits by repetition type and measurement type
-    const { dailyHabits, weeklyBinaryHabits, weeklyCounterHabits } = useMemo(() => {
-        return {
-            dailyHabits: habits.filter((h:Habit) => 
-                h.repetition.type === 'daily' && h.enabled !== false),
-            weeklyBinaryHabits: habits.filter((h:Habit) => 
-                h.repetition.type === 'weekly' && 
-                h.measurement.type === 'binary' && 
-                h.enabled !== false),
-            weeklyCounterHabits: habits.filter((h:Habit) => 
-                h.repetition.type === 'weekly' && 
-                h.measurement.type === 'count' && 
-                h.enabled !== false)
+    const { dailyAndWeeklyBinaryHabits, weeklyCounterHabits } = useMemo(() => {
+        // Filter habits but preserve original order from state.habits
+        const filtered = {
+            dailyAndWeeklyBinaryHabits: [] as Habit[],
+            weeklyCounterHabits: [] as Habit[]
         };
+        
+        // Process habits in their original order
+        habits.forEach((habit: Habit) => {
+            if (habit.enabled === false) return;
+            
+            if (habit.repetition.type === 'daily' || 
+                (habit.repetition.type === 'weekly' && habit.measurement.type === 'binary')) {
+                filtered.dailyAndWeeklyBinaryHabits.push((habit));
+            } else if (habit.repetition.type === 'weekly' && habit.measurement.type === 'count') {
+                filtered.weeklyCounterHabits.push(habit);
+            }
+        });
+        
+        return filtered;
     }, [habits]);
 
     // Get habit status for a specific date - updated to include due status and exceeded status
@@ -335,6 +342,8 @@ export default function StatsScreen() {
     // Render table for daily or weekly binary habits
     const renderTable = (tableHabits: Habit[], title: string) => {
         if (tableHabits.length === 0) return null;
+        
+        // No sorting needed here - we're using the original order from state
         
         return (
             <View style={styles.tableContainer}>
@@ -727,14 +736,12 @@ export default function StatsScreen() {
             </View>
 
             {/* Message if no habits exist */}
-            {dailyHabits.length === 0 && weeklyBinaryHabits.length === 0 && weeklyCounterHabits.length === 0 && (
+            {dailyAndWeeklyBinaryHabits.length === 0 && weeklyCounterHabits.length === 0 && (
                 <Text style={styles.placeholder}>Add some habits to see their activity here.</Text>
             )}
 
             {/* Render tables for daily and weekly habits */}
-            {renderTable(dailyHabits.concat(weeklyBinaryHabits), "Habits")}
-            {/* {renderTable(dailyHabits, "Daily Habits")}
-            {renderTable(weeklyBinaryHabits, "Weekly Habits")} */}
+            {renderTable(dailyAndWeeklyBinaryHabits, "Habits")}
             {renderWeeklyCounterTable(weeklyCounterHabits)}
         </ScrollView>
     );
