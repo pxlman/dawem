@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform, I18nManager, StyleProp, TextInput, Animated, Easing } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Vibration, Platform, I18nManager, StyleProp, TextInput } from 'react-native';
 // Import date-fns functions for date comparison
 import { format, isAfter, startOfDay } from 'date-fns';
 import {getColors} from '../constants/Colors';
@@ -9,9 +9,9 @@ import { getWeeklyHabitTotal } from '../utils/habitUtils';
 import { Habit, LogEntry, HabitLogStatus } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { ColorProps } from 'react-native-svg';
-import { Audio } from 'expo-av';
 let Colors = getColors()
 
+<<<<<<< HEAD
 // Add interface for water drop animation props
 interface WaterDropProps {
   active: boolean;
@@ -104,6 +104,8 @@ const playWaterDropSound = async () => {
   }
 };
 
+=======
+>>>>>>> parent of 0f0852e (Adding water drop animation and sound effect)
 interface HabitItemProps {
     habit: Habit;
     currentDate: Date;
@@ -115,10 +117,6 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
     const { logs, settings} = useAppState(); // Removed timeModules as it's not used
     Colors = getColors(settings.theme)
     const dateString = format(currentDate, 'yyyy-MM-dd');
-    
-    // State for water drop animation
-    const [showWaterDrop, setShowWaterDrop] = useState(false);
-    const [waterDropPosition, setWaterDropPosition] = useState({ x: 0, y: 0 });
     
     // Get the configured start day of week from settings
     const startDayOfWeek = settings?.startDayOfWeek || 6;
@@ -175,9 +173,12 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         dispatch({ type: 'LOG_HABIT', payload });
     };
 
+<<<<<<< HEAD
     // Reference to button for positioning animation
     const buttonRef = useRef<View>(null);
 
+=======
+>>>>>>> parent of 0f0852e (Adding water drop animation and sound effect)
     // --- Binary Button Handlers ---
     const handleSinglePress = () => {
         // updateLog function handles the future date check internally
@@ -190,6 +191,7 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         // Update visual state immediately only if NOT a future date
         if (!isFutureDate) {
             setCurrentButtonStatus(nextStatus ?? 'none');
+<<<<<<< HEAD
             
             // Play water drop animation and sound when checking the habit (changing to 'right' status)
             if (nextStatus === 'right') {
@@ -202,12 +204,10 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
                     });
                 }
             }
+=======
+>>>>>>> parent of 0f0852e (Adding water drop animation and sound effect)
         }
         updateLog(nextStatus);
-    };
-
-    const handleWaterDropComplete = () => {
-        setShowWaterDrop(false);
     };
 
     const handleLongPress = () => {
@@ -253,29 +253,16 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         const finalIconColor = isFutureDate ? Colors.grey : iconColor; // Dim icon when disabled
 
         return (
-            <View style={{ position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-                <TouchableOpacity
-                    ref={buttonRef}
-                    style={combinedButtonStyle}
-                    onPress={handleSinglePress}
-                    onLongPress={handleLongPress}
-                    delayLongPress={300}
-                    disabled={isFutureDate} // Disable touch interactions
-                    activeOpacity={isFutureDate ? 1 : 0.7} // No visual feedback when disabled
-                >
-                    <Ionicons name={iconName} size={20} color={finalIconColor} />
-                </TouchableOpacity>
-                {showWaterDrop && (
-                    <View style={styles.dropContainer}>
-                        <WaterDropAnimation 
-                            active={showWaterDrop} 
-                            color={Colors.primary}
-                            size={80}
-                            onAnimationComplete={handleWaterDropComplete}
-                        />
-                    </View>
-                )}
-            </View>
+            <TouchableOpacity
+                style={combinedButtonStyle}
+                onPress={handleSinglePress}
+                onLongPress={handleLongPress}
+                delayLongPress={300}
+                disabled={isFutureDate} // Disable touch interactions
+                activeOpacity={isFutureDate ? 1 : 0.7} // No visual feedback when disabled
+            >
+                <Ionicons name={iconName} size={20} color={finalIconColor} />
+            </TouchableOpacity>
         );
     };
 
@@ -481,7 +468,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 1.0,
     zIndex: 1,
-    overflow: 'visible', // to ensure animations aren't clipped
   },
   containerDisabled: {
     opacity: 0.6,
@@ -572,12 +558,6 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   // Removed all modal-related styles
-  dropContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 5,
-  },
 });
 
 export default HabitItem;
