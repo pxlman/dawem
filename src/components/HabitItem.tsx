@@ -11,101 +11,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { ColorProps } from 'react-native-svg';
 let Colors = getColors()
 
-<<<<<<< HEAD
-// Add interface for water drop animation props
-interface WaterDropProps {
-  active: boolean;
-  size?: number;
-  color?: string;
-  onAnimationComplete?: () => void;
-}
-
-// Water Drop Animation Component
-const WaterDropAnimation: React.FC<WaterDropProps> = ({ 
-  active, 
-  size = 100, 
-  color = '#4FC3F7',
-  onAnimationComplete 
-}) => {
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (active) {
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Fade out
-      setTimeout(() => {
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 600,
-          useNativeDriver: true,
-        }).start(() => {
-          if (onAnimationComplete) {
-            onAnimationComplete();
-          }
-        });
-      }, 200);
-    } else {
-      scaleAnim.setValue(0);
-      opacityAnim.setValue(0);
-    }
-  }, [active, scaleAnim, opacityAnim, onAnimationComplete]);
-
-  if (!active) return null;
-
-  return (
-    <Animated.View
-      style={{
-        position: 'absolute',
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: color,
-        opacity: opacityAnim,
-        transform: [{ scale: scaleAnim }],
-        zIndex: 10,
-      }}
-    />
-  );
-};
-
-// Sound effect function
-const playWaterDropSound = async () => {
-  try {
-    const { sound } = await Audio.Sound.createAsync(
-      require('../assets/sounds/water-drop.mp3'),
-      { shouldPlay: true }
-    );
-    
-    // Play the sound
-    await sound.playAsync();
-    
-    // Unload sound when finished
-    sound.setOnPlaybackStatusUpdate(status => {
-      if (status.isLoaded && status.didJustFinish) {
-        sound.unloadAsync();
-      }
-    });
-  } catch (error) {
-    console.log('Error playing sound', error);
-  }
-};
-
-=======
->>>>>>> parent of 0f0852e (Adding water drop animation and sound effect)
 interface HabitItemProps {
     habit: Habit;
     currentDate: Date;
@@ -173,12 +78,6 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         dispatch({ type: 'LOG_HABIT', payload });
     };
 
-<<<<<<< HEAD
-    // Reference to button for positioning animation
-    const buttonRef = useRef<View>(null);
-
-=======
->>>>>>> parent of 0f0852e (Adding water drop animation and sound effect)
     // --- Binary Button Handlers ---
     const handleSinglePress = () => {
         // updateLog function handles the future date check internally
@@ -191,21 +90,6 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         // Update visual state immediately only if NOT a future date
         if (!isFutureDate) {
             setCurrentButtonStatus(nextStatus ?? 'none');
-<<<<<<< HEAD
-            
-            // Play water drop animation and sound when checking the habit (changing to 'right' status)
-            if (nextStatus === 'right') {
-                // Get button position for animation
-                if (buttonRef.current) {
-                    buttonRef.current.measureInWindow((x:number, y:number, width:number, height:number) => {
-                        setWaterDropPosition({ x: x + width/2, y: y + height/2 });
-                        setShowWaterDrop(true);
-                        playWaterDropSound();
-                    });
-                }
-            }
-=======
->>>>>>> parent of 0f0852e (Adding water drop animation and sound effect)
         }
         updateLog(nextStatus);
     };
