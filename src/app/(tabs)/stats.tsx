@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useLayoutEffect, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, I18nManager, findNodeHandle } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, I18nManager } from 'react-native';
 import { useAppDispatch, useAppState } from '../../context/AppStateContext';
 import { getColors } from '../../constants/Colors';
 import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
@@ -9,16 +9,14 @@ import { addDays, subDays, isBefore, startOfWeek, endOfWeek, format, addWeeks, s
     startOfMonth, endOfMonth, addMonths, subMonths, 
     set,
     Day} from 'date-fns';
-import { getSaturdayDateString } from '../../utils/dateUtils';
 import { getWeeklyHabitTotal } from '@/utils/habitUtils';
-import { getTextColorForBackground } from '@/utils/colorUtils';
 import { useNavigation } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker';
 let Colors = getColors()
 
 export default function StatsScreen() {
     const navigation = useNavigation();
-    const { habits, logs, settings } = useAppState();
+    const { habits, logs, settings, timeModules } = useAppState();
     const dispatch = useAppDispatch();
     getColors(settings.theme)
     
@@ -351,7 +349,25 @@ export default function StatsScreen() {
     const renderTable = (tableHabits: Habit[], title: string) => {
         if (tableHabits.length === 0) return null;
         
-        // No sorting needed here - we're using the original order from state
+        // Create a mapping of timeModuleId to module name
+        const moduleIdToName = Object.fromEntries(
+            timeModules.map(module => [module.id, module.name])
+        );
+        
+        // Group habits by timeModule
+        const habitsByModule: Record<string, Habit[]> = {};
+        
+        tableHabits.forEach(habit => {
+            const moduleId = habit.timeModuleId || 'uncategorized';
+            const moduleName = habit.timeModuleId && moduleIdToName[habit.timeModuleId] 
+                ? moduleIdToName[habit.timeModuleId] 
+                : 'Uncategorized';
+                
+            if (!habitsByModule[moduleName]) {
+                habitsByModule[moduleName] = [];
+            }
+            habitsByModule[moduleName].push(habit);
+        });
         
         return (
             <View style={styles.tableContainer}>
@@ -365,23 +381,34 @@ export default function StatsScreen() {
                             <Text style={styles.headerText}>Habit</Text>
                         </View>
                         
-                        {/* Habit name cells */}
-                        {tableHabits.map(habit => (
-                            <View key={`fixed-${habit.id}`} style={styles.habitNameCell}>
-                                <Text 
-                                    style={styles.habitNameText}
-                                    numberOfLines={1}
-                                    ellipsizeMode="tail"
-                                >
-                                    {habit.title}
-                                </Text>
-                            </View>
+                        {/* Render habits by module with dividers */}
+                        {Object.entries(habitsByModule).map(([moduleName, moduleHabits], moduleIndex) => (
+                            <React.Fragment key={`module-${moduleName}`}>
+                                {/* Module divider */}
+                                <View style={styles.moduleDividerContainer}>
+                                    <View style={styles.moduleDividerLine} />
+                                    <Text style={styles.moduleDividerText}>{moduleName}</Text>
+                                </View>
+                                
+                                {/* Module habits */}
+                                {moduleHabits.map(habit => (
+                                    <View key={`fixed-${habit.id}`} style={styles.habitNameCell}>
+                                        <Text 
+                                            style={styles.habitNameText}
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail"
+                                        >
+                                            {habit.title}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </React.Fragment>
                         ))}
                     </View>
                     
                     {/* Scrollable right part */}
                     <ScrollView 
-                        ref={dailyScrollViewRef}  // Use the daily-specific ref
+                        ref={dailyScrollViewRef}
                         horizontal 
                         showsHorizontalScrollIndicator={false} 
                         scrollEnabled={true} 
@@ -397,7 +424,7 @@ export default function StatsScreen() {
                                         style={[
                                             styles.dateCell,
                                             {width:cellsize},
-                                            date.getDay() === startDayOfWeek && styles.startOfWeekCell, // Week start at saturday
+                                            date.getDay() === startDayOfWeek && styles.startOfWeekCell,
                                             isToday(date) && styles.todayCellHeader,
                                         ]}
                                     >
@@ -408,79 +435,92 @@ export default function StatsScreen() {
                                 ))}
                             </View>
                             
-                            {/* Habit data rows */}
-                            {tableHabits.map(habit => (
-                                <View key={habit.id} style={styles.habitRow}>
-                                    {/* Data cells for each date */}
-                                    {dates.map((date, index) => {
-                                        const status = getHabitStatus(habit, date);
-                                        let cellStyle = styles.emptyCell;
-                                        
-                                        if (status.status === 'completed') {
-                                            cellStyle = styles.completedCell;
-                                        } else if (status.status === 'exceeded') {
-                                            cellStyle = styles.exceededCell; // New style for exceeded
-                                        } else if (status.status === 'partial') {
-                                            cellStyle = styles.partialCell;
-                                        } else if (status.status === 'missed') {
-                                            // if it's still today and the measurement type is count
-                                            // so it's still not missed
-                                            if(!isToday(date) || habit.measurement.type !== 'count'){
-                                                cellStyle = styles.missedCell;
-                                            }
-                                        } else if (status.status === 'notdue') {
-                                            cellStyle = styles.emptyCell;
-                                        } else {
-                                            cellStyle = styles.emptyCell;
-                                        }
-                                        
-                                        // Add not-due styling
-                                        const notDueStyle = status.status === 'notdue' ? styles.notDueCell : {};
-                                        
-                                        // Enhanced today highlight styling
-                                        const todayHighlight = isToday(date) ? styles.cellHighlight : {};
-                                        
-                                        return (
+                            {/* Render data rows by module with dividers */}
+                            {Object.entries(habitsByModule).map(([moduleName, moduleHabits], moduleIndex) => (
+                                <React.Fragment key={`data-${moduleName}`}>
+                                    {/* Module divider row (with visible divider line) */}
+                                    <View style={styles.moduleDividerRow}>
+                                        <View style={styles.scrollableDividerLine} />
+                                        {dates.map((date, dateIndex) => (
                                             <View 
-                                                key={`${habit.id}-${index}`} 
+                                                key={`divider-${dateIndex}`}
                                                 style={[
-                                                    styles.dataCell, 
-                                                    {width:cellsize},
-                                                    notDueStyle, // Apply not-due styling
-                                                    cellStyle,
-                                                    date.getDay() === startDayOfWeek && styles.startOfWeekCell, // Week start at saturday
-                                                    isToday(date) && styles.todayCellIndicator,
-                                                    todayHighlight, // Apply enhanced today highlight
+                                                    styles.dividerCell,
+                                                    {width: cellsize}
                                                 ]}
-                                            >
-                                                {/* Show lock icon for non-due habits */}
-                                                { status.status === 'notdue' && (
-                                                    <Ionicons 
-                                                        name="lock-closed" 
-                                                        size={8} 
-                                                        color={Colors.grey} 
-                                                    />
-                                                )}
+                                            />
+                                        ))}
+                                    </View>
+                                    
+                                    {/* Module habit data rows */}
+                                    {moduleHabits.map(habit => (
+                                        <View key={habit.id} style={styles.habitRow}>
+                                            {/* Data cells for each date */}
+                                            {dates.map((date, index) => {
+                                                const status = getHabitStatus(habit, date);
+                                                let cellStyle = styles.emptyCell;
                                                 
-                                                {habit.measurement.type === 'count' && status.value > 0 && (
-                                                    <Text style={[
-                                                        styles.countText,
-                                                        status.status === 'notdue' && styles.notDueText,
-                                                        (status.status === 'exceeded' && styles.exceededCountText),
-                                                    ]}>
-                                                        {status.value}
-                                                    </Text>
-                                                )}
-                                            </View>
-                                        );
-                                    })}
-                                </View>
+                                                if (status.status === 'completed') {
+                                                    cellStyle = styles.completedCell;
+                                                } else if (status.status === 'exceeded') {
+                                                    cellStyle = styles.exceededCell;
+                                                } else if (status.status === 'partial') {
+                                                    cellStyle = styles.partialCell;
+                                                } else if (status.status === 'missed') {
+                                                    if(!isToday(date) || habit.measurement.type !== 'count'){
+                                                        cellStyle = styles.missedCell;
+                                                    }
+                                                } else if (status.status === 'notdue') {
+                                                    cellStyle = styles.emptyCell;
+                                                } else {
+                                                    cellStyle = styles.emptyCell;
+                                                }
+                                                
+                                                const notDueStyle = status.status === 'notdue' ? styles.notDueCell : {};
+                                                const todayHighlight = isToday(date) ? styles.cellHighlight : {};
+                                                
+                                                return (
+                                                    <View 
+                                                        key={`${habit.id}-${index}`} 
+                                                        style={[
+                                                            styles.dataCell, 
+                                                            {width:cellsize},
+                                                            notDueStyle,
+                                                            cellStyle,
+                                                            date.getDay() === startDayOfWeek && styles.startOfWeekCell,
+                                                            isToday(date) && styles.todayCellIndicator,
+                                                            todayHighlight,
+                                                        ]}
+                                                    >
+                                                        {status.status === 'notdue' && (
+                                                            <Ionicons 
+                                                                name="lock-closed" 
+                                                                size={8} 
+                                                                color={Colors.grey} 
+                                                            />
+                                                        )}
+                                                        
+                                                        {habit.measurement.type === 'count' && status.value > 0 && (
+                                                            <Text style={[
+                                                                styles.countText,
+                                                                status.status === 'notdue' && styles.notDueText,
+                                                                (status.status === 'exceeded' && styles.exceededCountText),
+                                                            ]}>
+                                                                {status.value}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
+                                    ))}
+                                </React.Fragment>
                             ))}
                         </View>
                     </ScrollView>
                 </View>
                 
-                {/* Legend for this table - updated to include exceeded */}
+                {/* Legend for this table */}
                 <View style={styles.legendContainer}>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
@@ -515,6 +555,26 @@ export default function StatsScreen() {
     const renderWeeklyCounterTable = (tableHabits: Habit[]) => {
         if (tableHabits.length === 0) return null;
 
+        // Create a mapping of timeModuleId to module name
+        const moduleIdToName = Object.fromEntries(
+            timeModules.map(module => [module.id, module.name])
+        );
+        
+        // Group habits by timeModule
+        const habitsByModule: Record<string, Habit[]> = {};
+        
+        tableHabits.forEach(habit => {
+            const moduleId = habit.timeModuleId || 'uncategorized';
+            const moduleName = habit.timeModuleId && moduleIdToName[habit.timeModuleId] 
+                ? moduleIdToName[habit.timeModuleId] 
+                : 'Uncategorized';
+                
+            if (!habitsByModule[moduleName]) {
+                habitsByModule[moduleName] = [];
+            }
+            habitsByModule[moduleName].push(habit);
+        });
+
         // Modify weekly dates array to align with the chronological order
         const chronologicalWeeklyDates = useMemo(() => {
             const weeks: { startDate: Date, endDate: Date }[] = [];
@@ -536,33 +596,44 @@ export default function StatsScreen() {
 
         return (
             <View style={styles.tableContainer}>
-                <Text style={styles.tableTitle}>Weekly Counters </Text>
+                <Text style={styles.tableTitle}>Weekly Counters</Text>
                 
                 <View style={styles.tableContent}>
                     {/* Fixed left column for habit names */}
                     <View style={styles.fixedColumn}>
                         {/* Header cell */}
                         <View style={[styles.habitNameCell, styles.headerNameCell]}>
-                            <Text style={styles.headerText}>Habit/Week</Text>
+                            <Text style={styles.headerText}>Habit</Text>
                         </View>
                         
-                        {/* Habit name cells */}
-                        {tableHabits.map(habit => (
-                            <View key={`fixed-${habit.id}`} style={styles.habitNameCell}>
-                                <Text 
-                                    style={styles.habitNameText}
-                                    numberOfLines={1}
-                                    ellipsizeMode="tail"
-                                >
-                                    {habit.title}
-                                </Text>
-                            </View>
+                        {/* Render habits by module with dividers */}
+                        {Object.entries(habitsByModule).map(([moduleName, moduleHabits], moduleIndex) => (
+                            <React.Fragment key={`module-${moduleName}`}>
+                                {/* Module divider */}
+                                <View style={styles.moduleDividerContainer}>
+                                    <View style={styles.moduleDividerLine} />
+                                    <Text style={styles.moduleDividerText}>{moduleName}</Text>
+                                </View>
+                                
+                                {/* Module habits */}
+                                {moduleHabits.map(habit => (
+                                    <View key={`fixed-${habit.id}`} style={styles.habitNameCell}>
+                                        <Text 
+                                            style={styles.habitNameText}
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail"
+                                        >
+                                            {habit.title}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </React.Fragment>
                         ))}
                     </View>
                     
                     {/* Scrollable right part */}
                     <ScrollView 
-                        ref={weeklyScrollViewRef}  // Use the weekly-specific ref
+                        ref={weeklyScrollViewRef}
                         horizontal 
                         showsHorizontalScrollIndicator={false} 
                         style={styles.scrollableArea}
@@ -571,7 +642,6 @@ export default function StatsScreen() {
                             {/* Header row with weeks */}
                             <View style={styles.headerRow}>
                                 {chronologicalWeeklyDates.map((week, index) => {
-                                    // Check if this is the current week
                                     const today = new Date();
                                     const isCurrentWeek = today >= week.startDate && today <= week.endDate;
                                     
@@ -580,12 +650,12 @@ export default function StatsScreen() {
                                             key={`week-${index}`} 
                                             style={[
                                                 styles.weekCell,
-                                                isCurrentWeek && styles.currentWeekHeaderCell // Apply special styling to current week header
+                                                isCurrentWeek && styles.currentWeekHeaderCell
                                             ]}
                                         >
                                             <Text style={[
                                                 styles.weekDateText,
-                                                isCurrentWeek && styles.currentWeekHeaderText // Apply special text styling
+                                                isCurrentWeek && styles.currentWeekHeaderText
                                             ]}>
                                                 {format(week.startDate, 'dd/MM')}
                                             </Text>
@@ -594,62 +664,78 @@ export default function StatsScreen() {
                                 })}
                             </View>
                             
-                            {/* Habit data rows */}
-                            {tableHabits.map(habit => (
-                                <View key={habit.id} style={styles.habitRow}>
-                                    {/* Data cells for each week */}
-                                    {chronologicalWeeklyDates.map((week, index) => {
-                                        const status = getWeeklyCounterStatus(habit, week.startDate);
-                                        let cellStyle = styles.emptyCell;
-                                        
-                                        // Style based on status
-                                        if (status.status === 'exceeded') {
-                                            cellStyle = styles.exceededCell;
-                                        } else if (status.status === 'completed') {
-                                            cellStyle = styles.completedCell;
-                                        } else if (status.status === 'partial') {
-                                            cellStyle = styles.partialCell;
-                                        } else if (status.status === 'missed') {
-                                            cellStyle = styles.missedCell;
-                                        }
-                                        
-                                        // Additional styles based on week timing
-                                        const weekTimingStyle = status.isCurrentWeek ? {...styles.currentWeekCell,...styles.cellHighlight} : 
-                                                               status.isFutureWeek ? styles.futureWeekCell : {};
-                                        
-                                        return (
+                            {/* Render data rows by module with dividers */}
+                            {Object.entries(habitsByModule).map(([moduleName, moduleHabits], moduleIndex) => (
+                                <React.Fragment key={`data-${moduleName}`}>
+                                    {/* Module divider row (with visible divider line) */}
+                                    <View style={styles.moduleDividerRow}>
+                                        <View style={styles.scrollableDividerLine} />
+                                        {chronologicalWeeklyDates.map((week, weekIndex) => (
                                             <View 
-                                                key={`${habit.id}-week-${index}`} 
-                                                style={[
-                                                    styles.weekDataCell, 
-                                                    cellStyle,
-                                                    weekTimingStyle,
-                                                    status.isFutureWeek && styles.notDueCell, // Apply not-due styling to future weeks
-                                                ]}
-                                            >
-                                                {/* Show value and percentage for non-empty cells */}
-                                                {status.value > 0 && (
-                                                    <Text style={[
-                                                        styles.weekCountText,
-                                                        status.isFutureWeek && styles.notDueText,
-                                                        status.status === 'exceeded' && styles.exceededCountText
-                                                    ]}>
-                                                        {status.value}/{habit.measurement.targetValue || 0} ({status.percentage}%)
-                                                    </Text>
-                                                )}
+                                                key={`divider-${weekIndex}`}
+                                                style={[styles.dividerCell, { width: 70 }]}
+                                            />
+                                        ))}
+                                    </View>
+                                    
+                                    {/* Module habit data rows */}
+                                    {moduleHabits.map(habit => (
+                                        <View key={habit.id} style={styles.habitRow}>
+                                            {/* Data cells for each week */}
+                                            {chronologicalWeeklyDates.map((week, index) => {
+                                                const status = getWeeklyCounterStatus(habit, week.startDate);
+                                                let cellStyle = styles.emptyCell;
                                                 
-                                                {/* Show lock icon for future weeks */}
-                                                {status.isFutureWeek && (
-                                                    <Ionicons 
-                                                        name="lock-closed" 
-                                                        size={12} 
-                                                        color={Colors.darkGrey} 
-                                                    />
-                                                )}
-                                            </View>
-                                        );
-                                    })}
-                                </View>
+                                                // Style based on status
+                                                if (status.status === 'exceeded') {
+                                                    cellStyle = styles.exceededCell;
+                                                } else if (status.status === 'completed') {
+                                                    cellStyle = styles.completedCell;
+                                                } else if (status.status === 'partial') {
+                                                    cellStyle = styles.partialCell;
+                                                } else if (status.status === 'missed') {
+                                                    cellStyle = styles.missedCell;
+                                                }
+                                                
+                                                // Additional styles based on week timing
+                                                const weekTimingStyle = status.isCurrentWeek ? {...styles.currentWeekCell,...styles.cellHighlight} : 
+                                                                        status.isFutureWeek ? styles.futureWeekCell : {};
+                                                
+                                                return (
+                                                    <View 
+                                                        key={`${habit.id}-week-${index}`} 
+                                                        style={[
+                                                            styles.weekDataCell, 
+                                                            cellStyle,
+                                                            weekTimingStyle,
+                                                            status.isFutureWeek && styles.notDueCell, // Apply not-due styling to future weeks
+                                                        ]}
+                                                    >
+                                                        {/* Show value and percentage for non-empty cells */}
+                                                        {status.value > 0 && (
+                                                            <Text style={[
+                                                                styles.weekCountText,
+                                                                status.isFutureWeek && styles.notDueText,
+                                                                status.status === 'exceeded' && styles.exceededCountText
+                                                            ]}>
+                                                                {status.value}/{habit.measurement.targetValue || 0} ({status.percentage}%)
+                                                            </Text>
+                                                        )}
+                                                        
+                                                        {/* Show lock icon for future weeks */}
+                                                        {status.isFutureWeek && (
+                                                            <Ionicons 
+                                                                name="lock-closed" 
+                                                                size={12} 
+                                                                color={Colors.darkGrey} 
+                                                            />
+                                                        )}
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
+                                    ))}
+                                </React.Fragment>
                             ))}
                         </View>
                     </ScrollView>
@@ -902,13 +988,13 @@ const styles = StyleSheet.create({
     },
     habitRow: {
         flexDirection: 'row',
-        height: 40, // Fixed height to match habitNameCell
+        height: 50, // Match the increased height of habitNameCell
         alignItems: 'center',
         justifyContent:'center',
     },
     habitNameCell: {
         width: '100%', // Take full width of the fixed column
-        height: 40, // Fixed height to match habitRow
+        height: 50, // Increased height to accommodate module name
         padding: 8,
         backgroundColor: Colors.surface,
         justifyContent: 'center',
@@ -917,8 +1003,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: Colors.text,
         fontWeight: '500',
-        textAlign:'center',
+        textAlign: 'center',
         paddingHorizontal: 6, // Add some padding to give more room for text
+    },
+    moduleNameText: {
+        fontSize: 11,
+        color: Colors.textSecondary,
+        fontStyle: 'italic',
+        textAlign: 'center',
+        marginTop: 2,
     },
     dateCell: {
         width: 16, // GitHub-style cell width
@@ -1052,7 +1145,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrey,
     },
-weekDateText: {
+    weekDateText: {
         fontSize: 10,
         color: Colors.textSecondary,
         textAlign: 'center',
@@ -1069,7 +1162,7 @@ weekDateText: {
         marginVertical: 2,
         padding: 2,
     },
-weekCountText: {
+    weekCountText: {
         fontSize: 10,
         fontWeight: 'bold',
         color: 'white',
@@ -1112,4 +1205,46 @@ weekCountText: {
     dropdownListItemLabelStyle: { color: Colors.text, }, // List item text
     dropdownArrowStyle: { tintColor: Colors.textSecondary, },
     dropdownTickStyle: { tintColor: Colors.primary, },
+    moduleDividerContainer: {
+        position: 'relative',
+        height: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    moduleDividerLine: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        height: 1,
+        backgroundColor: Colors.lightGrey,
+    },
+moduleDividerText: {
+        position: 'absolute',
+        backgroundColor: Colors.surface,
+        paddingHorizontal: 10,
+        fontSize: 14,
+        color: Colors.primary,
+        fontWeight: '800',
+    },
+    moduleDividerRow: {
+        flexDirection: 'row',
+        height: 30,
+        alignItems: 'center',
+        position: 'relative', // To position the divider line
+    },
+    scrollableDividerLine: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        height: 1,
+        backgroundColor: Colors.lightGrey,
+        zIndex: 1, // Ensure the line appears below the cells
+    },
+    dividerCell: {
+        height: 30,
+        marginHorizontal: 1,
+        // Make the divider cells transparent to show the line
+        backgroundColor: 'transparent',
+        zIndex: 2,
+    },
 });
