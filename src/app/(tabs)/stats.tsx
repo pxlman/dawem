@@ -428,6 +428,10 @@ export default function StatsScreen() {
                                             isToday(date) && styles.todayCellHeader,
                                         ]}
                                     >
+                                        {viewMode === 'weekly' && (<Text style={styles.dayOfWeekText}>
+                                            {format(date, 'EEE')}
+                                        </Text>
+                                        )}
                                         <Text style={styles.dateText}>
                                             {date.getDate()}
                                         </Text>
@@ -1014,10 +1018,11 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     dateCell: {
-        width: 16, // GitHub-style cell width
+        width: 18, // GitHub-style cell width
         alignItems: 'center',
         padding: 0, // Minimal padding
         marginHorizontal: 1, // Small margin between date cells
+        justifyContent: 'center', // Center content vertically
     },
     firstOfMonthCell: {
         borderLeftWidth: 1,
@@ -1033,13 +1038,18 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.primary + '33', // Using primary color with opacity
     },
     dateText: {
-        fontSize: 8, // Smaller font for dates
+        fontSize: 9, // Smaller font for dates
         color: Colors.textSecondary,
         textAlign: 'center',
-        margin:'auto'
+    },
+    dayOfWeekText: {
+        fontSize: 10, // Even smaller font for day of week
+        color: Colors.textSecondary,
+        textAlign: 'center',
+        marginBottom: 1, // Small spacing between day name and date
     },
     dataCell: {
-        width: 16, // GitHub-style cell width
+        width: 18, // GitHub-style cell width
         height: 16, // GitHub-style cell height
         justifyContent: 'center',
         alignItems: 'center',
