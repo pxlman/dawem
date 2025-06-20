@@ -90,7 +90,7 @@ export interface LogEntry {
 
 export interface AppSettings {
     startTimeOfDay?: string; // New field for the start time of the day (e.g., "08:00")
-    startDayOfWeek: Day; // Sun=0
+    startDayOfWeek: Day; // Sun=0 , Sat=6
     theme: ThemeType;
 }
 
@@ -170,4 +170,5 @@ export type AppAction =
         type: "IMPORT_DATA";
         payload: {habits: Habit[], goals: Goal[], timeModules: TimeModule[]};
     }
+    | { type: "UPDATE_START_DAY"; payload: { startDayOfWeek: Day } }
     ;

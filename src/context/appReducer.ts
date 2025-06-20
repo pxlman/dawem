@@ -577,6 +577,15 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 timeModules: {...action.payload.timeModules,...state.timeModules},
             };
         }
+        case 'UPDATE_START_DAY': {
+            return {
+                ...state,
+                settings: {
+                    ...state.settings,
+                    startDayOfWeek: action.payload.startDayOfWeek, // Update start day of week in settings
+                },
+            };
+        }
 // ... other cases ...
 
         default:

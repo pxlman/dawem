@@ -1,21 +1,25 @@
 import React, { useMemo, useState, useLayoutEffect, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, I18nManager, findNodeHandle } from 'react-native';
-import { useAppState } from '../../context/AppStateContext';
+import { useAppDispatch, useAppState } from '../../context/AppStateContext';
 import { getColors } from '../../constants/Colors';
 import { Habit, HabitStatus, LogEntry, HabitRepetitionType } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { isHabitDue } from '../../utils/dateUtils';
 import { addDays, subDays, isBefore, startOfWeek, endOfWeek, format, addWeeks, subWeeks, 
-    startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+    startOfMonth, endOfMonth, addMonths, subMonths, 
+    set,
+    Day} from 'date-fns';
 import { getSaturdayDateString } from '../../utils/dateUtils';
 import { getWeeklyHabitTotal } from '@/utils/habitUtils';
 import { getTextColorForBackground } from '@/utils/colorUtils';
 import { useNavigation } from 'expo-router';
+import DropDownPicker from 'react-native-dropdown-picker';
 let Colors = getColors()
 
 export default function StatsScreen() {
     const navigation = useNavigation();
     const { habits, logs, settings } = useAppState();
+    const dispatch = useAppDispatch();
     getColors(settings.theme)
     
     // State for view mode (weekly or monthly)
@@ -24,6 +28,10 @@ export default function StatsScreen() {
     
     // State for navigation offset (0 = current, -1 = previous, etc.)
     const [timeOffset, setTimeOffset] = useState(0);
+
+    // Start day of week
+    const [startDayOfWeek, setStartDayOfWeek] = useState(settings.startDayOfWeek || 6); // Default to Saturday (6)
+    const [dropDownStartdw, setDropDownStartdw] = useState(false); // Default to Saturday (6)
     
     // Create separate refs for daily and weekly scrolling
     const dailyScrollViewRef = useRef<ScrollView>(null);
@@ -140,7 +148,7 @@ export default function StatsScreen() {
                     const today = new Date();
                     // Find the index of the current week
                     const chronologicalWeeklyDates = dates
-                        .filter(date => date.getDay() === 6)
+                        .filter(date => date.getDay() === startDayOfWeek)
                         .map(date => ({
                             startDate: date,
                             endDate: addDays(date, 6)
@@ -182,7 +190,7 @@ export default function StatsScreen() {
         // For weekly counter habit view, we'll use the current week
         const weekStartDay = dates[dates.length - 1]; // First day in the list (in reverse order)
         dates.map(d => {
-            if(d.getDay() === 6)
+            if(d.getDay() === startDayOfWeek)
                 weeks.push({
                     startDate: d,
                     endDate: addDays(weekStartDay, 7)
@@ -389,7 +397,7 @@ export default function StatsScreen() {
                                         style={[
                                             styles.dateCell,
                                             {width:cellsize},
-                                            date.getDay() === 6 && styles.startOfWeekCell, // Week start at saturday
+                                            date.getDay() === startDayOfWeek && styles.startOfWeekCell, // Week start at saturday
                                             isToday(date) && styles.todayCellHeader,
                                         ]}
                                     >
@@ -440,7 +448,7 @@ export default function StatsScreen() {
                                                     {width:cellsize},
                                                     notDueStyle, // Apply not-due styling
                                                     cellStyle,
-                                                    date.getDay() === 6 && styles.startOfWeekCell, // Week start at saturday
+                                                    date.getDay() === startDayOfWeek && styles.startOfWeekCell, // Week start at saturday
                                                     isToday(date) && styles.todayCellIndicator,
                                                     todayHighlight, // Apply enhanced today highlight
                                                 ]}
@@ -515,7 +523,7 @@ export default function StatsScreen() {
             
             // Group dates by week
             for (let i = 0; i < dates.length; i++) {
-                if (dates[i].getDay() === 6) { // Saturday (week start)
+                if (dates[i].getDay() === startDayOfWeek) { // Saturday (week start)
                     weeks.push({
                         startDate: dates[i],
                         endDate: addDays(dates[i], 7)
@@ -688,62 +696,96 @@ export default function StatsScreen() {
     }, [dates, timeOffset, viewMode]);
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.scrollContentContainer}>
-            {/* Period navigation in the header */}
-            <View style={styles.pageHeader}>
-                <TouchableOpacity 
-                    onPress={goToPrevious} 
-                    style={styles.navButtonHeader}
-                >
-                    <Ionicons name={!I18nManager.isRTL?"chevron-back":'chevron-forward'} size={24} color={Colors.primary} />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                    onPress={goToCurrent}
-                    style={styles.monthDisplayHeader}
-                >
-                    <Text style={styles.monthTextHeader}>
-                        {displayedPeriod.displayText}
-                    </Text>
-                    {timeOffset !== 0 && (
-                        <Text style={styles.returnToCurrentText}>
-                            {viewMode === 'weekly' 
-                                ? "(Go to current week)" 
-                                : "(Go to current month)"}
-                        </Text>
-                    )}
-                    {headerText && (
-                        <Text style={styles.daysRemainingText}>
-                            {headerText}
-                        </Text>
-                    )}
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                    onPress={goToNext} 
-                    style={[
-                        styles.navButtonHeader,
-                        timeOffset === 0 && styles.disabledButton
-                    ]}
-                    disabled={timeOffset === 0}
-                >
-                    <Ionicons 
-                        name={!I18nManager.isRTL?"chevron-forward":'chevron-back'} 
-                        size={24} 
-                        color={timeOffset === 0 ? Colors.darkGrey : Colors.primary} 
-                    />
-                </TouchableOpacity>
-            </View>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContentContainer}
+        nestedScrollEnabled={true} // Helps with dropdown inside scrollview
+        keyboardShouldPersistTaps='handled'
+      >
+        {/* Period navigation in the header */}
+        <View style={styles.pageHeader}>
+          <TouchableOpacity
+            onPress={goToPrevious}
+            style={styles.navButtonHeader}
+          >
+            <Ionicons
+              name={!I18nManager.isRTL ? "chevron-back" : "chevron-forward"}
+              size={24}
+              color={Colors.primary}
+            />
+          </TouchableOpacity>
 
-            {/* Message if no habits exist */}
-            {dailyAndWeeklyBinaryHabits.length === 0 && weeklyCounterHabits.length === 0 && (
-                <Text style={styles.placeholder}>Add some habits to see their activity here.</Text>
+          <TouchableOpacity
+            onPress={goToCurrent}
+            style={styles.monthDisplayHeader}
+          >
+            <Text style={styles.monthTextHeader}>
+              {displayedPeriod.displayText}
+            </Text>
+            {timeOffset !== 0 && (
+              <Text style={styles.returnToCurrentText}>
+                {viewMode === "weekly"
+                  ? "(Go to current week)"
+                  : "(Go to current month)"}
+              </Text>
             )}
+            {headerText && (
+              <Text style={styles.daysRemainingText}>{headerText}</Text>
+            )}
+          </TouchableOpacity>
 
-            {/* Render tables for daily and weekly habits */}
-            {renderTable(dailyAndWeeklyBinaryHabits, "Habits")}
-            {renderWeeklyCounterTable(weeklyCounterHabits)}
-        </ScrollView>
+          <TouchableOpacity
+            onPress={goToNext}
+            style={[
+              styles.navButtonHeader,
+              timeOffset === 0 && styles.disabledButton,
+            ]}
+            disabled={timeOffset === 0}
+          >
+            <Ionicons
+              name={!I18nManager.isRTL ? "chevron-forward" : "chevron-back"}
+              size={24}
+              color={timeOffset === 0 ? Colors.darkGrey : Colors.primary}
+            />
+          </TouchableOpacity>
+        </View>
+        {/* Change start day of week if the view mode is weekly using a dropdown picker */}
+        <DropDownPicker
+            scrollViewProps={{nestedScrollEnabled: true,overScrollMode: 'always'}}
+            open={dropDownStartdw}
+            value={startDayOfWeek}
+            items={['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'].map((day,index) => ({label:day,value:(index+6)%7 as Day}))}
+            setOpen={setDropDownStartdw}
+            setValue={(val) =>{
+            setStartDayOfWeek(val)
+            dispatch({ type: 'UPDATE_START_DAY', payload: {startDayOfWeek: val('')} });
+            } }
+            placeholder="Select start day of week..."
+            style={styles.dropdownStyle}
+            placeholderStyle={styles.dropdownPlaceholderStyle}
+            dropDownContainerStyle={styles.dropdownContainerStyle}
+            textStyle={styles.dropdownTextStyle}
+            labelStyle={styles.dropdownLabelStyle}
+            listItemLabelStyle={styles.dropdownListItemLabelStyle}
+            theme="DARK"
+            mode='SIMPLE'
+            listMode='SCROLLVIEW'
+            zIndex={5000} // Ensure dropdown appears above other elements
+            zIndexInverse={1000} // Ensure dropdown appears above other elements
+        />
+
+        {/* Message if no habits exist */}
+        {dailyAndWeeklyBinaryHabits.length === 0 &&
+          weeklyCounterHabits.length === 0 && (
+            <Text style={styles.placeholder}>
+              Add some habits to see their activity here.
+            </Text>
+          )}
+
+        {/* Render tables for daily and weekly habits */}
+        {renderTable(dailyAndWeeklyBinaryHabits, "Habits")}
+        {renderWeeklyCounterTable(weeklyCounterHabits)}
+      </ScrollView>
     );
 }
 
@@ -1055,4 +1097,19 @@ weekCountText: {
         color: Colors.primary,
         fontWeight: 'bold',
     },
+    dropdownStyle: {
+        backgroundColor: Colors.surface, borderColor: Colors.grey,
+        marginBottom: 10, // Spacing below closed picker
+    },
+    dropdownPlaceholderStyle: { color: Colors.textSecondary, },
+    dropdownContainerStyle: { // Style for the container holding the dropdown list
+        backgroundColor: Colors.surface, borderColor: Colors.grey,
+        elevation:3,
+        // No marginBottom needed here, spacing handled by dropdownStyle
+    },
+    dropdownTextStyle: { fontSize: 16, color: Colors.text, },
+    dropdownLabelStyle: { color: Colors.text, }, // Selected item text
+    dropdownListItemLabelStyle: { color: Colors.text, }, // List item text
+    dropdownArrowStyle: { tintColor: Colors.textSecondary, },
+    dropdownTickStyle: { tintColor: Colors.primary, },
 });
