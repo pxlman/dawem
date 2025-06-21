@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppState, useAppDispatch } from '../context/AppStateContext';
 import { fixedColors, getColors } from '../constants/Colors';
 import { Habit, TimeModule } from '@/types/index';
-import HabitEditModal from '@/components/HabitEditModal';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { format } from 'date-fns';
 import '../utils/i18n'; // Ensure i18n is initialized

@@ -432,7 +432,7 @@ export default function StatsScreen() {
                                         ]}
                                     >
                                         {viewMode === 'weekly' && (<Text style={styles.dayOfWeekText}>
-                                            {format(date, 'EEE')}
+                                            { date.toLocaleDateString(t('lang') === 'ar'? 'ar-SA': 'en-US', { weekday: t('lang') === 'en'? 'short': 'narrow'})}
                                         </Text>
                                         )}
                                         <Text style={styles.dateText}>
