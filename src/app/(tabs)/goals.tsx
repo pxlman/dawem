@@ -3,6 +3,8 @@ import { View, Button, StyleSheet, Text, SafeAreaView, Alert, Platform, Switch, 
 import Constants from 'expo-constants';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
+import '../../utils/i18n';
+import { useTranslation } from 'react-i18next';
 
 import GoalTreeMindMap from '../../components/goals/GoalTreeMindMap';
 import { Goal } from '@/types/index';
@@ -21,6 +23,9 @@ const INITIAL_GOALS: Goal[] = [
 ];
 
 const GoalsScreen: React.FC = () => {
+    // Get translations
+    const { t } = useTranslation();
+    
     // Get app state and dispatch
     const appState = useAppState();
     const dispatch = useAppDispatch();
@@ -63,7 +68,7 @@ const GoalsScreen: React.FC = () => {
     const handleAddGoal = useCallback(
       (parentGoalId: string | null = null) => {
         const newGoal = {
-          title: "Edit Me!",
+          title: t('goals.editMe'),
           color: fixedColors[5],
           enabled: true,
         };
@@ -81,7 +86,7 @@ const GoalsScreen: React.FC = () => {
           });
         }
       },
-      [dispatch]
+      [dispatch, t]
     );
 
     // Handle editing a goal
@@ -110,10 +115,10 @@ const GoalsScreen: React.FC = () => {
         <SafeAreaView style={styles.safeArea}>
             {/* Header with testing mode toggle */}
             {/* <View style={styles.headerContainer}>
-                <Text style={styles.header}>My Goals Map</Text>
+                <Text style={styles.header}>{t('goals.title')}</Text>
                 <View style={styles.headerActions}>
                     <Button
-                        title="Add Top Goal"
+                        title={t('goals.add')}
                         onPress={() => handleAddGoal(null)}
                     />
                 </View>
@@ -121,7 +126,7 @@ const GoalsScreen: React.FC = () => {
             
             {/* Display goals count for debugging */}
             <Text style={styles.debugText}>
-                Goals: {goals?.length || 0} ({'App State'})
+                {t('goals.goals')}: {goals?.length || 0}
             </Text>
 
             {/* Mind map component */}

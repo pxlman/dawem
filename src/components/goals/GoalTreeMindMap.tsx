@@ -18,6 +18,8 @@ import Animated, {
     runOnJS,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import '../../utils/i18n'
+import { useTranslation } from "react-i18next";
 
 import GoalNodeMindMap, { NODE_WIDTH, NODE_BASE_HEIGHT, NODE_VERTICAL_SPACING, NODE_HORIZONTAL_SPACING, } from "./GoalNodeMindMap";
 // Re-add HabitNodeMindMap import for rendering habits as nodes
@@ -61,6 +63,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
     const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
     const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
     const [showHabitModal, setShowHabitModal] = useState(false);
+    const { t } = useTranslation();
 
     // --- Reanimated Shared Values ---
     const scale = useSharedValue(1);
@@ -440,12 +443,12 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
             if (!nodeToRemove) return;
 
             Alert.alert(
-                "Confirm Deletion",
-                `Are you sure you want to remove "${nodeToRemove.title}"? This cannot be undone.`,
+                t('goals.deleteAlert.title'),
+                `${t('goals.deleteAlert.message1')} "${nodeToRemove.title}"${t('questionMark')} ${t('goals.deleteAlert.message2')}`,
                 [
-                    { text: "Cancel", style: "cancel" },
+                    { text: t('goals.deleteAlert.cancelButton'), style: "cancel" },
                     {
-                        text: "Remove",
+                        text: t('goals.deleteAlert.confirmButton'),
                         style: "destructive",
                         onPress: () => {
                             onRemoveGoal(focusedNodeId);
@@ -638,7 +641,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                             color={Colors.grey}
                         />
                         <Text style={styles.actionText}>
-                            {((focusedGoalData?.habitsIds||[]).length === 0)? 'Add':'Modify'}
+                            {((focusedGoalData?.habitsIds||[]).length === 0)? t('goals.add'):t('goals.modifyStructure')}
                         </Text>
                     </TouchableOpacity>
 
@@ -653,7 +656,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                             color={Colors.grey}
                         />
                         <Text style={styles.actionText}>
-                            {isCurrentlyEditing ? "Done" : "Edit"}
+                            {isCurrentlyEditing ? t('goals.done') : t('goals.edit')}
                         </Text>
                     </TouchableOpacity>
 
@@ -669,7 +672,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                             color={Colors.grey}
                         />
                         <Text style={styles.actionText}>
-                            {isPaused ? "Resume" : "Pause"}
+                            {isPaused ? t('goals.resume') : t('goals.pause')}
                         </Text>
                     </TouchableOpacity>
 
@@ -681,7 +684,7 @@ const GoalTreeMindMap: React.FC<GoalTreeMindMapProps> = ({
                         activeOpacity={0.7}
                     >
                         <Ionicons name="trash-outline" size={20} color={Colors.red} />
-                        <Text style={[styles.actionText, styles.deleteText]}>Remove</Text>
+                        <Text style={[styles.actionText, styles.deleteText]}>{t('goals.delete')}</Text>
                     </TouchableOpacity>
                 </View>
             )}

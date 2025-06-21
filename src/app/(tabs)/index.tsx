@@ -10,6 +10,8 @@ import TimeModuleGroup from '../../components/TimeModuleGroup'; // Ensure correc
 import { getDefaultDate, getTodayDate, isHabitDue } from '../../utils/dateUtils';
 import { fixedColors, getColors } from '../../constants/Colors'; // Import fixed colors
 import { Habit, TimeModule } from '@/types/index';
+import '../../utils/i18n';
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 // --- Date Header Component (With animation for today button) ---
@@ -27,6 +29,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
     // Create animated values for scale and shake effects
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const shakeAnim = useRef(new Animated.Value(0)).current;
+    const { i18n } = useTranslation();
     
     // Function that triggers animation and calls onTodayPress
     const handleTodayPress = () => {
@@ -124,6 +127,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
             currentDate.getFullYear() === today.getFullYear()
         );
     };
+    const {t} = useTranslation();
     
     return (
         <View style={styles.datePickerContainer}>
@@ -143,7 +147,7 @@ const DateHeader: React.FC<DateHeaderProps> = ({ currentDate, onPrevDay, onNextD
                             }
                         ]}
                     >
-                        {format(currentDate, 'EEE, MMM d, yyyy')}
+                        {t(format(currentDate, 'EEE, MMM d, yyyy'))}
                     </Animated.Text>
                     {!isToday() && <Octicons name='dot-fill' color={Colors.primary} size={18} style={styles.todayDot} />}
                 </View>
@@ -169,6 +173,7 @@ export default function HabitListScreen() {
     const router = useRouter();
     const navigation = useNavigation();
     const dispatch = useAppDispatch();
+    const {t, i18n } = useTranslation();
     
     
     const [currentDate, setCurrentDate] = useState(getDefaultDate(settings.startTimeOfDay));
@@ -226,11 +231,11 @@ export default function HabitListScreen() {
     const handleMenuDelete = () => {
         if (!menuHabit) return;
         Alert.alert(
-            'Delete Habit',
-            `Are you sure you want to delete "${menuHabit.title}"?`,
+            t('habits.deleteAlert.title'),
+            `${t('habits.deleteAlert.message1')} "${menuHabit.title}"${t('questionMark')} ${t('habits.deleteAlert.message2')}`,
             [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => {
+                { text: t('habits.deleteAlert.cancelButton'), style: 'cancel' },
+                { text: t('habits.deleteAlert.confirmButton'), style: 'destructive', onPress: () => {
                     dispatch({ type: 'DELETE_HABIT', payload: { id: menuHabit.id } });
                     hideHabitMenu();
                 }},
@@ -340,11 +345,11 @@ export default function HabitListScreen() {
                         { position: 'absolute', top: menuPosition.y, left: menuPosition.x }
                     ]}>
                         <TouchableOpacity style={styles.menuItem} onPress={handleMenuEdit}>
-                            <Text style={styles.menuItemText}>Edit</Text>
+                            <Text style={styles.menuItemText}>{t('habits.edit')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.menuItem} onPress={handleMenuDelete}>
                             {/* <Ionicons name='pencil-outline' color={Colors.text} size={18}/> */}
-                            <Text style={[styles.menuItemText, { color: Colors.red }]}>Delete</Text>
+                            <Text style={[styles.menuItemText, { color: Colors.red }]}>{t('habits.delete')}</Text>
                         </TouchableOpacity>
                         {/* <TouchableOpacity style={styles.menuItem} onPress={hideHabitMenu}>
                             <Text style={styles.menuItemText}>Cancel</Text>

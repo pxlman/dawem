@@ -7,11 +7,14 @@ import { StatusBar } from 'expo-status-bar';
 import { AppProvider, useAppState } from '../context/AppStateContext';
 import {getColors}  from '@/constants/Colors';
 import { StyleSheet, Platform, StatusBar as MStatusBar } from 'react-native';
+import '../utils/i18n'; // Ensure translations are loaded
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 export default function RootLayout() {
     // const {theme} = useAppState();
     // Colors = getColors('fresh');
+    const { t } = useTranslation();
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <AppProvider>
@@ -19,7 +22,7 @@ export default function RootLayout() {
                 <SafeAreaView style={styles.container}>
                     <StatusBar
                     animated={true}
-                    backgroundColor={Colors.background}
+                    backgroundColor='transparent'
                     style='light'
                     hidden={false}
                     />
@@ -29,7 +32,7 @@ export default function RootLayout() {
                             name="add-edit-habit"
                             options={{
                                 presentation: 'modal',
-                                title: 'Add/Edit Habit',
+                                title: t('habits.addEditScreen.addScreenTitle'),
                                 headerStyle: { backgroundColor: Colors.surface },
                                 headerTintColor: Colors.text,
                                 headerTitleStyle: { fontWeight: 'bold' },
@@ -40,7 +43,7 @@ export default function RootLayout() {
                             name="all-habits"
                             options={{
                                 presentation: 'modal',
-                                title: 'All Habits',
+                                title: t('habits.allHabits.title'),
                                 headerStyle: { backgroundColor: Colors.surface },
                                 headerTintColor: Colors.text,
                                 headerTitleStyle: { fontWeight: 'bold' },
@@ -51,7 +54,7 @@ export default function RootLayout() {
                             name="settings"
                             options={{
                                 presentation: 'modal',
-                                title: 'Settings',
+                                title: t('settings.title'),
                                 headerStyle: { backgroundColor: Colors.surface },
                                 headerTintColor: Colors.text,
                                 headerTitleStyle: { fontWeight: 'bold' },

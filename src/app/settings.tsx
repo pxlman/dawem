@@ -31,6 +31,9 @@ import { Buffer } from "buffer"; // Import Buffer for base64 conversion if not g
 import { format, set } from "date-fns";
 import Sharing from "expo-sharing";
 import { downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
+import '../utils/i18n'; // Ensure i18next is initialized globally
+import { saveLanguagePreference, loadSavedLanguage } from "../utils/i18n";
+import { useTranslation } from 'react-i18next'; // Import the translation hook
 // import { downloadJsonFile, downloadJsonFileToDownloadsAndroid } from "@/utils/fileUtils";
 // import { saveJsonFileWithPicker } from "@/utils/fileUtils";
 let Colors = getColors();
@@ -41,6 +44,7 @@ const getRandomElement = <T,>(array: T[]): T => {
 };
 
 export default function SettingsScreen() {
+  const { t, i18n } = useTranslation(); // Get i18n instance for language switching
   const state = useAppState();
   const { timeModules, settings, habits } = state;
   const dispatch = useAppDispatch();
@@ -66,7 +70,7 @@ export default function SettingsScreen() {
       author: "صلى الله عليه وسلم",
     },
     {
-      text: "قال الله عز وجل: ﴿ وَنَفْسٍ وَمَا سَوَّاهَا * فَأَلْهَمَهَا فُجُورَهَا وَتَقْوَاهَا * قَدْ أَفْلَحَ مَنْ زَكَّاهَا ﴾ [الشمس: 7 - 9] قال العلامة السعدي رحمه الله: أي: طهَّر نفسه من الذنوب، ونقَّاها من العيوب، ورقَّاها بطاعة الله، وعلَّاها بالعلم النافع، والعمل الصالح.",
+      text: "قال الله عز وجل: ﴿ وَنَفْسٍ وَمَا سَوَّاهَا * فَأَلْهَمَهَا فُجُورَهَا وَتَقْوَاهَا * قَدْ أَفْلَحَ مَنْ زَكَّاهَا ﴾ [الشمس: 7 - 9] قال العلامة السعدي رحمه الله: أي: طهَّر نفسه من الذنوب، ونقَّاها من العيوب، ورقَّاها بطاعة الله، وعلَّاها بالعلم النافع، والعمل الصالح.",
       author: "",
     },
     {
@@ -74,19 +78,19 @@ export default function SettingsScreen() {
       author: "عمر بن الخطاب رضي الله عنه",
     },
     {
-      text: "وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا ۚ وَإِنَّ اللَّهَ لَمَعَ الْمُحْسِنِينَ",
+      text: "وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا ۚ وَإِنَّ اللَّهَ لَمَعَ الْمُحْسِنِينَ",
       author: "سورة العنكبوت",
     },
     {
-      text: "يقول الله تعالى: من تقرَّب إليَّ شبرًا تقرَّبتُ إليه ذراعًا ومن تقرَّب إليَّ ذراعًا تقرَّبتُ إليه باعًا ومن أتاني يمشي أتيتُه هَرولةً",
+      text: "يقول الله تعالى: من تقرَّب إليَّ شبرًا تقرَّبتُ إليه ذراعًا ومن تقرَّب إليَّ ذراعًا تقرَّبتُ إليه باعًا ومن أتاني يمشي أتيتُه هَرولةً",
       author: "حديث قدسي",
     },
     {
-      text: "ما تَقَرَّبَ إِلَيَّ عَبدي بِشيءٍ أحبَّ إِلَيَّ مِمّا افْتَرَضْتُهُ عليهِ، وما زالَ عَبدي يَتَقَرَّبُ إِلَيَّ بِالنَّوافِلِ حتى أُحِبَّهُ",
+      text: "ما تَقَرَّبَ إِلَيَّ عَبدي بِشيءٍ أحبَّ إِلَيَّ مِمّا افْتَرَضْتُهُ عليهِ، وما زالَ عَبدي يَتَقَرَّبُ إِلَيَّ بِالنَّوافِلِ حتى أُحِبَّهُ",
       author: "من حديث قدسي",
     },
     {
-      text: "وَأَنْ لَيْسَ لِلإنْسَانِ إِلا مَا سَعَى (-) وَأَنَّ سَعْيَهُ سَوْفَ يُرَى",
+      text: "وَأَنْ لَيْسَ لِلإنْسَانِ إِلا مَا سَعَى (-) وَأَنَّ سَعْيَهُ سَوْفَ يُرَى",
       author: "سورة النجم",
     },
   ];
@@ -102,9 +106,16 @@ export default function SettingsScreen() {
     new Date()
   ); // Store Date value for picker
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
-
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  
   // Available themes
   const themes: ThemeType[] = ["fresh", "dark", "browny", "night"];
+
+  // Available languages
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'ar', name: 'العربية' }
+  ];
 
   // Handle theme change
   const handleThemeChange = (theme: ThemeType) => {
@@ -113,6 +124,14 @@ export default function SettingsScreen() {
       payload: theme,
     });
     setShowThemeDropdown(false); // Close dropdown after selection
+  };
+
+  // Handle language change
+  const handleLanguageChange = () => {
+    // Toggle between 'en' and 'ar'
+    const newLanguage = i18n.language === 'en' ? 'ar' : 'en';
+    saveLanguagePreference(newLanguage); // Save preference
+    loadSavedLanguage(); // Load saved language
   };
 
   useEffect(() => {
@@ -141,7 +160,7 @@ export default function SettingsScreen() {
   const handleAddTimeModule = () => {
     const trimmedName = moduleToRename?.name.trim();
     if (!trimmedName)
-      return Alert.alert("Error", "Time Module name cannot be empty.");
+      return Alert.alert("Error", t("settings.addTimeModulePlaceholder"));
     if (
       timeModules.some(
         (tm: TimeModule) => tm.name.toLowerCase() === trimmedName.toLowerCase()
@@ -149,7 +168,7 @@ export default function SettingsScreen() {
     ) {
       return Alert.alert(
         "Error",
-        `A Time Module named "${trimmedName}" already exists.`
+        `${t("settings.addTimeModulePlaceholder")} "${trimmedName}" ${t("settings.addTimeModulePlaceholder")}`
       );
     }
     dispatch({
@@ -164,12 +183,12 @@ export default function SettingsScreen() {
       return Alert.alert("Error", "Cannot delete the last Time Module.");
     }
     Alert.alert(
-      "Confirm Delete",
-      `Delete "${name}"? Habits will be reassigned.`,
+      t("habits.delete"),
+      `${t("habits.delete")} "${name}"? Habits will be reassigned.`,
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Delete",
+          text: t("habits.delete"),
           style: "destructive",
           onPress: () =>
             dispatch({ type: "DELETE_TIME_MODULE", payload: { id } }),
@@ -321,12 +340,12 @@ export default function SettingsScreen() {
         );
       }
       Alert.alert(
-        "Confirm Import",
+        t("settings.importData"),
         `Danger option read carefully, import ${importedData.habits.length} habits, ${importedData.goals.length} goals and ${importedData.timeModules.length} time modules?`,
         [
           { text: "Cancel", style: "cancel" },
           {
-            text: "Import",
+            text: t("settings.importData"),
             onPress: () => {
               // Create merged arrays without duplicates by ID
               const mergedHabits = mergeArraysWithoutDuplicates(
@@ -358,7 +377,7 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error("Import Error:", error);
       Alert.alert(
-        "Import Error",
+        t("settings.importData") + " Error",
         error instanceof Error ? error.message : "Could not import data."
       );
     }
@@ -441,7 +460,7 @@ export default function SettingsScreen() {
                   onPress={() => showModuleTimePicker(item.id)}
                 >
                   <Text style={styles.timeButtonText}>
-                    Starts: {item.startTime}
+                    {t("settings.startTimeOfDay")}: {item.startTime}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -457,12 +476,14 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity
-                style={styles.addTimeButton}
-                onPress={() => showModuleTimePicker(item.id)}
-              >
-                <Text style={styles.addTimeText}>+ Add Start Time</Text>
-              </TouchableOpacity>
+              <></>
+              // Uncomment if you want to show the button to add start time
+              // <TouchableOpacity
+              //   style={styles.addTimeButton}
+              //   onPress={() => showModuleTimePicker(item.id)}
+              // >
+              //   <Text style={styles.addTimeText}>+ {t("settings.addStartTime")}</Text>
+              // </TouchableOpacity>
             )}
           </View>
           <View style={styles.itemActionButtons}>
@@ -528,11 +549,10 @@ export default function SettingsScreen() {
   // Data for the main FlatList to structure sections
   const sectionsData = [
     { key: "quote", title: "Inspiration" },
-    { key: "startTime", title: "Start Time of New Day" },
-    { key: "timeModules", title: "Time Modules Management" },
-    // { key: "theme", title: "Appearance" },
-    { key: "importExport", title: "Import / Export Data" },
-    { key: "dataManagement", title: "Data Management" },
+    { key: "appSettings", title: t("settings.appSettings") },
+    { key: "timeModules", title: t("settings.timeModuleManagement") },
+    { key: "importExport", title: t("settings.importExportData") },
+    { key: "dataManagement", title: t("settings.dataManagement") },
   ];
 
   const renderSection = ({ item }: { item: (typeof sectionsData)[0] }) => {
@@ -544,10 +564,13 @@ export default function SettingsScreen() {
             <Text style={styles.quoteAuthor}>- {randomQuoteRef.current.author}</Text>
           </View>
         );
-      case "startTime":
+      case "appSettings":
         return (
           <View style={styles.section}>
             <Text style={styles.header}>{item.title}</Text>
+            
+            {/* Day Start Time Setting */}
+            <Text style={styles.label}>{t("settings.startTimeOfDay")}</Text>
             <TouchableOpacity
               onPress={() => setIsTimePickerVisible(true)}
               style={styles.timePickerButton}
@@ -559,7 +582,25 @@ export default function SettingsScreen() {
                       minute: "2-digit",
                       hour12: false,
                     })
-                  : "Set Time"}
+                  : t("settings.addStartTime")}
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Language Setting */}
+            <Text style={styles.label}>{t("settings.changeLanguage")}</Text>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleLanguageChange}
+            >
+              <Ionicons
+                name="language-outline"
+                size={22}
+                color={Colors.background}
+                style={styles.buttonIcon}
+              />
+              <Text style={styles.actionButtonText}>
+                {/* { t('settings.switchLanguage') + (t('lang') === 'en')? ' Arabic' : ' الانجليزية'} */}
+                {`${t('settings.switchLanguage')}${t('lang') === 'en' ? ' Arabic' : 'انجليزية'}`}
               </Text>
             </TouchableOpacity>
           </View>
@@ -579,10 +620,10 @@ export default function SettingsScreen() {
               scrollEnabled={false} // Disable DraggableFlatList's own scroll
             />
             <View style={styles.addSection}>
-              <Text style={styles.label}>Add New Time Module</Text>
+              <Text style={styles.label}>{t("settings.addTimeModule")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Module Name (e.g., Morning)"
+                placeholder={t("settings.addTimeModulePlaceholder")}
                 value={moduleToRename?.name}
                 onChangeText={(v) => {
                   setModuleToRename((prev) => ({
@@ -601,86 +642,9 @@ export default function SettingsScreen() {
                 }
                 disabled={!moduleToRename?.name?.trim()}
               >
-                <Text style={styles.addButtonText}>Add Module</Text>
+                <Text style={styles.addButtonText}>{t("settings.addModuleButton")}</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        );
-      case "theme":
-        return (
-          <View style={styles.section}>
-            <Text style={styles.header}>{item.title}</Text>
-            <Text style={styles.label}>Theme</Text>
-            <TouchableOpacity
-              style={styles.dropdownButton}
-              onPress={() => setShowThemeDropdown(true)}
-            >
-              <View
-                style={[
-                  styles.colorIndicator,
-                  { backgroundColor: getColors(settings.theme).primary },
-                ]}
-              />
-              <Text style={styles.dropdownButtonText}>
-                {settings.theme.charAt(0).toUpperCase() +
-                  settings.theme.slice(1)}
-              </Text>
-              <Ionicons
-                name="chevron-down"
-                size={24}
-                color={Colors.textSecondary}
-              />
-            </TouchableOpacity>
-
-            <Modal
-              visible={showThemeDropdown}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setShowThemeDropdown(false)}
-            >
-              <TouchableWithoutFeedback
-                onPress={() => setShowThemeDropdown(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.dropdownContainer}>
-                    {themes.map((theme) => (
-                      <TouchableOpacity
-                        key={theme}
-                        style={[
-                          styles.dropdownItem,
-                          settings.theme === theme &&
-                            styles.dropdownItemSelected,
-                        ]}
-                        onPress={() => handleThemeChange(theme)}
-                      >
-                        <View
-                          style={[
-                            styles.colorIndicator,
-                            { backgroundColor: getColors(theme).primary },
-                          ]}
-                        />
-                        <Text
-                          style={[
-                            styles.dropdownItemText,
-                            settings.theme === theme &&
-                              styles.dropdownItemTextSelected,
-                          ]}
-                        >
-                          {theme.charAt(0).toUpperCase() + theme.slice(1)}
-                        </Text>
-                        {settings.theme === theme && (
-                          <Ionicons
-                            name="checkmark"
-                            size={22}
-                            color={Colors.primary}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </Modal>
           </View>
         );
       case "importExport":
@@ -698,7 +662,7 @@ export default function SettingsScreen() {
                   color={Colors.background}
                   style={styles.buttonIcon}
                 />
-                <Text style={styles.secondaryButtonText}>Import Data</Text>
+                <Text style={styles.secondaryButtonText}>{t("settings.importData")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleExportHabits}
@@ -710,11 +674,11 @@ export default function SettingsScreen() {
                   color={Colors.background}
                   style={styles.buttonIcon}
                 />
-                <Text style={styles.secondaryButtonText}>Export Data</Text>
+                <Text style={styles.secondaryButtonText}>{t("settings.exportData")}</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.infoText}>
-              Backup your data or transfer to another device.
+              {t("settings.importExportDescription")}
             </Text>
           </View>
         );
@@ -732,10 +696,10 @@ export default function SettingsScreen() {
                 color={Colors.text}
                 style={styles.buttonIcon}
               />
-              <Text style={styles.resetButtonText}>Reset All Habit Logs</Text>
+              <Text style={styles.resetButtonText}>{t("settings.resetData")}</Text>
             </TouchableOpacity>
             <Text style={styles.infoText}>
-              This deletes all logs but keeps habits and modules.
+              {t("settings.resetDataDescription")}
             </Text>
           </View>
         );
@@ -1158,5 +1122,20 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "right",
     fontWeight: "500",
+  },
+  actionButton: {
+    backgroundColor: Colors.accent,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 10,
+  },
+  actionButtonText: {
+    color: Colors.surface,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 8,
   },
 });

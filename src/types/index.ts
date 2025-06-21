@@ -104,6 +104,166 @@ export interface AppState {
     // dispatch: (action: AppAction) => void;
 }
 
+export interface LocaleTexts {
+    questionMark: string;
+    lang: string;
+    habits: {
+        title: string;
+        name: string;
+        edit: string;
+        delete: string;
+        deleteAlert: {
+            title: string;
+            message1: string;
+            message2: string;
+            confirmButton: string;
+            cancelButton: string;
+        };
+        noHabitsDue: string;
+        addeditScreen:{
+            addScreenTitle: string;
+            editScreenTitle: string;
+            habitTitle: string;
+            habitTitlePlaceholder: string;
+            habitColor: string;
+            habitTimeModule: string;
+            selectGoal: string;
+            habitGoal: string;
+            trackHabitBy: string;
+            completionStatus: string;
+            counterStatus: string;
+            targetValue: string;
+            changeBy: string;
+            habitRepetition: string;
+            repetitionType: {
+                daily: string;
+                weekly: string;
+            }
+            daysOfWeek: string;
+            advancedOptions: string;
+            startDate: string;
+            endDate: string;
+            forever: string;
+            fromever: string;
+            clearStartDate: string;
+            clearEndDate: string;
+            addButton: string;
+            editButton: string;
+        }
+        allHabits: {
+            title: string;
+            repetitionType: {
+                daily: string;
+                weekly: string;
+            };
+            createdAt: string;
+            startDate: string;
+            endDate: string;
+        };
+        repetitionType:{
+            daily: string;
+            weekly:{
+                counter: string;
+                completion: string;
+                everyDay: string;
+            }
+        }
+    };
+    tabs: {
+        habits: string;
+        stats: string;
+        goals: string;
+        settings: string;
+    };
+    stats: {
+        title: string;
+        habitsTableTitle: string;
+        habitsColumn: string;
+        currentWeekStart: string;
+        currentMonthStart: string;
+        habitStatus: {
+            completed: string;
+            exceeded: string;
+            missed: string;
+            notDue: string;
+            partial: string;
+            nodata: string;
+        };
+        weeklyCounterTableTitle: string;
+        weeklyCounterColumn: string;
+        weeklyCounterStatus: {
+            completed: string;
+            exceeded: string;
+            noprogress: string;
+            partialprogress: string;
+            notDue: string;
+        };
+    }
+    goals: {
+        title: string;
+        goals: string;
+        goal: string;
+        habits: string;
+        edit: string;
+        editMe: string;
+        done: string;
+        delete: string;
+        add: string;
+        pause: string;
+        resume: string;
+        modifyStructure: string;
+        selectHabits: string;
+        noHabitsIntro: string;
+        noHabitsDescription: string;
+        deleteAlert:{
+            title: string;
+            message1: string;
+            message2: string;
+            confirmButton: string;
+            cancelButton: string;
+        }
+
+    }
+    weekdays: {
+        saturday: string;
+        sunday: string;
+        monday: string;
+        tuesday: string;
+        wednesday: string;
+        thursday: string;
+        friday: string;
+    };
+    weekDaysShort: {
+        saturday: string;
+        sunday: string;
+        monday: string;
+        tuesday: string;
+        wednesday: string;
+        thursday: string;
+        friday: string;
+    };
+    settings: {
+        title: string;
+        startTimeOfDay: string;
+        timeModuleManagement: string;
+        addStartTime: string;
+        addTimeModule: string;
+        addTimeModulePlaceholder: string;
+        addModuleButton: string;
+        importExportData: string;
+        importData: string;
+        exportData: string;
+        importExportDescription: string;
+        dataManagement: string;
+        resetData: string;
+        resetDataDescription: string;
+        appSettings: string;
+        changeLanguage: string;
+        changeTheme: string;
+        switchLanguage: string;
+    }
+
+}
 // Payload type for ADD_HABIT action
 export interface AddHabitPayload {
     id?: string;

@@ -9,6 +9,8 @@ import { getWeeklyHabitTotal } from '../utils/habitUtils';
 import { Habit, LogEntry, HabitLogStatus } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import { ColorProps } from 'react-native-svg';
+import '../utils/i18n';
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 interface HabitItemProps {
@@ -20,6 +22,7 @@ interface HabitItemProps {
 const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu }) => {
     const dispatch = useAppDispatch();
     const { logs, settings} = useAppState(); // Removed timeModules as it's not used
+    const { t } = useTranslation();
     Colors = getColors(settings.theme)
     const dateString = format(currentDate, 'yyyy-MM-dd');
     
@@ -258,20 +261,28 @@ const HabitItem: React.FC<HabitItemProps> = ({ habit, currentDate, onShowMenu })
         let iconName: keyof typeof Ionicons.glyphMap = 'calendar-outline';
         
         if (habit.repetition.type === 'daily') {
-            repetitionText = 'Daily';
+            repetitionText = t('habits.allHabits.repetitionType.daily');
             iconName = 'calendar-outline';
         } else if (habit.repetition.type === 'weekly') {
             iconName = 'calendar-number-outline';
             
             if (habit.measurement.type === 'count') {
-                repetitionText = `Weekly counter (${habit.measurement.targetValue})`;
+                repetitionText = `${t('habits.repetitionType.weekly.counter')} (${habit.measurement.targetValue})`;
             } else {
                 // Format selected days
-                const daysOfWeek = ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+                const daysOfWeek = [
+                    t('weekDaysShort.saturday'),
+                    t('weekDaysShort.sunday'),
+                    t('weekDaysShort.monday'),
+                    t('weekDaysShort.tuesday'),
+                    t('weekDaysShort.wednesday'),
+                    t('weekDaysShort.thursday'),
+                    t('weekDaysShort.friday')
+                ];
                 const selectedDays = habit.repetition.config.daysOfWeek || [];
                 
                 if (selectedDays.length === 7) {
-                    repetitionText = 'Every day';
+                    repetitionText = t('habits.repetitionType.weekly.everyDay');
                 } else {
                     const dayMarkers = daysOfWeek.filter((day, index) => 
                         selectedDays.includes(index) 

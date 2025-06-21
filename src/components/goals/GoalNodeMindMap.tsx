@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Goal, NodeLayout } from '../../types/index';
 import {getColors}  from '@/constants/Colors';
 import { useAppState } from '@/context/AppStateContext';
+import '../../utils/i18n'; // Ensure translations are loaded
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 interface GoalNodeMindMapProps {
@@ -40,6 +42,7 @@ const GoalNodeMindMap: React.FC<GoalNodeMindMapProps> = memo(({
 
     // Local state ONLY for the text input value during editing
     const [editedTitle, setEditedTitle] = useState<string>(title);
+    const { t } = useTranslation();
     const inputRef = useRef<TextInput>(null);
 
     // Update local editedTitle when entering edit mode or title changes externally
@@ -125,14 +128,14 @@ const GoalNodeMindMap: React.FC<GoalNodeMindMapProps> = memo(({
                             onSubmitEditing={handleSave} // Save on keyboard submit
                         />
                         {/* Internal Save/Cancel buttons for TextInput */}
-                        <View style={styles.editActions}>
+                        {/* <View style={styles.editActions}>
                             <TouchableOpacity onPress={handleSave} style={styles.iconButton}>
                                 <Ionicons name="checkmark" size={20} color="green" />
                             </TouchableOpacity>
                             <TouchableOpacity onPress={handleCancel} style={styles.iconButton}>
                                 <Ionicons name="close" size={20} color="#555" />
                             </TouchableOpacity>
-                        </View>
+                        </View> */}
                     </View>
                 ) : (
                     // Display View - NO ACTION BUTTONS HERE
@@ -146,7 +149,7 @@ const GoalNodeMindMap: React.FC<GoalNodeMindMapProps> = memo(({
                         </Text>
                          {habitsIds && habitsIds.length > 0 && (
                             <Text style={[styles.habitText, isFocused && styles.habitTextFocused]}>
-                                Habits: {habitsIds.length}
+                                {t('habits.name')} {habitsIds.length}
                             </Text>
                          )}
                     </View>

@@ -12,6 +12,8 @@ import { addDays, subDays, isBefore, startOfWeek, endOfWeek, format, addWeeks, s
 import { getWeeklyHabitTotal } from '@/utils/habitUtils';
 import { useNavigation } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker';
+import '../../utils/i18n'; // Import i18n for translations
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 export default function StatsScreen() {
@@ -19,6 +21,7 @@ export default function StatsScreen() {
     const { habits, logs, settings, timeModules } = useAppState();
     const dispatch = useAppDispatch();
     getColors(settings.theme)
+    const { t } = useTranslation(); // Initialize translation hook
     
     // State for view mode (weekly or monthly)
     const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
@@ -378,7 +381,7 @@ export default function StatsScreen() {
                     <View style={styles.fixedColumn}>
                         {/* Header cell */}
                         <View style={[styles.habitNameCell, styles.headerNameCell]}>
-                            <Text style={styles.headerText}>Habit</Text>
+                            <Text style={styles.headerText}>{t('stats.habitsColumn')}</Text>
                         </View>
                         
                         {/* Render habits by module with dividers */}
@@ -528,27 +531,27 @@ export default function StatsScreen() {
                 <View style={styles.legendContainer}>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
-                        <Text style={styles.legendText}>Exceeded</Text>
+                        <Text style={styles.legendText}>{t('stats.habitStatus.exceeded')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.green }]} />
-                        <Text style={styles.legendText}>Completed</Text>
+                        <Text style={styles.legendText}>{t('stats.habitStatus.completed')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.red }]} />
-                        <Text style={styles.legendText}>Missed</Text>
+                        <Text style={styles.legendText}>{t('stats.habitStatus.missed')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
-                        <Text style={styles.legendText}>Partial</Text>
+                        <Text style={styles.legendText}>{t('stats.habitStatus.partial')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.darkGrey }]} />
-                        <Text style={styles.legendText}>No Data</Text>
+                        <Text style={styles.legendText}>{t('stats.habitStatus.nodata')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <Ionicons name="lock-closed" size={10} color={Colors.darkGrey} style={{marginRight: 4}} />
-                        <Text style={styles.legendText}>Not Due</Text>
+                        <Text style={styles.legendText}>{t('stats.habitStatus.notDue')}</Text>
                     </View>
                 </View>
             </View>
@@ -600,14 +603,14 @@ export default function StatsScreen() {
 
         return (
             <View style={styles.tableContainer}>
-                <Text style={styles.tableTitle}>Weekly Counters</Text>
+                <Text style={styles.tableTitle}>{t('stats.weeklyCounterTableTitle')}</Text>
                 
                 <View style={styles.tableContent}>
                     {/* Fixed left column for habit names */}
                     <View style={styles.fixedColumn}>
                         {/* Header cell */}
                         <View style={[styles.habitNameCell, styles.headerNameCell]}>
-                            <Text style={styles.headerText}>Habit</Text>
+                            <Text style={styles.headerText}>{t('stats.weeklyCounterColumn')}</Text>
                         </View>
                         
                         {/* Render habits by module with dividers */}
@@ -749,23 +752,23 @@ export default function StatsScreen() {
                 <View style={styles.legendContainer}>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.blue }]} />
-                        <Text style={styles.legendText}>Exceeded Target</Text>
+                        <Text style={styles.legendText}>{t('stats.weeklyCounterStatus.exceeded')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.green }]} />
-                        <Text style={styles.legendText}>Completed (100%)</Text>
+                        <Text style={styles.legendText}>{t('stats.weeklyCounterStatus.completed')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.buff }]} />
-                        <Text style={styles.legendText}>Partial Progress</Text>
+                        <Text style={styles.legendText}>{t('stats.weeklyCounterStatus.partialprogress')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <View style={[styles.legendColorBox, { backgroundColor: Colors.red }]} />
-                        <Text style={styles.legendText}>No Progress</Text>
+                        <Text style={styles.legendText}>{t('stats.weeklyCounterStatus.noprogress')}</Text>
                     </View>
                     <View style={styles.legendItem}>
                         <Ionicons name="lock-closed" size={10} color={Colors.darkGrey} style={{marginRight: 4}} />
-                        <Text style={styles.legendText}>Not Due</Text>
+                        <Text style={styles.legendText}>{t('stats.weeklyCounterStatus.notDue')}</Text>
                     </View>
                 </View>
             </View>
@@ -780,10 +783,10 @@ export default function StatsScreen() {
     // Update text to show appropriate day range
     const headerText = useMemo(() => {
         if (timeOffset === 0) {
-            return viewMode === 'weekly' ? "Current to week start" : "Current to month start";
+            return viewMode === 'weekly' ? t('stats.currentWeekStart') : t('stats.currentMonthStart');
         }
         return "";
-    }, [dates, timeOffset, viewMode]);
+    }, [dates, timeOffset, viewMode, t]);
 
     return (
       <ScrollView
@@ -815,8 +818,8 @@ export default function StatsScreen() {
             {timeOffset !== 0 && (
               <Text style={styles.returnToCurrentText}>
                 {viewMode === "weekly"
-                  ? "(Go to current week)"
-                  : "(Go to current month)"}
+                  ? `(${t('tabs.stats')})`
+                  : `(${t('tabs.stats')})`}
               </Text>
             )}
             {headerText && (
@@ -844,13 +847,21 @@ export default function StatsScreen() {
             scrollViewProps={{nestedScrollEnabled: true,overScrollMode: 'always'}}
             open={dropDownStartdw}
             value={startDayOfWeek}
-            items={['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'].map((day,index) => ({label:day,value:(index+6)%7 as Day}))}
+            items={[
+                {label: t('weekdays.saturday'), value: 6 as Day},
+                {label: t('weekdays.sunday'), value: 0 as Day},
+                {label: t('weekdays.monday'), value: 1 as Day},
+                {label: t('weekdays.tuesday'), value: 2 as Day},
+                {label: t('weekdays.wednesday'), value: 3 as Day},
+                {label: t('weekdays.thursday'), value: 4 as Day},
+                {label: t('weekdays.friday'), value: 5 as Day}
+            ]}
             setOpen={setDropDownStartdw}
             setValue={(val) =>{
-            setStartDayOfWeek(val)
-            dispatch({ type: 'UPDATE_START_DAY', payload: {startDayOfWeek: val('')} });
-            } }
-            placeholder="Select start day of week..."
+                setStartDayOfWeek(val)
+                dispatch({ type: 'UPDATE_START_DAY', payload: {startDayOfWeek: val('')} });
+            }}
+            placeholder={t('settings.startTimeOfDay')}
             style={styles.dropdownStyle}
             placeholderStyle={styles.dropdownPlaceholderStyle}
             dropDownContainerStyle={styles.dropdownContainerStyle}
@@ -868,12 +879,12 @@ export default function StatsScreen() {
         {dailyAndWeeklyBinaryHabits.length === 0 &&
           weeklyCounterHabits.length === 0 && (
             <Text style={styles.placeholder}>
-              Add some habits to see their activity here.
+              {t('habits.noHabitsDue')}
             </Text>
           )}
 
         {/* Render tables for daily and weekly habits */}
-        {renderTable(dailyAndWeeklyBinaryHabits, "Habits")}
+        {renderTable(dailyAndWeeklyBinaryHabits, t('stats.habitsTableTitle'))}
         {renderWeeklyCounterTable(weeklyCounterHabits)}
       </ScrollView>
     );
@@ -970,8 +981,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems:'stretch',
         height: 50, // Fixed height to match headerNameCell
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrey,
+        // borderBottomWidth: 1,
+        // borderBottomColor: Colors.lightGrey,
         justifyContent:'center',
     },
     rowsContainer: {
@@ -981,8 +992,8 @@ const styles = StyleSheet.create({
     headerNameCell: {
         height: 50, // Fixed height to match headerRow
         backgroundColor: Colors.surface,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrey,
+        // borderBottomWidth: 1,
+        // borderBottomColor: Colors.lightGrey,
     },
     headerText: {
         fontWeight: '600',

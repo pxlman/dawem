@@ -9,6 +9,8 @@ import { Habit, TimeModule } from '@/types/index';
 import HabitEditModal from '@/components/HabitEditModal';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { format } from 'date-fns';
+import '../utils/i18n'; // Ensure i18n is initialized
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 // --- Type for grouped data ---
@@ -29,6 +31,8 @@ const HabitItemRenderer = React.memo(({
     onEditHabit: (habit: Habit) => void;
     onDeleteHabit: (habit: Habit) => void;
 }) => {
+    const { t } = useTranslation();
+    
     return (
         <ScaleDecorator>
             <TouchableOpacity
@@ -43,10 +47,10 @@ const HabitItemRenderer = React.memo(({
                 <View style={styles.habitContent}>
                     <Text style={styles.habitTitle}>{item.title}</Text>
                     <Text style={styles.habitInfo}>
-                        {item.repetition.type} • Created: {new Date(item.createdAt).toLocaleDateString()}
+                        {t(`habits.allHabits.repetitionType.${item.repetition.type}`)} • {t('habits.allHabits.createdAt')}: {new Date(item.createdAt).toLocaleDateString()}
                     </Text>
-                    {item.startDate && <Text style={styles.habitInfo}>Start: {item.startDate}</Text>}
-                    {item.endDate && <Text style={styles.habitInfo}>End: {item.endDate}</Text>}
+                    {item.startDate && <Text style={styles.habitInfo}>{t('habits.allHabits.startDate')}: {item.startDate}</Text>}
+                    {item.endDate && <Text style={styles.habitInfo}>{t('habits.allHabits.endDate')}: {item.endDate}</Text>}
                 </View>
                 <View style={styles.habitActions}>
                     <TouchableOpacity onPress={() => onEditHabit(item)} style={styles.actionButton}>
@@ -82,6 +86,7 @@ const TimeModuleGroup = React.memo(({
     onEditHabit: (habit: Habit) => void;
     onDeleteHabit: (habit: Habit) => void;
 }) => {
+    const { t } = useTranslation();
     const dispatch = useAppDispatch();
     const [groupHabits, setGroupHabits] = useState(habits);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -136,7 +141,7 @@ const TimeModuleGroup = React.memo(({
     return (
         <View style={styles.timeModuleGroup}>
             <Text style={styles.timeModuleTitle}>
-                {timeModule ? timeModule.name : 'Uncategorized'}
+                {timeModule ? timeModule.name : t('habits.allHabits.uncategorized', 'Uncategorized')}
             </Text>
             <DraggableFlatList
                 data={groupHabits}
@@ -180,12 +185,11 @@ const TimeModuleGroup = React.memo(({
 
 // Main All Habits Screen component
 export default function AllHabitsScreen() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { habits, timeModules, settings } = useAppState();
     Colors =  getColors(settings.theme)
     const dispatch = useAppDispatch();
-    // const [habitToEdit, setHabitToEdit] = React.useState<Habit | null>(null);
-    // const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);
     const currentDate = new Date();
 
     // Group all habits by time module and sort them by sortOrder - memoized
@@ -219,12 +223,12 @@ export default function AllHabitsScreen() {
 
     const handleDeleteHabit = useCallback((habit: Habit) => {
         Alert.alert(
-            'Delete Habit',
-            `Are you sure you want to delete "${habit.title}"?`,
+            t('habits.delete'),
+            t('habits.deleteConfirmation', `Are you sure you want to delete "${habit.title}"?`),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel', 'Cancel'), style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: t('habits.delete'),
                     style: 'destructive',
                     onPress: () => {
                         dispatch({
@@ -235,7 +239,7 @@ export default function AllHabitsScreen() {
                 },
             ]
         );
-    }, [dispatch]);
+    }, [dispatch, t]);
 
     // Render a group item
     const renderGroupItem = useCallback(({ item }: { item: TimeModuleGroupData }) => {
@@ -258,7 +262,7 @@ export default function AllHabitsScreen() {
         {/* <SafeAreaView style={styles.container}> */}
             {groupedData.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <Text style={styles.noHabitsText}>No habits found.</Text>
+                    <Text style={styles.noHabitsText}>{t('habits.noHabitsFound', 'No habits found.')}</Text>
                 </View>
             ) : (
                 <FlatList

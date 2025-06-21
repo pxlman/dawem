@@ -4,10 +4,13 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {getColors} from '../../constants/Colors';
 import { useAppState } from '@/context/AppStateContext';
+import '../../utils/i18n';
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 export default function TabLayout() {
     const {settings} = useAppState();
+    const { t } = useTranslation();
     Colors =  getColors(settings.theme)
     return (
         <Tabs
@@ -36,9 +39,9 @@ export default function TabLayout() {
                 },
             })}
         >
-            <Tabs.Screen name="index" options={{ title: 'Habits' }} />
-            <Tabs.Screen name="stats" options={{ title: 'Stats' }} />
-            <Tabs.Screen name="goals" options={{ title: 'Goals' }} />
+            <Tabs.Screen name="index" options={{ title: t('tabs.habits') }} />
+            <Tabs.Screen name="stats" options={{ title: t('tabs.stats') }} />
+            <Tabs.Screen name="goals" options={{ title: t('tabs.goals') }} />
             {/* <Tabs.Screen name="settings" options={{ title: 'Settings' }} /> */}
         </Tabs>
     );

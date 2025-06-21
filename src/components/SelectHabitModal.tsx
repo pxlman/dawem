@@ -11,6 +11,8 @@ import { useAppDispatch, useAppState } from '@/context/AppStateContext';
 import { Goal, Habit } from '@/types/index';
 import { Ionicons } from '@expo/vector-icons';
 import {getColors}  from '@/constants/Colors';
+import '../utils/i18n';
+import { useTranslation } from 'react-i18next';
 let Colors = getColors()
 
 interface SelectHabitModalProps {
@@ -26,6 +28,7 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
 }) => {
   const { habits, goals, settings } = useAppState();
   const dispatch = useAppDispatch();
+const { t } = useTranslation();
   Colors =  getColors(settings.theme)
 
   const [selectedHabits, setSelectedHabits] = useState<Set<string>>(new Set());
@@ -109,9 +112,9 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
       >
         <View style={styles.habitInfo}>
           <Text style={[styles.habitTitle, isSelected && styles.selectedText]}>{item.title}</Text>
-            <Text style={[styles.habitDescription, isSelected && styles.selectedText]} numberOfLines={1}>
+            {/* <Text style={[styles.habitDescription, isSelected && styles.selectedText]} numberOfLines={1}>
               {'Some stats'}
-            </Text>
+            </Text> */}
         </View>
         <View style={styles.checkboxContainer}>
           {isSelected && (
@@ -135,8 +138,8 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
         activeOpacity={1}
         onPress={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
       >
-        <Text style={styles.modalHeader}>Select Habits</Text>
-        <Text style={styles.goalTitle}>Goal: {goal.title}</Text>
+        <Text style={styles.modalHeader}>{t('goals.selectHabits')}</Text>
+        <Text style={styles.goalTitle}>{t('goals.goal')}: {goal.title}</Text>
         
         {availableHabits.length > 0 ? (
           <FlatList
@@ -157,10 +160,10 @@ const SelectHabitModal: React.FC<SelectHabitModalProps> = ({
         
         <View style={styles.actions}>
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.buttonText}>Save</Text>
+            <Text style={styles.buttonText}>{t('goals.done')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={[styles.buttonText, {color:Colors.text}]}>Cancel</Text>
+            <Text style={[styles.buttonText, {color:Colors.text}]}>{t('habits.deleteAlert.cancelButton')}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
