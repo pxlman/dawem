@@ -31,7 +31,7 @@ export default function StatsScreen() {
     const [timeOffset, setTimeOffset] = useState(0);
 
     // Start day of week
-    const [startDayOfWeek, setStartDayOfWeek] = useState(settings.startDayOfWeek || 6); // Default to Saturday (6)
+    const [startDayOfWeek, setStartDayOfWeek] = useState(settings.startDayOfWeek?? 6); // Default to Saturday (6)
     const [dropDownStartdw, setDropDownStartdw] = useState(false); // Default to Saturday (6)
     
     // Create separate refs for daily and weekly scrolling
@@ -74,7 +74,7 @@ export default function StatsScreen() {
         
         if (viewMode === 'weekly') {
             // Weekly view logic
-            const startDay = settings.startDayOfWeek || 6; // 6 is Saturday
+            const startDay = settings.startDayOfWeek?? 6 ; // 6 is Saturday
             
             // Add the week offset
             date.setDate(date.getDate() + (timeOffset * 7));
