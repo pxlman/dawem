@@ -39,8 +39,8 @@ const ar: LocaleTexts = {
       endDate: 'تاريخ النهاية',
       forever: 'الى ان يتوفانا الله',
       fromever: 'من زمان',
-      clearStartDate: 'مسح تاريخ البداية',
-      clearEndDate: 'مسح تاريخ النهاية',
+      clearStartDate: 'حذف تاريخ البداية',
+      clearEndDate: 'حذف تاريخ النهاية',
       addButton: 'إضافة عادة',
       editButton: 'تحديث العادة',
       daysOfWeek: 'أيام الأسبوع'
