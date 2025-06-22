@@ -37,7 +37,7 @@ const ar: LocaleTexts = {
       advancedOptions: 'خيارات متقدمة',
       startDate: 'تاريخ البداية',
       endDate: 'تاريخ النهاية',
-      forever: 'لحد لما ربنا ياخدنا',
+      forever: 'الى ان يتوفانا الله',
       fromever: 'من زمان',
       clearStartDate: 'مسح تاريخ البداية',
       clearEndDate: 'مسح تاريخ النهاية',
@@ -80,9 +80,9 @@ const ar: LocaleTexts = {
       completed: 'خلصت',
       exceeded: 'زيادة',
       missed: 'فاتت',
-      notDue: 'مش مطلوبة',
-      partial: 'جزئية',
-      nodata: 'مفيش بيانات'
+      notDue: 'مش يومها',
+      partial: 'قضاء',
+      nodata: 'فاضية'
     },
     weeklyCounterTableTitle: 'جدول العد الأسبوعي',
     weeklyCounterColumn: 'عداد أسبوعي',
