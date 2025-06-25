@@ -270,9 +270,10 @@ export default function SettingsScreen() {
 
   const handleExportHabits = async () => {
     const exportData = {
-      habits: mergeArraysWithoutDuplicates(state.habits, habits),
-      timeModules: mergeArraysWithoutDuplicates(state.timeModules, timeModules),
-      goals: mergeArraysWithoutDuplicates(state.goals, state.goals),
+      // habits: mergeArraysWithoutDuplicates(state.habits, habits),
+      // timeModules: mergeArraysWithoutDuplicates(state.timeModules, timeModules),
+      // goals: mergeArraysWithoutDuplicates(state.goals, state.goals),
+      ...state
     };
     const jsonString = JSON.stringify(exportData, null, 2);
 
@@ -364,6 +365,7 @@ export default function SettingsScreen() {
               dispatch({
                 type: "IMPORT_DATA",
                 payload: {
+                  ...importedData,
                   habits: mergedHabits,
                   timeModules: mergedTimeModules,
                   goals: mergedGoals,
