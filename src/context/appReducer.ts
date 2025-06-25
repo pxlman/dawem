@@ -572,6 +572,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             console.log(action.payload)
             return {
                 ...state,
+                ...action.payload,
                 habits: {...action.payload.habits,...state.habits},
                 goals: {...action.payload.goals,...state.goals},
                 timeModules: {...action.payload.timeModules,...state.timeModules},
