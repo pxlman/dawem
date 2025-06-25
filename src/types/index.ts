@@ -88,6 +88,13 @@ export interface LogEntry {
     notes?: string;
 }
 
+export interface Reminder {
+    id: string;
+    habitId: string;
+    time?: string | null | undefined; // 'HH:mm' format || null if no time set so is popped at the start of the day
+    enabled?: boolean;
+}
+
 export interface AppSettings {
     startTimeOfDay?: string; // New field for the start time of the day (e.g., "08:00")
     startDayOfWeek: Day; // Sun=0 , Sat=6
